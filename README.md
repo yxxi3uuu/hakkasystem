@@ -1,6 +1,11 @@
-"# hakkasystem" 
+pip install "fastapi[standard]"
+安裝fastapi
 
-安裝在powershell
-(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+安裝docker desktop 
+docker-compose up --build
 
-測試 要重開終端poetry --version
+docker ps
+看有沒有聯繫成功
+
+uvicorn main:app --reload
+
