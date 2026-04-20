@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>配對遊戲 - 客語隨拍隨學</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: white;
+      margin: 16px;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .game-stat { text-align: center; }
+    .game-stat-val { font-size: 24px; font-weight: 800; color: #2E7D32; }
+    .game-stat-lbl { font-size: 11px; color: #888; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 0 16px 16px;
+    }
+    .card {
+      aspect-ratio: 1;
+      border-radius: 12px;
+      background: #4CAF50;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: white;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s, background 0.2s;
+      text-align: center; padding: 4px;
+    }
+    .card.flipped   { background: white; color: #333; border: 2px solid #4CAF50; }
+    .card.matched   { background: #E8F5E9; color: #2E7D32; border: 2px solid #4CAF50; cursor: default; }
+    .card.wrong     { background: #FFEBEE; border: 2px solid #f44336; }
+    .card:not(.flipped):not(.matched):hover { transform: scale(1.04); }
+    .card .back     { font-size: 22px; }
+
+    .win-banner {
+      display: none;
+      background: linear-gradient(135deg, #4CAF50, #2E7D32);
+      color: white;
+      border-radius: 16px;
+      margin: 0 16px 16px;
+      padding: 24px;
+      text-align: center;
+    }
+    .win-banner h2 { font-size: 22px; margin-bottom: 8px; }
+    .win-banner p  { font-size: 14px; opacity: 0.9; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <span style="font-size:22px;">🎮</span>
+    <h1>配對遊戲</h1>
+    <button class="btn btn-outline" style="padding:6px 14px;font-size:13px;" onclick="initGame()">重新開始</button>
+  </div>
+
+  <div class="game-header">
+    <div class="game-stat">
+      <div class="game-stat-val" id="score">0</div>
+      <div class="game-stat-lbl">分數</div>
+    </div>
+    <div class="game-stat">
+      <div class="game-stat-val" id="moves">0</div>
+      <div class="game-stat-lbl">移動次數</div>
+    </div>
+    <div class="game-stat">
+      <div class="game-stat-val" id="pairs">0/6</div>
+      <div class="game-stat-lbl">配對</div>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="win-banner" id="winBanner">
+    <h2>🎉 恭喜完成！</h2>
+    <p id="winMsg"></p>
+    <button class="btn btn-outline" onclick="initGame()">再玩一次</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎮 遊戲說明</div>
+    <ul style="padding:8px 16px 16px;list-style:none;">
+      <li style="font-size:13px;color:#666;margin-bottom:6px;">• 找出中文詞彙和對應的客語發音</li>
+      <li style="font-size:13px;color:#666;margin-bottom:6px;">• 每次只能翻開兩張卡片</li>
+      <li style="font-size:13px;color:#666;">• 配對成功得 10 分，移動次數越少越好</li>
+    </ul>
+  </div>
+
+  <nav class="bottom-nav">
+    <a class="nav-item" href="/"><div class="nav-icon">🏠</div><div class="nav-label">首頁</div></a>
+    <a class="nav-item" href="/recognition"><div class="nav-icon">📷</div><div class="nav-label">拍照學習</div></a>
+    <a class="nav-item" href="/practice"><div class="nav-icon">🎤</div><div class="nav-label">語音練習</div></a>
+    <a class="nav-item active" href="/game"><div class="nav-icon">🎮</div><div class="nav-label">配對遊戲</div></a>
+    <a class="nav-item" href="/record"><div class="nav-icon">📊</div><div class="nav-label">學習記錄</div></a>
+    <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
+  </nav>
+
+  <script>
+    const PAIRS = [
+      { zh: "你好",   rom: "ngì-hó" },
+      { zh: "謝謝",   rom: "án-tsṳ́-sì" },
+      { zh: "蘋果",   rom: "phìn-kó" },
+      { zh: "貓咪",   rom: "miāu" },
+      { zh: "水",     rom: "súi" },
+      { zh: "飯",     rom: "fan" },
+    ];
+
+    let cards = [], flipped = [], matched = 0, moves = 0, score = 0, lock = false;
+
+    function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
+
+    function initGame() {
+      flipped = []; matched = 0; moves = 0; score = 0; lock = false;
+      document.getElementById('score').textContent = 0;
+      document.getElementById('moves').textContent = 0;
+      document.getElementById('pairs').textContent = '0/6';
+      document.getElementById('winBanner').style.display = 'none';
+
+      cards = shuffle([
+        ...PAIRS.map((p, i) => ({ id: i, type: 'zh',  text: p.zh  })),
+        ...PAIRS.map((p, i) => ({ id: i, type: 'rom', text: p.rom })),
+      ]);
+
+      const grid = document.getElementById('grid');
+      grid.innerHTML = cards.map((c, idx) => `
+        <div class="card" data-idx="${idx}" onclick="flip(this, ${idx})">
+          <span class="back">?</span>
+        </div>
+      `).join('');
+    }
+
+    function flip(el, idx) {
+      if (lock || el.classList.contains('flipped') || el.classList.contains('matched')) return;
+      el.classList.add('flipped');
+      el.innerHTML = cards[idx].text;
+      flipped.push({ el, idx });
+
+      if (flipped.length === 2) {
+        lock = true; moves++;
+        document.getElementById('moves').textContent = moves;
+        const [a, b] = flipped;
+        if (cards[a.idx].id === cards[b.idx].id && cards[a.idx].type !== cards[b.idx].type) {
+          // match
+          a.el.classList.add('matched'); b.el.classList.add('matched');
+          matched++; score += 10;
+          document.getElementById('score').textContent = score;
+          document.getElementById('pairs').textContent = `${matched}/6`;
+          flipped = []; lock = false;
+          if (matched === 6) showWin();
+        } else {
+          // wrong
+          a.el.classList.add('wrong'); b.el.classList.add('wrong');
+          setTimeout(() => {
+            a.el.classList.remove('flipped', 'wrong'); a.el.innerHTML = '<span class="back">?</span>';
+            b.el.classList.remove('flipped', 'wrong'); b.el.innerHTML = '<span class="back">?</span>';
+            flipped = []; lock = false;
+          }, 900);
+        }
+      }
+    }
+
+    function showWin() {
+      const banner = document.getElementById('winBanner');
+      document.getElementById('winMsg').textContent = `得分 ${score} 分，共移動 ${moves} 次！`;
+      banner.style.display = 'block';
+    }
+
+    initGame();
+  </script>
+</body>
+</html>

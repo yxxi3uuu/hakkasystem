@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>個人中心 - 客語隨拍隨學</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    /* ── 頂部用戶區 ── */
+    .profile-header {
+      background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+      color: white;
+      padding: 40px 20px 30px;
+      text-align: center;
+    }
+    .app-title {
+      font-size: 14px;
+      opacity: 0.85;
+      margin-bottom: 16px;
+      letter-spacing: 1px;
+    }
+    .avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin: 0 auto 12px;
+      border: 3px solid rgba(255,255,255,0.6);
+    }
+    .user-name {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .user-subtitle {
+      font-size: 13px;
+      opacity: 0.8;
+    }
+
+    /* ── 統計卡片 ── */
+    .stats-row {
+      display: flex;
+      background: white;
+      border-radius: 16px;
+      margin: -20px 16px 0;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .stat-item {
+      flex: 1;
+      text-align: center;
+      padding: 18px 8px;
+      border-right: 1px solid #f0f0f0;
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #2E7D32;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    /* ── 通用 section ── */
+    .section {
+      background: white;
+      border-radius: 16px;
+      margin: 16px;
+      overflow: hidden;
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #333;
+      padding: 16px 16px 8px;
+    }
+
+    /* ── 選單列表 ── */
+    .menu-item {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid #f5f5f5;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item:hover { background: #f9f9f9; }
+    .menu-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      margin-right: 12px;
+    }
+    .menu-icon.green  { background: #E8F5E9; }
+    .menu-icon.blue   { background: #E3F2FD; }
+    .menu-icon.orange { background: #FFF3E0; }
+    .menu-icon.red    { background: #FFEBEE; }
+    .menu-text { flex: 1; font-size: 15px; color: #333; }
+    .menu-arrow { color: #ccc; font-size: 18px; }
+
+    /* ── 成就徽章 ── */
+    .achievements-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 8px 16px 16px;
+    }
+    .badge {
+      text-align: center;
+      padding: 12px 8px;
+      border-radius: 12px;
+      background: #f9f9f9;
+    }
+    .badge.unlocked { background: #E8F5E9; }
+    .badge-icon { font-size: 28px; margin-bottom: 6px; }
+    .badge-name { font-size: 12px; font-weight: 600; color: #333; }
+    .badge-desc { font-size: 10px; color: #888; margin-top: 2px; line-height: 1.3; }
+    .badge.locked .badge-icon { filter: grayscale(1); opacity: 0.4; }
+    .badge.locked .badge-name { color: #aaa; }
+
+    /* ── 本週目標 ── */
+    .goal-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .goal-item:last-child { border-bottom: none; padding-bottom: 16px; }
+    .goal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .goal-title { font-size: 14px; color: #333; }
+    .goal-progress-text { font-size: 13px; font-weight: 600; color: #4CAF50; }
+    .progress-bar {
+      height: 8px;
+      background: #E8F5E9;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4CAF50, #66BB6A);
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+
+    /* ── 底部導覽列 ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 430px;
+      background: white;
+      border-top: 1px solid #eee;
+      display: flex;
+      padding: 8px 0 12px;
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      text-decoration: none;
+      color: #aaa;
+      transition: color 0.15s;
+    }
+    .nav-item.active { color: #4CAF50; }
+    .nav-item:hover { color: #4CAF50; }
+    .nav-icon { font-size: 22px; }
+    .nav-label { font-size: 10px; }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部用戶資訊 -->
+  <div class="profile-header">
+    <div class="app-title">🎓 客語隨拍隨學</div>
+    <div class="avatar">👤</div>
+    <div class="user-name" id="userName">載入中...</div>
+    <div class="user-subtitle" id="userSubtitle">已學習 -- 天</div>
+  </div>
+
+  <!-- 統計卡片 -->
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-value" id="statVocab">--</div>
+      <div class="stat-label">已學詞彙</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="statScore">--</div>
+      <div class="stat-label">平均分數</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="statDays">--</div>
+      <div class="stat-label">學習天數</div>
+    </div>
+  </div>
+
+  <!-- 選單 -->
+  <div class="section" style="margin-top: 32px;">
+    <div class="menu-item">
+      <div class="menu-icon green">⚙️</div>
+      <span class="menu-text">設定</span>
+      <span class="menu-arrow">›</span>
+    </div>
+    <div class="menu-item">
+      <div class="menu-icon blue">🔔</div>
+      <span class="menu-text">通知設定</span>
+      <span class="menu-arrow">›</span>
+    </div>
+    <div class="menu-item">
+      <div class="menu-icon orange">📖</div>
+      <span class="menu-text">使用說明</span>
+      <span class="menu-arrow">›</span>
+    </div>
+    <div class="menu-item" id="logoutBtn">
+      <div class="menu-icon red">🚪</div>
+      <span class="menu-text">登出</span>
+      <span class="menu-arrow">›</span>
+    </div>
+  </div>
+
+  <!-- 成就徽章 -->
+  <div class="section">
+    <div class="section-title">🏆 成就徽章</div>
+    <div class="achievements-grid" id="achievementsGrid">
+      <!-- 由 JS 動態填入 -->
+    </div>
+  </div>
+
+  <!-- 本週目標 -->
+  <div class="section">
+    <div class="section-title">💪 本週目標</div>
+    <div id="weeklyGoals">
+      <!-- 由 JS 動態填入 -->
+    </div>
+  </div>
+
+  <!-- 底部導覽列 -->
+  <nav class="bottom-nav">
+    <a class="nav-item" href="/"><div class="nav-icon">🏠</div><div class="nav-label">首頁</div></a>
+    <a class="nav-item" href="/recognition"><div class="nav-icon">📷</div><div class="nav-label">拍照學習</div></a>
+    <a class="nav-item" href="/practice"><div class="nav-icon">🎤</div><div class="nav-label">語音練習</div></a>
+    <a class="nav-item" href="/game"><div class="nav-icon">🎮</div><div class="nav-label">配對遊戲</div></a>
+    <a class="nav-item" href="/record"><div class="nav-icon">📊</div><div class="nav-label">學習記錄</div></a>
+    <a class="nav-item active" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
+  </nav>
+
+  <script>
+    const USER_ID = 1; // TODO: 從 session/token 取得
+
+    async function loadProfile() {
+      try {
+        const [profile, achievements, goals] = await Promise.all([
+          fetch(`/api/profile/${USER_ID}`).then(r => r.json()),
+          fetch(`/api/profile/${USER_ID}/achievements`).then(r => r.json()),
+          fetch(`/api/profile/${USER_ID}/weekly-goals`).then(r => r.json()),
+        ]);
+
+        // 用戶資訊
+        document.getElementById('userName').textContent = profile.name;
+        document.getElementById('userSubtitle').textContent = `已學習 ${profile.study_days} 天`;
+        document.getElementById('statVocab').textContent = profile.vocab_learned;
+        document.getElementById('statScore').textContent = profile.avg_score;
+        document.getElementById('statDays').textContent = profile.study_days;
+
+        // 成就徽章
+        const grid = document.getElementById('achievementsGrid');
+        grid.innerHTML = achievements.map(a => `
+          <div class="badge ${a.unlocked ? 'unlocked' : 'locked'}">
+            <div class="badge-icon">${a.icon}</div>
+            <div class="badge-name">${a.name}</div>
+            <div class="badge-desc">${a.description || ''}</div>
+          </div>
+        `).join('');
+
+        // 本週目標
+        const goalsEl = document.getElementById('weeklyGoals');
+        goalsEl.innerHTML = goals.map(g => {
+          const pct = Math.min(100, Math.round((g.current / g.target) * 100));
+          return `
+            <div class="goal-item">
+              <div class="goal-header">
+                <span class="goal-title">${g.title}</span>
+                <span class="goal-progress-text">${g.current}/${g.target}</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width:${pct}%"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+      } catch (err) {
+        console.error('載入失敗', err);
+      }
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/';
+    });
+
+    loadProfile();
+  </script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>語音練習 - 客語隨拍隨學</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    .practice-card {
+      background: white;
+      border-radius: 16px;
+      margin: 16px;
+      padding: 24px;
+      text-align: center;
+    }
+    .difficulty-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .easy   { background: #E8F5E9; color: #2E7D32; }
+    .medium { background: #FFF3E0; color: #E65100; }
+    .hard   { background: #FFEBEE; color: #C62828; }
+
+    .word-display { font-size: 36px; font-weight: 800; color: #333; margin-bottom: 6px; }
+    .word-roman   { font-size: 18px; color: #4CAF50; margin-bottom: 24px; }
+
+    .mic-btn {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: #4CAF50;
+      border: none;
+      font-size: 36px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 12px;
+      box-shadow: 0 4px 16px rgba(76,175,80,0.4);
+      transition: transform 0.15s, background 0.15s;
+    }
+    .mic-btn.recording { background: #f44336; animation: pulse 1s infinite; }
+    .mic-btn:hover { transform: scale(1.05); }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 4px 16px rgba(244,67,54,0.4); }
+      50%      { box-shadow: 0 4px 28px rgba(244,67,54,0.7); }
+    }
+    .mic-hint { font-size: 13px; color: #888; }
+
+    .score-bar {
+      height: 10px; background: #E8F5E9; border-radius: 5px;
+      margin: 16px 0 6px; overflow: hidden;
+    }
+    .score-fill { height: 100%; background: #4CAF50; border-radius: 5px; transition: width 0.6s; }
+    .score-text { font-size: 13px; color: #666; text-align: right; }
+
+    /* vocab list */
+    .vocab-item {
+      display: flex; align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid #f5f5f5;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .vocab-item:last-child { border-bottom: none; }
+    .vocab-item:hover { background: #f9f9f9; }
+    .vocab-zh   { font-size: 16px; font-weight: 600; color: #333; flex: 1; }
+    .vocab-rom  { font-size: 13px; color: #4CAF50; flex: 1; }
+    .vocab-diff { margin-left: auto; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <span style="font-size:22px;">🎤</span>
+    <h1>語音練習</h1>
+  </div>
+  <p style="font-size:13px;color:#888;padding:12px 16px 4px;">聽標準發音，然後錄下你的發音，系統會給你評分和建議</p>
+
+  <!-- 練習卡 -->
+  <div class="practice-card">
+    <span class="difficulty-badge easy" id="diffBadge">難度：簡單</span>
+    <div class="word-display" id="wordDisplay">你好</div>
+    <div class="word-roman"   id="wordRoman">ngì-hó</div>
+
+    <button class="btn btn-outline" style="margin-bottom:20px;" onclick="playAudio()">▶ 播放標準發音</button>
+
+    <button class="mic-btn" id="micBtn" onclick="toggleRecord()">🎤</button>
+    <div class="mic-hint" id="micHint">點擊麥克風開始錄音</div>
+
+    <div id="scoreWrap" style="display:none;">
+      <div class="score-bar"><div class="score-fill" id="scoreFill" style="width:0%"></div></div>
+      <div class="score-text" id="scoreText">0 分</div>
+    </div>
+  </div>
+
+  <!-- 詞彙列表 -->
+  <div class="section">
+    <div class="section-title">📝 練習詞彙列表</div>
+    <div id="vocabList"></div>
+  </div>
+
+  <!-- 技巧 -->
+  <div class="section">
+    <div class="section-title">💡 發音技巧</div>
+    <ul style="padding:8px 16px 16px;list-style:none;">
+      <li style="font-size:13px;color:#666;margin-bottom:6px;">• 先仔細聽標準發音，注意聲調變化</li>
+      <li style="font-size:13px;color:#666;margin-bottom:6px;">• 錄音時找個安靜的環境</li>
+      <li style="font-size:13px;color:#666;">• 多練習幾次，熟能生巧</li>
+    </ul>
+  </div>
+
+  <nav class="bottom-nav">
+    <a class="nav-item" href="/"><div class="nav-icon">🏠</div><div class="nav-label">首頁</div></a>
+    <a class="nav-item" href="/recognition"><div class="nav-icon">📷</div><div class="nav-label">拍照學習</div></a>
+    <a class="nav-item active" href="/practice"><div class="nav-icon">🎤</div><div class="nav-label">語音練習</div></a>
+    <a class="nav-item" href="/game"><div class="nav-icon">🎮</div><div class="nav-label">配對遊戲</div></a>
+    <a class="nav-item" href="/record"><div class="nav-icon">📊</div><div class="nav-label">學習記錄</div></a>
+    <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
+  </nav>
+
+  <script>
+    const VOCAB = [
+      { zh: "你好", roman: "ngì-hó",        diff: "easy",   label: "簡單" },
+      { zh: "謝謝", roman: "án-tsṳ́-sì",    diff: "medium", label: "中等" },
+      { zh: "蘋果", roman: "phìn-kó",       diff: "easy",   label: "簡單" },
+    ];
+
+    let current = 0;
+    let recording = false;
+
+    function renderVocab() {
+      document.getElementById('vocabList').innerHTML = VOCAB.map((v, i) => `
+        <div class="vocab-item" onclick="selectVocab(${i})">
+          <span class="vocab-zh">${v.zh}</span>
+          <span class="vocab-rom">${v.roman}</span>
+          <span class="difficulty-badge ${v.diff} vocab-diff">${v.label}</span>
+        </div>
+      `).join('');
+    }
+
+    function selectVocab(i) {
+      current = i;
+      const v = VOCAB[i];
+      document.getElementById('wordDisplay').textContent = v.zh;
+      document.getElementById('wordRoman').textContent   = v.roman;
+      document.getElementById('diffBadge').textContent   = `難度：${v.label}`;
+      document.getElementById('diffBadge').className     = `difficulty-badge ${v.diff}`;
+      document.getElementById('scoreWrap').style.display = 'none';
+    }
+
+    function playAudio() {
+      // 之後接真實 TTS API
+      if ('speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(VOCAB[current].zh);
+        u.lang = 'zh-TW'; speechSynthesis.speak(u);
+      }
+    }
+
+    function toggleRecord() {
+      const btn  = document.getElementById('micBtn');
+      const hint = document.getElementById('micHint');
+      recording = !recording;
+      if (recording) {
+        btn.classList.add('recording');
+        hint.textContent = '錄音中... 再次點擊停止';
+      } else {
+        btn.classList.remove('recording');
+        hint.textContent = '點擊麥克風開始錄音';
+        // 模擬評分
+        const score = Math.floor(Math.random() * 30) + 70;
+        document.getElementById('scoreWrap').style.display = 'block';
+        setTimeout(() => {
+          document.getElementById('scoreFill').style.width = score + '%';
+          document.getElementById('scoreText').textContent = score + ' 分';
+        }, 100);
+      }
+    }
+
+    renderVocab();
+  </script>
+</body>
+</html>

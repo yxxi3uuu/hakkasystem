@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>首頁 - 客語隨拍隨學</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    .hero {
+      background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+      color: white;
+      padding: 40px 20px 50px;
+      text-align: center;
+    }
+    .hero-emoji { font-size: 56px; margin-bottom: 12px; }
+    .hero h1 { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+    .hero p  { font-size: 14px; opacity: 0.85; line-height: 1.6; }
+
+    .feature-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: -24px 16px 0;
+    }
+    .feature-card {
+      background: white;
+      border-radius: 16px;
+      padding: 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .feature-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+    .feature-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; flex-shrink: 0;
+    }
+    .feature-icon.green  { background: #E8F5E9; }
+    .feature-icon.blue   { background: #E3F2FD; }
+    .feature-icon.purple { background: #F3E5F5; }
+    .feature-card h3 { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 3px; }
+    .feature-card p  { font-size: 12px; color: #888; }
+    .feature-arrow   { margin-left: auto; color: #ccc; font-size: 20px; }
+
+    .tip-box {
+      background: #FFF8E1;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      color: #795548;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="hero-emoji">🎓</div>
+    <h1>客語隨拍隨學</h1>
+    <p>透過拍照、語音、遊戲三種有趣的方式<br>輕鬆學習客家話！</p>
+  </div>
+
+  <div class="feature-cards">
+    <a class="feature-card" href="/recognition">
+      <div class="feature-icon green">📷</div>
+      <div>
+        <h3>拍照學習</h3>
+        <p>拍下物品，立即學習客語發音</p>
+      </div>
+      <span class="feature-arrow">›</span>
+    </a>
+    <a class="feature-card" href="/practice">
+      <div class="feature-icon blue">🎤</div>
+      <div>
+        <h3>語音練習</h3>
+        <p>跟讀練習，提升客語口說能力</p>
+      </div>
+      <span class="feature-arrow">›</span>
+    </a>
+    <a class="feature-card" href="/game">
+      <div class="feature-icon purple">🎮</div>
+      <div>
+        <h3>配對遊戲</h3>
+        <p>趣味遊戲，加深學習印象</p>
+      </div>
+      <span class="feature-arrow">›</span>
+    </a>
+  </div>
+
+  <div class="section" style="margin-top:24px;">
+    <div class="section-title">📊 今日學習進度</div>
+    <div class="stats-row" style="margin:0;border-radius:0;box-shadow:none;">
+      <div class="stat-item">
+        <div class="stat-value" id="todayVocab">--</div>
+        <div class="stat-label">已學詞彙</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="todayPractice">--</div>
+        <div class="stat-label">語音練習</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="todayGame">--</div>
+        <div class="stat-label">完成遊戲</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip-box">
+    💡 每天練習10分鐘，客語能力進步看得見！
+  </div>
+
+  <nav class="bottom-nav">
+    <a class="nav-item active" href="/"><div class="nav-icon">🏠</div><div class="nav-label">首頁</div></a>
+    <a class="nav-item" href="/recognition"><div class="nav-icon">📷</div><div class="nav-label">拍照學習</div></a>
+    <a class="nav-item" href="/practice"><div class="nav-icon">🎤</div><div class="nav-label">語音練習</div></a>
+    <a class="nav-item" href="/game"><div class="nav-icon">🎮</div><div class="nav-label">配對遊戲</div></a>
+    <a class="nav-item" href="/record"><div class="nav-icon">📊</div><div class="nav-label">學習記錄</div></a>
+    <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
+  </nav>
+
+  <script>
+    const USER_ID = 1;
+    fetch(`/api/profile/${USER_ID}`)
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById('todayVocab').textContent    = d.vocab_learned ?? '--';
+        document.getElementById('todayPractice').textContent = d.study_days    ?? '--';
+        document.getElementById('todayGame').textContent     = 3;
+      })
+      .catch(() => {});
+  </script>
+</body>
+</html>
