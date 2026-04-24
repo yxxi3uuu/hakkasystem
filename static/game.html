@@ -20,28 +20,62 @@
     .game-stat-val { font-size: 24px; font-weight: 800; color: #2E7D32; }
     .game-stat-lbl { font-size: 11px; color: #888; }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
+    .match-area {
+      position: relative;
       margin: 0 16px 16px;
+      display: flex;
+      justify-content: space-between;
+      gap: 0;
     }
-    .card {
-      aspect-ratio: 1;
+    .match-col {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 42%;
+      z-index: 2;
+    }
+    .match-item {
+      padding: 14px 12px;
       border-radius: 12px;
-      background: #4CAF50;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 700; color: white;
+      text-align: center;
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
       user-select: none;
-      transition: transform 0.2s, background 0.2s;
-      text-align: center; padding: 4px;
+      transition: all 0.2s;
+      border: 2px solid #e0e0e0;
+      background: white;
     }
-    .card.flipped   { background: white; color: #333; border: 2px solid #4CAF50; }
-    .card.matched   { background: #E8F5E9; color: #2E7D32; border: 2px solid #4CAF50; cursor: default; }
-    .card.wrong     { background: #FFEBEE; border: 2px solid #f44336; }
-    .card:not(.flipped):not(.matched):hover { transform: scale(1.04); }
-    .card .back     { font-size: 22px; }
+    .match-item:hover { border-color: #4CAF50; background: #f1f8e9; }
+    .match-item.selected { border-color: #4CAF50; background: #E8F5E9; box-shadow: 0 0 0 3px rgba(76,175,80,0.2); }
+    .match-item.matched  { border-color: #4CAF50; background: #C8E6C9; opacity: 0.7; cursor: default; }
+    .match-item.wrong    { border-color: #f44336; background: #FFEBEE; animation: shake 0.4s; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25%     { transform: translateX(-6px); }
+      75%     { transform: translateX(6px); }
+    }
+
+    .match-item .sub { font-size: 11px; color: #888; margin-top: 3px; font-weight: 400; }
+
+    /* SVG lines */
+    svg.lines {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+    svg.lines line {
+      stroke: #4CAF50;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+    }
+    svg.lines line.drawing {
+      stroke: #4CAF50;
+      stroke-dasharray: 6 4;
+      opacity: 0.5;
+    }
 
     .win-banner {
       display: none;
@@ -60,9 +94,10 @@
 
   <div class="top-bar">
     <span style="font-size:22px;">🎮</span>
-    <h1>配對遊戲</h1>
+    <h1>連連看</h1>
     <button class="btn btn-outline" style="padding:6px 14px;font-size:13px;" onclick="initGame()">重新開始</button>
   </div>
+  <p style="font-size:13px;color:#888;padding:4px 16px 0;">將左邊的中文詞彙連到右邊對應的客語發音</p>
 
   <div class="game-header">
     <div class="game-stat">
@@ -71,7 +106,7 @@
     </div>
     <div class="game-stat">
       <div class="game-stat-val" id="moves">0</div>
-      <div class="game-stat-lbl">移動次數</div>
+      <div class="game-stat-lbl">嘗試次數</div>
     </div>
     <div class="game-stat">
       <div class="game-stat-val" id="pairs">0/6</div>
@@ -79,20 +114,24 @@
     </div>
   </div>
 
-  <div class="grid" id="grid"></div>
+  <div class="match-area" id="matchArea">
+    <div class="match-col" id="leftCol"></div>
+    <svg class="lines" id="svgLines"></svg>
+    <div class="match-col" id="rightCol"></div>
+  </div>
 
   <div class="win-banner" id="winBanner">
     <h2>🎉 恭喜完成！</h2>
     <p id="winMsg"></p>
-    <button class="btn btn-outline" onclick="initGame()">再玩一次</button>
+    <button class="btn btn-outline" style="color:white;border-color:white;" onclick="initGame()">再玩一次</button>
   </div>
 
   <div class="section">
     <div class="section-title">🎮 遊戲說明</div>
     <ul style="padding:8px 16px 16px;list-style:none;">
-      <li style="font-size:13px;color:#666;margin-bottom:6px;">• 找出中文詞彙和對應的客語發音</li>
-      <li style="font-size:13px;color:#666;margin-bottom:6px;">• 每次只能翻開兩張卡片</li>
-      <li style="font-size:13px;color:#666;">• 配對成功得 10 分，移動次數越少越好</li>
+      <li style="font-size:13px;color:#666;margin-bottom:6px;">• 點擊左邊的中文詞彙，再點擊右邊對應的客語發音</li>
+      <li style="font-size:13px;color:#666;margin-bottom:6px;">• 配對成功會畫出連線，得 10 分</li>
+      <li style="font-size:13px;color:#666;">• 嘗試次數越少越好</li>
     </ul>
   </div>
 
@@ -115,65 +154,127 @@
       { zh: "飯",     rom: "fan" },
     ];
 
-    let cards = [], flipped = [], matched = 0, moves = 0, score = 0, lock = false;
+    let selectedLeft = null;
+    let matched = 0, moves = 0, score = 0;
+    let matchedPairs = [];
 
-    function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
 
     function initGame() {
-      flipped = []; matched = 0; moves = 0; score = 0; lock = false;
-      document.getElementById('score').textContent = 0;
-      document.getElementById('moves').textContent = 0;
+      selectedLeft = null;
+      matched = 0; moves = 0; score = 0;
+      matchedPairs = [];
+      document.getElementById('score').textContent = '0';
+      document.getElementById('moves').textContent = '0';
       document.getElementById('pairs').textContent = '0/6';
       document.getElementById('winBanner').style.display = 'none';
+      document.getElementById('svgLines').innerHTML = '';
 
-      cards = shuffle([
-        ...PAIRS.map((p, i) => ({ id: i, type: 'zh',  text: p.zh  })),
-        ...PAIRS.map((p, i) => ({ id: i, type: 'rom', text: p.rom })),
-      ]);
+      const leftOrder  = shuffle(PAIRS);
+      const rightOrder = shuffle(PAIRS);
 
-      const grid = document.getElementById('grid');
-      grid.innerHTML = cards.map((c, idx) => `
-        <div class="card" data-idx="${idx}" onclick="flip(this, ${idx})">
-          <span class="back">?</span>
+      const leftCol  = document.getElementById('leftCol');
+      const rightCol = document.getElementById('rightCol');
+
+      leftCol.innerHTML = leftOrder.map((p, i) => `
+        <div class="match-item" data-id="${PAIRS.indexOf(p)}" data-side="left" onclick="selectItem(this)">
+          ${p.zh}
+        </div>
+      `).join('');
+
+      rightCol.innerHTML = rightOrder.map((p, i) => `
+        <div class="match-item" data-id="${PAIRS.indexOf(p)}" data-side="right" onclick="selectItem(this)">
+          ${p.rom}
+          <div class="sub">${p.zh}</div>
         </div>
       `).join('');
     }
 
-    function flip(el, idx) {
-      if (lock || el.classList.contains('flipped') || el.classList.contains('matched')) return;
-      el.classList.add('flipped');
-      el.innerHTML = cards[idx].text;
-      flipped.push({ el, idx });
+    function selectItem(el) {
+      if (el.classList.contains('matched')) return;
+      const side = el.dataset.side;
 
-      if (flipped.length === 2) {
-        lock = true; moves++;
+      if (side === 'left') {
+        // 選左邊
+        document.querySelectorAll('#leftCol .match-item').forEach(e => e.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedLeft = el;
+      } else if (side === 'right' && selectedLeft) {
+        // 選右邊 → 嘗試配對
+        moves++;
         document.getElementById('moves').textContent = moves;
-        const [a, b] = flipped;
-        if (cards[a.idx].id === cards[b.idx].id && cards[a.idx].type !== cards[b.idx].type) {
-          // match
-          a.el.classList.add('matched'); b.el.classList.add('matched');
-          matched++; score += 10;
+
+        const leftId  = parseInt(selectedLeft.dataset.id);
+        const rightId = parseInt(el.dataset.id);
+
+        if (leftId === rightId) {
+          // 配對成功
+          selectedLeft.classList.remove('selected');
+          selectedLeft.classList.add('matched');
+          el.classList.add('matched');
+          score += 10;
+          matched++;
           document.getElementById('score').textContent = score;
           document.getElementById('pairs').textContent = `${matched}/6`;
-          flipped = []; lock = false;
-          if (matched === 6) showWin();
+
+          drawLine(selectedLeft, el);
+          matchedPairs.push({ left: selectedLeft, right: el });
+          selectedLeft = null;
+
+          if (matched === 6) {
+            setTimeout(() => {
+              const banner = document.getElementById('winBanner');
+              document.getElementById('winMsg').textContent = `得分 ${score} 分，共嘗試 ${moves} 次！`;
+              banner.style.display = 'block';
+            }, 400);
+          }
         } else {
-          // wrong
-          a.el.classList.add('wrong'); b.el.classList.add('wrong');
+          // 配對失敗
+          selectedLeft.classList.add('wrong');
+          el.classList.add('wrong');
+          const prevLeft = selectedLeft;
           setTimeout(() => {
-            a.el.classList.remove('flipped', 'wrong'); a.el.innerHTML = '<span class="back">?</span>';
-            b.el.classList.remove('flipped', 'wrong'); b.el.innerHTML = '<span class="back">?</span>';
-            flipped = []; lock = false;
-          }, 900);
+            prevLeft.classList.remove('selected', 'wrong');
+            el.classList.remove('wrong');
+          }, 600);
+          selectedLeft = null;
         }
       }
     }
 
-    function showWin() {
-      const banner = document.getElementById('winBanner');
-      document.getElementById('winMsg').textContent = `得分 ${score} 分，共移動 ${moves} 次！`;
-      banner.style.display = 'block';
+    function drawLine(leftEl, rightEl) {
+      const svg   = document.getElementById('svgLines');
+      const area  = document.getElementById('matchArea');
+      const aRect = area.getBoundingClientRect();
+      const lRect = leftEl.getBoundingClientRect();
+      const rRect = rightEl.getBoundingClientRect();
+
+      const x1 = lRect.right  - aRect.left;
+      const y1 = lRect.top + lRect.height / 2 - aRect.top;
+      const x2 = rRect.left   - aRect.left;
+      const y2 = rRect.top + rRect.height / 2 - aRect.top;
+
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', x1);
+      line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2);
+      line.setAttribute('y2', y2);
+      svg.appendChild(line);
     }
+
+    // 視窗大小改變時重繪連線
+    window.addEventListener('resize', () => {
+      const svg = document.getElementById('svgLines');
+      svg.innerHTML = '';
+      matchedPairs.forEach(p => drawLine(p.left, p.right));
+    });
 
     initGame();
   </script>
