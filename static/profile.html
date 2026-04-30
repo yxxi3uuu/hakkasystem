@@ -264,62 +264,58 @@
     <a class="nav-item active" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
   </nav>
 
+  <script src="/static/auth.js"></script>
   <script>
-    const USER_ID = 1; // TODO: 從 session/token 取得
+    const user = requireLogin();
+    if (user) {
+      const USER_ID = user.id;
 
-    async function loadProfile() {
-      try {
-        const [profile, achievements, goals] = await Promise.all([
-          fetch(`/api/profile/${USER_ID}`).then(r => r.json()),
-          fetch(`/api/profile/${USER_ID}/achievements`).then(r => r.json()),
-          fetch(`/api/profile/${USER_ID}/weekly-goals`).then(r => r.json()),
-        ]);
+      async function loadProfile() {
+        try {
+          const [profile, achievements, goals] = await Promise.all([
+            fetch(`/api/profile/${USER_ID}`).then(r => r.json()),
+            fetch(`/api/profile/${USER_ID}/achievements`).then(r => r.json()),
+            fetch(`/api/profile/${USER_ID}/weekly-goals`).then(r => r.json()),
+          ]);
 
-        // 用戶資訊
-        document.getElementById('userName').textContent = profile.name;
-        document.getElementById('userSubtitle').textContent = `已學習 ${profile.study_days} 天`;
-        document.getElementById('statVocab').textContent = profile.vocab_learned;
-        document.getElementById('statScore').textContent = profile.avg_score;
-        document.getElementById('statDays').textContent = profile.study_days;
+          document.getElementById('userName').textContent = profile.name;
+          document.getElementById('userSubtitle').textContent = `已學習 ${profile.study_days} 天`;
+          document.getElementById('statVocab').textContent = profile.vocab_learned;
+          document.getElementById('statScore').textContent = profile.avg_score;
+          document.getElementById('statDays').textContent = profile.study_days;
 
-        // 成就徽章
-        const grid = document.getElementById('achievementsGrid');
-        grid.innerHTML = achievements.map(a => `
-          <div class="badge ${a.unlocked ? 'unlocked' : 'locked'}">
-            <div class="badge-icon">${a.icon}</div>
-            <div class="badge-name">${a.name}</div>
-            <div class="badge-desc">${a.description || ''}</div>
-          </div>
-        `).join('');
-
-        // 本週目標
-        const goalsEl = document.getElementById('weeklyGoals');
-        goalsEl.innerHTML = goals.map(g => {
-          const pct = Math.min(100, Math.round((g.current / g.target) * 100));
-          return `
-            <div class="goal-item">
-              <div class="goal-header">
-                <span class="goal-title">${g.title}</span>
-                <span class="goal-progress-text">${g.current}/${g.target}</span>
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width:${pct}%"></div>
-              </div>
+          const grid = document.getElementById('achievementsGrid');
+          grid.innerHTML = achievements.map(a => `
+            <div class="badge ${a.unlocked ? 'unlocked' : 'locked'}">
+              <div class="badge-icon">${a.icon}</div>
+              <div class="badge-name">${a.name}</div>
+              <div class="badge-desc">${a.description || ''}</div>
             </div>
-          `;
-        }).join('');
+          `).join('');
 
-      } catch (err) {
-        console.error('載入失敗', err);
+          const goalsEl = document.getElementById('weeklyGoals');
+          goalsEl.innerHTML = goals.map(g => {
+            const pct = Math.min(100, Math.round((g.current / g.target) * 100));
+            return `
+              <div class="goal-item">
+                <div class="goal-header">
+                  <span class="goal-title">${g.title}</span>
+                  <span class="goal-progress-text">${g.current}/${g.target}</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width:${pct}%"></div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } catch (err) {
+          console.error('載入失敗', err);
+        }
       }
+
+      document.getElementById('logoutBtn').addEventListener('click', () => logout());
+      loadProfile();
     }
-
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      window.location.href = '/';
-    });
-
-    loadProfile();
   </script>
 </body>
 </html>

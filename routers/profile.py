@@ -85,7 +85,3 @@ async def get_weekly_goals(user_id: int, db: AsyncSession = Depends(get_db)):
         select(WeeklyGoal).where(WeeklyGoal.user_id == user_id)
     )).scalars().all()
     return rows
-
-@router.post("/auth/logout")
-async def logout():
-    return {"message": "logged out"}

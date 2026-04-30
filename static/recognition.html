@@ -6,6 +6,86 @@
   <title>拍照學習 - 客語隨拍隨學</title>
   <link rel="stylesheet" href="/static/style.css" />
   <style>
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      margin: 16px 16px 0;
+    }
+    .mode-tab {
+      flex: 1;
+      padding: 10px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 2px solid #e0e0e0;
+      background: white;
+      color: #666;
+      transition: all 0.2s;
+    }
+    .mode-tab.active {
+      border-color: #4CAF50;
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    /* 相機區 */
+    .camera-wrap {
+      margin: 16px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #000;
+      position: relative;
+      aspect-ratio: 4/3;
+    }
+    .camera-wrap video,
+    .camera-wrap canvas,
+    .camera-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .camera-wrap canvas { display: none; }
+    .camera-wrap img    { display: none; }
+
+    .camera-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      padding: 12px 16px;
+    }
+    .shutter-btn {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: white;
+      border: 4px solid #4CAF50;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.15s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .shutter-btn:hover { transform: scale(1.08); }
+    .shutter-inner {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: #4CAF50;
+    }
+    .cam-action-btn {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #333;
+      background: #f0f0f0;
+    }
+
+    /* 上傳區 */
     .upload-zone {
       margin: 16px;
       border: 2px dashed #4CAF50;
@@ -15,6 +95,7 @@
       background: #F1F8E9;
       cursor: pointer;
       transition: background 0.15s;
+      display: none;
     }
     .upload-zone:hover { background: #E8F5E9; }
     .upload-zone input { display: none; }
@@ -22,9 +103,10 @@
     .upload-zone h3 { font-size: 16px; color: #2E7D32; margin-bottom: 6px; }
     .upload-zone p  { font-size: 13px; color: #888; }
 
-    #preview-wrap { margin: 0 16px 16px; display: none; }
-    #preview-wrap img { width: 100%; border-radius: 12px; }
+    #uploadPreview { margin: 0 16px 16px; display: none; }
+    #uploadPreview img { width: 100%; border-radius: 12px; }
 
+    /* 結果卡 */
     .result-card {
       background: white;
       border-radius: 16px;
@@ -37,7 +119,9 @@
     .result-example { font-size: 13px; color: #888; background: #f5f5f5; border-radius: 8px; padding: 10px; }
 
     .tip-list { padding: 8px 16px 16px; }
-    .tip-list li { font-size: 13px; color: #666; margin-bottom: 6px; line-height: 1.5; list-style: none; padding-left: 4px; }
+    .tip-list li { font-size: 13px; color: #666; margin-bottom: 6px; line-height: 1.5; list-style: none; }
+
+    .hidden { display: none; }
   </style>
 </head>
 <body>
@@ -46,24 +130,45 @@
     <span style="font-size:22px;">📷</span>
     <h1>拍照學習客語</h1>
   </div>
-  <p style="font-size:13px;color:#888;padding:12px 16px 0;">上傳圖片或拍照，系統會自動識別並教你客語發音</p>
+  <p style="font-size:13px;color:#888;padding:12px 16px 0;">拍照或上傳圖片，系統會自動識別並教你客語發音</p>
 
+  <!-- 模式切換 -->
+  <div class="mode-tabs">
+    <div class="mode-tab active" onclick="switchMode('camera')">📷 拍照</div>
+    <div class="mode-tab" onclick="switchMode('upload')">📁 上傳圖片</div>
+  </div>
+
+  <!-- 相機模式 -->
+  <div id="cameraMode">
+    <div class="camera-wrap" id="cameraWrap">
+      <video id="video" autoplay playsinline></video>
+      <canvas id="canvas"></canvas>
+      <img id="capturedImg" alt="拍攝結果" />
+    </div>
+    <div class="camera-controls" id="cameraControls">
+      <button class="cam-action-btn" onclick="switchCamera()">🔄</button>
+      <div class="shutter-btn" onclick="capture()"><div class="shutter-inner"></div></div>
+      <button class="cam-action-btn hidden" id="retakeBtn" onclick="retake()">↩️</button>
+    </div>
+  </div>
+
+  <!-- 上傳模式 -->
   <label class="upload-zone" id="uploadZone">
-    <input type="file" id="fileInput" accept="image/*" capture="environment" />
+    <input type="file" id="fileInput" accept="image/*" />
     <div class="upload-icon">📸</div>
     <h3>點擊上傳圖片</h3>
     <p>支援 JPG、PNG 格式</p>
   </label>
-
-  <div id="preview-wrap">
-    <img id="previewImg" src="" alt="預覽" />
+  <div id="uploadPreview">
+    <img id="uploadPreviewImg" src="" alt="預覽" />
   </div>
 
+  <!-- 辨識結果 -->
   <div class="result-card" id="resultCard">
     <div class="result-word"  id="resultWord">--</div>
     <div class="result-roman" id="resultRoman">--</div>
     <div class="result-example" id="resultExample">--</div>
-    <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="resetUpload()">再拍一張</button>
+    <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="resetAll()">再拍一張</button>
   </div>
 
   <div class="section">
@@ -84,41 +189,149 @@
     <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
   </nav>
 
+  <script src="/static/auth.js"></script>
   <script>
+    requireLogin();
     const MOCK = [
-      { word: "蘋果", roman: "phìn-kó",  example: "例句：我想吃蘋果。" },
+      { word: "蘋果", roman: "phìn-kó",  example: "例句：這個蘋果很甜。" },
       { word: "貓咪", roman: "miāu",      example: "例句：那隻貓咪很可愛。" },
       { word: "桌子", roman: "tó-é",      example: "例句：書放在桌子上。" },
+      { word: "杯子", roman: "pûi-é",     example: "例句：請給我一個杯子。" },
+      { word: "書本", roman: "sû-pún",    example: "例句：這本書很好看。" },
     ];
 
+    const video     = document.getElementById('video');
+    const canvas    = document.getElementById('canvas');
+    const captured  = document.getElementById('capturedImg');
+    let stream      = null;
+    let facingMode  = 'user'; // 預設前鏡頭
+
+    // ── 相機啟動 ──
+    async function startCamera() {
+      try {
+        if (stream) stream.getTracks().forEach(t => t.stop());
+
+        // 先嘗試指定鏡頭，失敗就用任何可用的
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 960 } }
+          });
+        } catch (e) {
+          console.warn('指定鏡頭失敗，嘗試任何可用相機:', e);
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        }
+
+        video.srcObject = stream;
+        await video.play();
+        video.style.display = 'block';
+        captured.style.display = 'none';
+        console.log('相機已啟動，解析度:', video.videoWidth, 'x', video.videoHeight);
+      } catch (err) {
+        console.error('無法開啟相機:', err);
+        // 顯示友善提示
+        document.getElementById('cameraWrap').innerHTML = `
+          <div style="color:white;text-align:center;padding:40px 20px;">
+            <div style="font-size:48px;margin-bottom:12px;">📷</div>
+            <p style="font-size:14px;margin-bottom:8px;">無法開啟相機</p>
+            <p style="font-size:12px;opacity:0.7;">請確認：</p>
+            <p style="font-size:12px;opacity:0.7;">1. 已允許瀏覽器使用相機</p>
+            <p style="font-size:12px;opacity:0.7;">2. 使用 localhost 或 HTTPS 開啟</p>
+            <p style="font-size:12px;opacity:0.7;">3. 沒有其他程式佔用相機</p>
+          </div>
+        `;
+      }
+    }
+
+    function switchCamera() {
+      facingMode = facingMode === 'environment' ? 'user' : 'environment';
+      startCamera();
+    }
+
+    function capture() {
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      captured.src = dataUrl;
+      captured.style.display = 'block';
+      video.style.display = 'none';
+
+      // 停止相機
+      if (stream) stream.getTracks().forEach(t => t.stop());
+
+      document.getElementById('retakeBtn').classList.remove('hidden');
+      showResult();
+    }
+
+    function retake() {
+      document.getElementById('retakeBtn').classList.add('hidden');
+      document.getElementById('resultCard').style.display = 'none';
+      startCamera();
+    }
+
+    // ── 上傳模式 ──
     document.getElementById('fileInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = ev => {
-        document.getElementById('previewImg').src = ev.target.result;
-        document.getElementById('preview-wrap').style.display = 'block';
+        document.getElementById('uploadPreviewImg').src = ev.target.result;
+        document.getElementById('uploadPreview').style.display = 'block';
         document.getElementById('uploadZone').style.display = 'none';
-
-        // 模擬辨識結果（之後接真實 API）
-        setTimeout(() => {
-          const r = MOCK[Math.floor(Math.random() * MOCK.length)];
-          document.getElementById('resultWord').textContent   = r.word;
-          document.getElementById('resultRoman').textContent  = r.roman;
-          document.getElementById('resultExample').textContent = r.example;
-          document.getElementById('resultCard').style.display = 'block';
-        }, 800);
+        showResult();
       };
       reader.readAsDataURL(file);
     });
 
-    function resetUpload() {
-      document.getElementById('uploadZone').style.display = 'block';
-      document.getElementById('preview-wrap').style.display = 'none';
+    // ── 模式切換 ──
+    function switchMode(mode) {
+      document.querySelectorAll('.mode-tab').forEach((t, i) => {
+        t.classList.toggle('active', (mode === 'camera' && i === 0) || (mode === 'upload' && i === 1));
+      });
+
+      const camMode = document.getElementById('cameraMode');
+      const upZone  = document.getElementById('uploadZone');
+
+      if (mode === 'camera') {
+        camMode.style.display = 'block';
+        upZone.style.display  = 'none';
+        document.getElementById('uploadPreview').style.display = 'none';
+        startCamera();
+      } else {
+        camMode.style.display = 'none';
+        upZone.style.display  = 'block';
+        if (stream) stream.getTracks().forEach(t => t.stop());
+      }
       document.getElementById('resultCard').style.display = 'none';
-      document.getElementById('fileInput').value = '';
     }
+
+    // ── 模擬辨識結果 ──
+    function showResult() {
+      setTimeout(() => {
+        const r = MOCK[Math.floor(Math.random() * MOCK.length)];
+        document.getElementById('resultWord').textContent    = r.word;
+        document.getElementById('resultRoman').textContent   = r.roman;
+        document.getElementById('resultExample').textContent = r.example;
+        document.getElementById('resultCard').style.display  = 'block';
+      }, 800);
+    }
+
+    function resetAll() {
+      document.getElementById('resultCard').style.display = 'none';
+      const activeTab = document.querySelector('.mode-tab.active').textContent.trim();
+      if (activeTab.includes('拍照')) {
+        document.getElementById('retakeBtn').classList.add('hidden');
+        startCamera();
+      } else {
+        document.getElementById('uploadZone').style.display  = 'block';
+        document.getElementById('uploadPreview').style.display = 'none';
+        document.getElementById('fileInput').value = '';
+      }
+    }
+
+    // 預設啟動相機
+    startCamera();
   </script>
 </body>
 </html>

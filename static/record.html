@@ -143,9 +143,12 @@
     <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
   </nav>
 
+  <script src="/static/auth.js"></script>
   <script>
-    const USER_ID = 1;
-    const DAYS = ['週一','週二','週三','週四','週五','週六','週日'];
+    const user = requireLogin();
+    if (user) {
+      const USER_ID = user.id;
+      const DAYS = ['週一','週二','週三','週四','週五','週六','週日'];
     const SCORES = [80, 92, 75, 88, 95, 70, 87];
 
     const ACTIVITIES = [
@@ -219,6 +222,7 @@
     document.getElementById('achieveList').innerHTML = ACHIEVEMENTS.map(a => `
       <div class="achieve-item">✅ ${a}</div>
     `).join('');
+    }
   </script>
 </body>
 </html>

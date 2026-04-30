@@ -128,8 +128,11 @@
     <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
   </nav>
 
+  <script src="/static/auth.js"></script>
   <script>
-    const USER_ID = 1;
+    const user = requireLogin();
+    if (user) {
+      const USER_ID = user.id;
     fetch(`/api/profile/${USER_ID}`)
       .then(r => r.json())
       .then(d => {
@@ -138,6 +141,7 @@
         document.getElementById('todayGame').textContent     = 3;
       })
       .catch(() => {});
+    }
   </script>
 </body>
 </html>

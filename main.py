@@ -7,6 +7,7 @@ from sqlalchemy.future import select
 from database import get_db, engine, Base
 from models import User
 from routers.profile import router as profile_router
+from routers.auth import router as auth_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,11 +28,16 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Routers
 app.include_router(profile_router)
+app.include_router(auth_router)
 
 # Serve pages
 @app.get("/")
 async def home():
     return FileResponse("static/index.html")
+
+@app.get("/login")
+async def login_page():
+    return FileResponse("static/login.html")
 
 @app.get("/profile")
 async def profile_page():

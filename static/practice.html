@@ -120,7 +120,9 @@
     <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
   </nav>
 
+  <script src="/static/auth.js"></script>
   <script>
+    requireLogin();
     const VOCAB = [
       { zh: "你好", roman: "ngì-hó",        diff: "easy",   label: "簡單" },
       { zh: "謝謝", roman: "án-tsṳ́-sì",    diff: "medium", label: "中等" },

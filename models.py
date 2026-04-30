@@ -3,9 +3,10 @@ from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey
 
 class User(Base):
     __tablename__ = "users"
-    id    = Column(Integer, primary_key=True, index=True)
-    name  = Column(String)
-    email = Column(String, unique=True)
+    id       = Column(Integer, primary_key=True, index=True)
+    name     = Column(String)
+    email    = Column(String, unique=True)
+    password = Column(String)  # hashed password
 
 class LearningStats(Base):
     __tablename__ = "learning_stats"
