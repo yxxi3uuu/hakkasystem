@@ -1,3 +1,4 @@
+# pip install ultralytics
 from ultralytics import YOLO
 
 # 1. 載入模型
