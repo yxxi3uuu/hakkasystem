@@ -33,7 +33,7 @@ COCO_ZH = {
     "cell phone": "手機", "microwave": "微波爐", "oven": "烤箱",
     "toaster": "烤麵包機", "sink": "水槽", "refrigerator": "冰箱",
     "book": "書", "clock": "時鐘", "vase": "花瓶", "scissors": "剪刀",
-    "teddy bear": "玩具熊", "hair drier": "吹風機", "toothbrush": "牙刷",
+    "teddy bear": "玩具熊", "hair drier": "吹風機", "toothbrush": "牙刷","glasses":"眼鏡"
 }
 
 class RecognitionResponse(BaseModel):
@@ -59,8 +59,19 @@ async def recognize_image(file: UploadFile = File(...)):
         if boxes is None or len(boxes) == 0:
             raise HTTPException(status_code=422, detail="未偵測到任何物件")
 
-        # 取信心值最高的結果
-        best_idx = int(boxes.conf.argmax())
+        # 優先取非「人」的最高信心值物件，若全是人才取人
+        best_idx = None
+        best_conf = -1.0
+        for i in range(len(boxes)):
+            lbl = model.names[int(boxes.cls[i])]
+            conf = float(boxes.conf[i])
+            if lbl != "person" and conf > best_conf:
+                best_conf = conf
+                best_idx = i
+
+        # 全部都是人才 fallback 到信心值最高的
+        if best_idx is None:
+            best_idx = int(boxes.conf.argmax())
         label_en = model.names[int(boxes.cls[best_idx])]
         confidence = float(boxes.conf[best_idx])
         label_zh = COCO_ZH.get(label_en, label_en)
