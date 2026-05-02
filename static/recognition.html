@@ -192,13 +192,6 @@
   <script src="/static/auth.js"></script>
   <script>
     requireLogin();
-    const MOCK = [
-      { word: "蘋果", roman: "phìn-kó",  example: "例句：這個蘋果很甜。" },
-      { word: "貓咪", roman: "miāu",      example: "例句：那隻貓咪很可愛。" },
-      { word: "桌子", roman: "tó-é",      example: "例句：書放在桌子上。" },
-      { word: "杯子", roman: "pûi-é",     example: "例句：請給我一個杯子。" },
-      { word: "書本", roman: "sû-pún",    example: "例句：這本書很好看。" },
-    ];
 
     const video     = document.getElementById('video');
     const canvas    = document.getElementById('canvas');
@@ -261,6 +254,11 @@
       if (stream) stream.getTracks().forEach(t => t.stop());
 
       document.getElementById('retakeBtn').classList.remove('hidden');
+      // 顯示 loading
+      document.getElementById('resultWord').textContent    = '辨識中...';
+      document.getElementById('resultRoman').textContent   = '';
+      document.getElementById('resultExample').textContent = '請稍候';
+      document.getElementById('resultCard').style.display  = 'block';
       showResult();
     }
 
@@ -308,13 +306,47 @@
 
     // ── 模擬辨識結果 ──
     function showResult() {
-      setTimeout(() => {
-        const r = MOCK[Math.floor(Math.random() * MOCK.length)];
-        document.getElementById('resultWord').textContent    = r.word;
-        document.getElementById('resultRoman').textContent   = r.roman;
-        document.getElementById('resultExample').textContent = r.example;
-        document.getElementById('resultCard').style.display  = 'block';
-      }, 800);
+      setTimeout(async () => {
+        // 把 canvas 或上傳圖片轉成 blob 送到後端
+        try {
+          let blob;
+          const activeTab = document.querySelector('.mode-tab.active').textContent.trim();
+
+          if (activeTab.includes('拍照')) {
+            // 從 canvas 取得圖片
+            blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+          } else {
+            // 從上傳的 file input 取得
+            const file = document.getElementById('fileInput').files[0];
+            blob = file;
+          }
+
+          const formData = new FormData();
+          formData.append('file', blob, 'photo.jpg');
+
+          const res = await fetch('/api/recognize', { method: 'POST', body: formData });
+
+          if (res.ok) {
+            const data = await res.json();
+            document.getElementById('resultWord').textContent    = `${data.label_zh}（${data.label_en}）`;
+            document.getElementById('resultRoman').textContent   = `信心度：${Math.round(data.confidence * 100)}%`;
+            document.getElementById('resultExample').textContent =
+              data.hakka_sentence
+                ? `客語：${data.hakka_sentence}\n中文：${data.chinese_translation}`
+                : '（例句生成中...）';
+          } else {
+            const err = await res.json();
+            document.getElementById('resultWord').textContent    = '未偵測到物件';
+            document.getElementById('resultRoman').textContent   = '';
+            document.getElementById('resultExample').textContent = err.detail || '請重新拍攝';
+          }
+        } catch (e) {
+          document.getElementById('resultWord').textContent    = '辨識失敗';
+          document.getElementById('resultRoman').textContent   = '';
+          document.getElementById('resultExample').textContent = '請確認伺服器是否正常運行';
+        }
+        document.getElementById('resultCard').style.display = 'block';
+      }, 300);
     }
 
     function resetAll() {
