@@ -1,0 +1,33 @@
+
+version: '3.8'
+
+services:
+  # 資料庫服務
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: hakka2026
+      POSTGRES_DB: dbname
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # FastAPI 服務
+  api:
+    build: .
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"
+    environment:
+      # 注意：這裡的主機名要寫 "db" (服務名稱)，而不是 localhost
+      DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@db:5432/mydatabase"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
+

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>學習記錄 - 客語隨拍隨學</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    .record-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 16px;
+    }
+    .record-stat-card {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .record-stat-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .record-stat-val { font-size: 20px; font-weight: 800; color: #2E7D32; }
+    .record-stat-lbl { font-size: 11px; color: #888; }
+
+    /* chart */
+    .chart-wrap { padding: 8px 16px 16px; }
+    .chart-bars { display: flex; align-items: flex-end; gap: 6px; height: 80px; }
+    .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .bar { width: 100%; background: #4CAF50; border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.4s; }
+    .bar-lbl { font-size: 10px; color: #888; }
+
+    /* activity list */
+    .activity-item {
+      display: flex; align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; margin-right: 12px; flex-shrink: 0;
+    }
+    .activity-title { font-size: 14px; color: #333; font-weight: 600; }
+    .activity-date  { font-size: 12px; color: #aaa; }
+    .activity-score { margin-left: auto; font-size: 14px; font-weight: 700; color: #4CAF50; }
+
+    /* category */
+    .cat-item { padding: 10px 16px; border-bottom: 1px solid #f5f5f5; }
+    .cat-item:last-child { border-bottom: none; padding-bottom: 16px; }
+    .cat-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .cat-name { font-size: 14px; color: #333; }
+    .cat-pct  { font-size: 13px; font-weight: 600; color: #4CAF50; }
+    .cat-bar  { height: 8px; background: #E8F5E9; border-radius: 4px; overflow: hidden; }
+    .cat-fill { height: 100%; background: #4CAF50; border-radius: 4px; }
+
+    /* weekly achievements */
+    .achieve-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid #f5f5f5;
+      font-size: 14px; color: #333;
+    }
+    .achieve-item:last-child { border-bottom: none; padding-bottom: 16px; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <span style="font-size:22px;">📊</span>
+    <h1>學習記錄</h1>
+  </div>
+
+  <!-- 統計卡片 -->
+  <div class="record-stats">
+    <div class="record-stat-card">
+      <div class="record-stat-icon" style="background:#E8F5E9;">📈</div>
+      <div>
+        <div class="record-stat-val" id="avgScore">--</div>
+        <div class="record-stat-lbl">本週平均</div>
+      </div>
+    </div>
+    <div class="record-stat-card">
+      <div class="record-stat-icon" style="background:#E3F2FD;">🔥</div>
+      <div>
+        <div class="record-stat-val" id="streak">--</div>
+        <div class="record-stat-lbl">連續天數</div>
+      </div>
+    </div>
+    <div class="record-stat-card">
+      <div class="record-stat-icon" style="background:#FFF3E0;">📚</div>
+      <div>
+        <div class="record-stat-val" id="vocabCount">--</div>
+        <div class="record-stat-lbl">已學詞彙</div>
+      </div>
+    </div>
+    <div class="record-stat-card">
+      <div class="record-stat-icon" style="background:#F3E5F5;">✅</div>
+      <div>
+        <div class="record-stat-val" id="completion">--</div>
+        <div class="record-stat-lbl">完成率</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 本週趨勢 -->
+  <div class="section">
+    <div class="section-title">📈 本週學習趨勢</div>
+    <div class="chart-wrap">
+      <div class="chart-bars" id="chartBars"></div>
+    </div>
+  </div>
+
+  <!-- 最近活動 -->
+  <div class="section">
+    <div class="section-title">📋 最近活動</div>
+    <div id="activityList"></div>
+  </div>
+
+  <!-- 需要加強 -->
+  <div class="section">
+    <div class="section-title">🎯 需要加強的類別</div>
+    <div id="categoryList"></div>
+  </div>
+
+  <!-- 本週成就 -->
+  <div class="section">
+    <div class="section-title">🌟 本週成就</div>
+    <div id="achieveList"></div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a class="nav-item" href="/"><div class="nav-icon">🏠</div><div class="nav-label">首頁</div></a>
+    <a class="nav-item" href="/recognition"><div class="nav-icon">📷</div><div class="nav-label">拍照學習</div></a>
+    <a class="nav-item" href="/practice"><div class="nav-icon">🎤</div><div class="nav-label">語音練習</div></a>
+    <a class="nav-item" href="/game"><div class="nav-icon">🎮</div><div class="nav-label">配對遊戲</div></a>
+    <a class="nav-item active" href="/record"><div class="nav-icon">📊</div><div class="nav-label">學習記錄</div></a>
+    <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
+  </nav>
+
+  <script src="/static/auth.js"></script>
+  <script>
+    const user = requireLogin();
+    if (user) {
+      const USER_ID = user.id;
+      const DAYS = ['週一','週二','週三','週四','週五','週六','週日'];
+    const SCORES = [80, 92, 75, 88, 95, 70, 87];
+
+    const ACTIVITIES = [
+      { icon: '🎤', bg: '#E3F2FD', title: '完成語音練習', date: '2026-04-18', score: 95 },
+      { icon: '🎮', bg: '#F3E5F5', title: '配對遊戲',     date: '2026-04-18', score: 90 },
+      { icon: '📷', bg: '#E8F5E9', title: '拍照學習 5 個詞彙', date: '2026-04-17', score: 88 },
+      { icon: '🎤', bg: '#E3F2FD', title: '語音練習',     date: '2026-04-17', score: 85 },
+    ];
+
+    const CATEGORIES = [
+      { name: '食物類',   pct: 72 },
+      { name: '動物類',   pct: 85 },
+      { name: '日常用語', pct: 78 },
+    ];
+
+    const ACHIEVEMENTS = [
+      '連續學習 7 天',
+      '完成 20 次語音練習',
+      '學習了 15 個新詞彙',
+    ];
+
+    // 統計
+    fetch(`/api/profile/${USER_ID}`)
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById('avgScore').textContent   = '87分';
+        document.getElementById('streak').textContent     = '7天';
+        document.getElementById('vocabCount').textContent = d.vocab_learned + '個';
+        document.getElementById('completion').textContent = '92%';
+      })
+      .catch(() => {
+        document.getElementById('avgScore').textContent   = '87分';
+        document.getElementById('streak').textContent     = '7天';
+        document.getElementById('vocabCount').textContent = '45個';
+        document.getElementById('completion').textContent = '92%';
+      });
+
+    // 圖表
+    const max = Math.max(...SCORES);
+    document.getElementById('chartBars').innerHTML = SCORES.map((s, i) => `
+      <div class="bar-col">
+        <div class="bar" style="height:${(s/max)*70}px;opacity:${i===6?1:0.6+i*0.06}"></div>
+        <div class="bar-lbl">${DAYS[i]}</div>
+      </div>
+    `).join('');
+
+    // 活動
+    document.getElementById('activityList').innerHTML = ACTIVITIES.map(a => `
+      <div class="activity-item">
+        <div class="activity-icon" style="background:${a.bg}">${a.icon}</div>
+        <div>
+          <div class="activity-title">${a.title}</div>
+          <div class="activity-date">${a.date}</div>
+        </div>
+        <div class="activity-score">${a.score}分</div>
+      </div>
+    `).join('');
+
+    // 類別
+    document.getElementById('categoryList').innerHTML = CATEGORIES.map(c => `
+      <div class="cat-item">
+        <div class="cat-header">
+          <span class="cat-name">${c.name}</span>
+          <span class="cat-pct">${c.pct}%</span>
+        </div>
+        <div class="cat-bar"><div class="cat-fill" style="width:${c.pct}%"></div></div>
+      </div>
+    `).join('');
+
+    // 成就
+    document.getElementById('achieveList').innerHTML = ACHIEVEMENTS.map(a => `
+      <div class="achieve-item">✅ ${a}</div>
+    `).join('');
+    }
+  </script>
+</body>
+</html>

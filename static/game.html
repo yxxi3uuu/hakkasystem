@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>配對遊戲 - 客語隨拍隨學</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: white;
+      margin: 16px;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .game-stat { text-align: center; }
+    .game-stat-val { font-size: 24px; font-weight: 800; color: #2E7D32; }
+    .game-stat-lbl { font-size: 11px; color: #888; }
+
+    .match-area {
+      position: relative;
+      margin: 0 16px 16px;
+      display: flex;
+      justify-content: space-between;
+      gap: 0;
+    }
+    .match-col {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 42%;
+      z-index: 2;
+    }
+    .match-item {
+      padding: 14px 12px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s;
+      border: 2px solid #e0e0e0;
+      background: white;
+    }
+    .match-item:hover { border-color: #4CAF50; background: #f1f8e9; }
+    .match-item.selected { border-color: #4CAF50; background: #E8F5E9; box-shadow: 0 0 0 3px rgba(76,175,80,0.2); }
+    .match-item.matched  { border-color: #4CAF50; background: #C8E6C9; opacity: 0.7; cursor: default; }
+    .match-item.wrong    { border-color: #f44336; background: #FFEBEE; animation: shake 0.4s; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25%     { transform: translateX(-6px); }
+      75%     { transform: translateX(6px); }
+    }
+
+    .match-item .sub { font-size: 11px; color: #888; margin-top: 3px; font-weight: 400; }
+
+    /* SVG lines */
+    svg.lines {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+    svg.lines line {
+      stroke: #4CAF50;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+    }
+    svg.lines line.drawing {
+      stroke: #4CAF50;
+      stroke-dasharray: 6 4;
+      opacity: 0.5;
+    }
+
+    .win-banner {
+      display: none;
+      background: linear-gradient(135deg, #4CAF50, #2E7D32);
+      color: white;
+      border-radius: 16px;
+      margin: 0 16px 16px;
+      padding: 24px;
+      text-align: center;
+    }
+    .win-banner h2 { font-size: 22px; margin-bottom: 8px; }
+    .win-banner p  { font-size: 14px; opacity: 0.9; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <span style="font-size:22px;">🎮</span>
+    <h1>連連看</h1>
+    <button class="btn btn-outline" style="padding:6px 14px;font-size:13px;" onclick="initGame()">重新開始</button>
+  </div>
+  <p style="font-size:13px;color:#888;padding:4px 16px 0;">將左邊的中文詞彙連到右邊對應的客語發音</p>
+
+  <div class="game-header">
+    <div class="game-stat">
+      <div class="game-stat-val" id="score">0</div>
+      <div class="game-stat-lbl">分數</div>
+    </div>
+    <div class="game-stat">
+      <div class="game-stat-val" id="moves">0</div>
+      <div class="game-stat-lbl">嘗試次數</div>
+    </div>
+    <div class="game-stat">
+      <div class="game-stat-val" id="pairs">0/6</div>
+      <div class="game-stat-lbl">配對</div>
+    </div>
+  </div>
+
+  <div class="match-area" id="matchArea">
+    <div class="match-col" id="leftCol"></div>
+    <svg class="lines" id="svgLines"></svg>
+    <div class="match-col" id="rightCol"></div>
+  </div>
+
+  <div class="win-banner" id="winBanner">
+    <h2>🎉 恭喜完成！</h2>
+    <p id="winMsg"></p>
+    <button class="btn btn-outline" style="color:white;border-color:white;" onclick="initGame()">再玩一次</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎮 遊戲說明</div>
+    <ul style="padding:8px 16px 16px;list-style:none;">
+      <li style="font-size:13px;color:#666;margin-bottom:6px;">• 點擊左邊的中文詞彙，再點擊右邊對應的客語發音</li>
+      <li style="font-size:13px;color:#666;margin-bottom:6px;">• 配對成功會畫出連線，得 10 分</li>
+      <li style="font-size:13px;color:#666;">• 嘗試次數越少越好</li>
+    </ul>
+  </div>
+
+  <nav class="bottom-nav">
+    <a class="nav-item" href="/"><div class="nav-icon">🏠</div><div class="nav-label">首頁</div></a>
+    <a class="nav-item" href="/recognition"><div class="nav-icon">📷</div><div class="nav-label">拍照學習</div></a>
+    <a class="nav-item" href="/practice"><div class="nav-icon">🎤</div><div class="nav-label">語音練習</div></a>
+    <a class="nav-item active" href="/game"><div class="nav-icon">🎮</div><div class="nav-label">配對遊戲</div></a>
+    <a class="nav-item" href="/record"><div class="nav-icon">📊</div><div class="nav-label">學習記錄</div></a>
+    <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
+  </nav>
+
+  <script src="/static/auth.js"></script>
+  <script>
+    requireLogin();
+    const PAIRS = [
+      { zh: "你好",   rom: "ngì-hó" },
+      { zh: "謝謝",   rom: "án-tsṳ́-sì" },
+      { zh: "蘋果",   rom: "phìn-kó" },
+      { zh: "貓咪",   rom: "miāu" },
+      { zh: "水",     rom: "súi" },
+      { zh: "飯",     rom: "fan" },
+    ];
+
+    let selectedLeft = null;
+    let matched = 0, moves = 0, score = 0;
+    let matchedPairs = [];
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function initGame() {
+      selectedLeft = null;
+      matched = 0; moves = 0; score = 0;
+      matchedPairs = [];
+      document.getElementById('score').textContent = '0';
+      document.getElementById('moves').textContent = '0';
+      document.getElementById('pairs').textContent = '0/6';
+      document.getElementById('winBanner').style.display = 'none';
+      document.getElementById('svgLines').innerHTML = '';
+
+      const leftOrder  = shuffle(PAIRS);
+      const rightOrder = shuffle(PAIRS);
+
+      const leftCol  = document.getElementById('leftCol');
+      const rightCol = document.getElementById('rightCol');
+
+      leftCol.innerHTML = leftOrder.map((p, i) => `
+        <div class="match-item" data-id="${PAIRS.indexOf(p)}" data-side="left" onclick="selectItem(this)">
+          ${p.zh}
+        </div>
+      `).join('');
+
+      rightCol.innerHTML = rightOrder.map((p, i) => `
+        <div class="match-item" data-id="${PAIRS.indexOf(p)}" data-side="right" onclick="selectItem(this)">
+          ${p.rom}
+          <div class="sub">${p.zh}</div>
+        </div>
+      `).join('');
+    }
+
+    function selectItem(el) {
+      if (el.classList.contains('matched')) return;
+      const side = el.dataset.side;
+
+      if (side === 'left') {
+        // 選左邊
+        document.querySelectorAll('#leftCol .match-item').forEach(e => e.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedLeft = el;
+      } else if (side === 'right' && selectedLeft) {
+        // 選右邊 → 嘗試配對
+        moves++;
+        document.getElementById('moves').textContent = moves;
+
+        const leftId  = parseInt(selectedLeft.dataset.id);
+        const rightId = parseInt(el.dataset.id);
+
+        if (leftId === rightId) {
+          // 配對成功
+          selectedLeft.classList.remove('selected');
+          selectedLeft.classList.add('matched');
+          el.classList.add('matched');
+          score += 10;
+          matched++;
+          document.getElementById('score').textContent = score;
+          document.getElementById('pairs').textContent = `${matched}/6`;
+
+          drawLine(selectedLeft, el);
+          matchedPairs.push({ left: selectedLeft, right: el });
+          selectedLeft = null;
+
+          if (matched === 6) {
+            setTimeout(() => {
+              const banner = document.getElementById('winBanner');
+              document.getElementById('winMsg').textContent = `得分 ${score} 分，共嘗試 ${moves} 次！`;
+              banner.style.display = 'block';
+            }, 400);
+          }
+        } else {
+          // 配對失敗
+          selectedLeft.classList.add('wrong');
+          el.classList.add('wrong');
+          const prevLeft = selectedLeft;
+          setTimeout(() => {
+            prevLeft.classList.remove('selected', 'wrong');
+            el.classList.remove('wrong');
+          }, 600);
+          selectedLeft = null;
+        }
+      }
+    }
+
+    function drawLine(leftEl, rightEl) {
+      const svg   = document.getElementById('svgLines');
+      const area  = document.getElementById('matchArea');
+      const aRect = area.getBoundingClientRect();
+      const lRect = leftEl.getBoundingClientRect();
+      const rRect = rightEl.getBoundingClientRect();
+
+      const x1 = lRect.right  - aRect.left;
+      const y1 = lRect.top + lRect.height / 2 - aRect.top;
+      const x2 = rRect.left   - aRect.left;
+      const y2 = rRect.top + rRect.height / 2 - aRect.top;
+
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', x1);
+      line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2);
+      line.setAttribute('y2', y2);
+      svg.appendChild(line);
+    }
+
+    // 視窗大小改變時重繪連線
+    window.addEventListener('resize', () => {
+      const svg = document.getElementById('svgLines');
+      svg.innerHTML = '';
+      matchedPairs.forEach(p => drawLine(p.left, p.right));
+    });
+
+    initGame();
+  </script>
+</body>
+</html>
