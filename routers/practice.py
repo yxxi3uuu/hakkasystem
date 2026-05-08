@@ -3,7 +3,6 @@ from pydantic import BaseModel
 import pandas as pd
 import librosa
 import numpy as np
-from scipy.spatial.distance import cosine
 import subprocess
 import tempfile
 import os
@@ -22,16 +21,14 @@ DB_PATH  = os.path.join(DATA_DIR, "db.csv")
 def load_db() -> pd.DataFrame:
     return pd.read_csv(DB_PATH)
 
-# ── 特徵提取 ──
-def extract_features(y: np.ndarray, sr: int) -> np.ndarray:
-    mfcc   = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
-    delta  = librosa.feature.delta(mfcc)
-    delta2 = librosa.feature.delta(mfcc, order=2)
-    return np.concatenate([
-        np.mean(mfcc,   axis=1),
-        np.mean(delta,  axis=1),
-        np.mean(delta2, axis=1),
-    ])
+# ── DTW 評分 ──
+def dtw_score(y_user: np.ndarray, y_ref: np.ndarray, sr: int) -> int:
+    mfcc_ref  = librosa.feature.mfcc(y=y_ref,  sr=sr, n_mfcc=13)
+    mfcc_user = librosa.feature.mfcc(y=y_user, sr=sr, n_mfcc=13)
+    D, wp = librosa.sequence.dtw(X=mfcc_ref, Y=mfcc_user, metric='cosine')
+    avg_dist  = D[-1, -1] / len(wp)
+    raw_sim   = max(0.0, 1 - avg_dist * 1.5)
+    return int(np.power(raw_sim, 2.5) * 100)
 
 class Task(BaseModel):
     word:       str
@@ -123,17 +120,15 @@ async def score_recording(
         raise HTTPException(status_code=500, detail=f"標準音載入失敗：{e}")
 
     # 切除靜音
-    y_user, _ = librosa.effects.trim(y_user, top_db=20)
-    y_ref,  _ = librosa.effects.trim(y_ref,  top_db=20)
+    y_user, _ = librosa.effects.trim(y_user, top_db=30)
+    y_ref,  _ = librosa.effects.trim(y_ref,  top_db=30)
 
-    # 特徵比對
-    feat_ref  = extract_features(y_ref,  sr)
-    feat_user = extract_features(y_user, sr)
-    raw_sim   = max(0.0, 1 - cosine(feat_ref, feat_user))
+    # 音量太小直接給 0
+    if len(y_user) == 0 or float(np.max(np.abs(y_user))) < 0.01:
+        return ScoreResult(score=0, message="偵測不到聲音，請靠近麥克風大聲練習喔！")
 
-    # 非線性縮放：把 0~1 的相似度映射到較合理的分數
-    # 用 ^2 取代 ^5，讓分數分布更合理
-    final_score = int(min(max(raw_sim ** 2 * 100, 0), 100))
+    # DTW 評分
+    final_score = dtw_score(y_user, y_ref, sr)
 
     if final_score > 85:
         message = "太棒了！你的發音與標準音契合度極高。"
