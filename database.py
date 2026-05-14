@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 # 資料庫連線字串 (格式: postgresql+asyncpg://用戶名:密碼@主機:埠號/資料庫名)
-DATABASE_URL = "postgresql+asyncpg://user:hakka2026@localhost:5433/dbname"
+DATABASE_URL = "postgresql+asyncpg://user:hakka2026@db:5432/dbname"
 
 engine = create_async_engine(DATABASE_URL, echo=True)
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
