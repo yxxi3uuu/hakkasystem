@@ -329,11 +329,7 @@
         const shuffled = [...savedPhotoPairs].sort(() => Math.random() - 0.5);
         return shuffled.slice(0, 6); // Take up to 6
       } else {
-        const learned = JSON.parse(localStorage.getItem('learnedWords') || '[]');
-        if (learned.length >= 3) {
-          const shuffled = [...learned].sort(() => Math.random() - 0.5);
-          return shuffled.slice(0, 6);
-        }
+        // 預設模式就只回傳預設單字，不拿使用者拍過的
         return DEFAULT_PAIRS;
       }
     }
@@ -371,8 +367,7 @@
         sourceEl.textContent = `✨ 使用您的 ${totalPairs} 張照片`;
       } else {
         descEl.textContent = '將左邊的中文詞彙連到右邊對應的客語發音';
-        const learned = JSON.parse(localStorage.getItem('learnedWords') || '[]');
-        sourceEl.textContent = learned.length >= 3 ? `✨ 使用你拍照學過的 ${totalPairs} 個詞彙` : '使用預設詞彙（拍照學習後會自動換成你學過的詞）';
+        sourceEl.textContent = '📖 使用系統預設基礎詞彙';
       }
 
       const leftOrder = shuffle(PAIRS);

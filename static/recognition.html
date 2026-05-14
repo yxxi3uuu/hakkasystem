@@ -165,9 +165,11 @@
 
   <!-- 辨識結果 -->
   <div class="result-card" id="resultCard">
-    <div class="result-word"  id="resultWord">--</div>
-    <div class="result-roman" id="resultRoman">--</div>
-    <div class="result-example" id="resultExample">--</div>
+    <div id="resultItemsContainer">
+      <div class="result-word"  id="resultWord">--</div>
+      <div class="result-roman" id="resultRoman">--</div>
+      <div class="result-example" id="resultExample">--</div>
+    </div>
     <button class="btn btn-outline btn-block" style="margin-top:14px; border: 2px solid #4CAF50; color: #2E7D32;" onclick="saveWordPhoto()" id="saveBtn">💾 儲存照片與單字</button>
     <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="resetAll()">再拍一張</button>
   </div>
@@ -260,9 +262,10 @@
 
       document.getElementById('retakeBtn').classList.remove('hidden');
       // 顯示 loading
-      document.getElementById('resultWord').textContent    = '辨識中...';
-      document.getElementById('resultRoman').textContent   = '';
-      document.getElementById('resultExample').textContent = '請稍候';
+      document.getElementById('resultItemsContainer').innerHTML = `
+        <div class="result-word">辨識中...</div>
+        <div class="result-example">正在擷取多個物件並產生客語故事，請稍候...</div>
+      `;
       document.getElementById('resultCard').style.display  = 'block';
       showResult();
     }
@@ -334,42 +337,51 @@
 
           if (res.ok) {
             const data = await res.json();
-            currentLabelZh = data.label_zh;
-            currentLabelHakka = data.hakka_sentence ? data.hakka_sentence.split(' ')[0] : data.label_en;
+            const items = data.items || [];
 
-            document.getElementById('resultWord').textContent    = `${data.label_zh}（${data.label_en}）`;
-            document.getElementById('resultRoman').textContent   = `信心度：${Math.round(data.confidence * 100)}%`;
-            document.getElementById('resultExample').textContent =
-              data.hakka_sentence
-                ? `客語：${data.hakka_sentence}\n中文：${data.chinese_translation}`
-                : '（例句生成中...）';
-            
-            // 重設儲存按鈕狀態
-            const saveBtn = document.getElementById('saveBtn');
-            saveBtn.disabled = false;
-            saveBtn.textContent = '💾 儲存照片與單字';
+            if (items.length > 0) {
+              currentLabelZh = items[0].label_zh;
+              currentLabelHakka = items[0].hakka_sentence ? items[0].hakka_sentence.split(' ')[0] : items[0].label_en;
+              
+              let html = '';
+              items.forEach(item => {
+                html += `
+                  <div style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                    <div class="result-word" style="font-size:24px;">${item.label_zh}（${item.label_en}）</div>
+                    <div class="result-roman">信心度：${Math.round(item.confidence * 100)}%</div>
+                    <div class="result-example" style="font-size:15px; line-height:1.6;">
+                      ${item.hakka_sentence ? `<strong>客語：</strong>${item.hakka_sentence}<br><strong>中文：</strong>${item.chinese_translation}` : '（例句生成中...）'}
+                    </div>
+                  </div>
+                `;
+                
+                // 儲存學過的詞彙
+                if (item.hakka_sentence) {
+                  const learned = JSON.parse(localStorage.getItem('learnedWords') || '[]');
+                  const exists = learned.find(w => w.zh === item.label_zh);
+                  if (!exists) {
+                    learned.push({ zh: item.label_zh, rom: item.hakka_sentence.split(' ')[0] || item.label_en });
+                    if (learned.length > 30) learned.shift();
+                    localStorage.setItem('learnedWords', JSON.stringify(learned));
+                  }
+                }
+              });
 
-            // 儲存學過的詞彙到 localStorage
-            if (data.hakka_sentence) {
-              const learned = JSON.parse(localStorage.getItem('learnedWords') || '[]');
-              const exists = learned.find(w => w.zh === data.label_zh);
-              if (!exists) {
-                learned.push({ zh: data.label_zh, rom: data.hakka_sentence.split(' ')[0] || data.label_en });
-                // 最多保留 30 個
-                if (learned.length > 30) learned.shift();
-                localStorage.setItem('learnedWords', JSON.stringify(learned));
-              }
+              document.getElementById('resultItemsContainer').innerHTML = html;
+
+              // 重設儲存按鈕狀態
+              const saveBtn = document.getElementById('saveBtn');
+              saveBtn.disabled = false;
+              saveBtn.textContent = `💾 儲存照片與主要單字 (${items[0].label_zh})`;
+            } else {
+              document.getElementById('resultItemsContainer').innerHTML = '<div class="result-example">未偵測到任何物件</div>';
             }
           } else {
             const err = await res.json();
-            document.getElementById('resultWord').textContent    = '未偵測到物件';
-            document.getElementById('resultRoman').textContent   = '';
-            document.getElementById('resultExample').textContent = err.detail || '請重新拍攝';
+            document.getElementById('resultItemsContainer').innerHTML = `<div class="result-example">${err.detail || '辨識失敗，請重新拍攝'}</div>`;
           }
         } catch (e) {
-          document.getElementById('resultWord').textContent    = '辨識失敗';
-          document.getElementById('resultRoman').textContent   = '';
-          document.getElementById('resultExample').textContent = '請確認伺服器是否正常運行';
+          document.getElementById('resultItemsContainer').innerHTML = '<div class="result-example">發生錯誤，請確認伺服器是否正常運行</div>';
         }
         document.getElementById('resultCard').style.display = 'block';
       }, 300);

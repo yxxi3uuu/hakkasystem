@@ -36,12 +36,15 @@ COCO_ZH = {
     "teddy bear": "玩具熊", "hair drier": "吹風機", "toothbrush": "牙刷","glasses":"眼鏡"
 }
 
-class RecognitionResponse(BaseModel):
+class RecognizedItem(BaseModel):
     label_en: str
     label_zh: str
     confidence: float
     hakka_sentence: str = ""
     chinese_translation: str = ""
+
+class RecognitionResponse(BaseModel):
+    items: list[RecognizedItem]
 
 @router.post("/recognize", response_model=RecognitionResponse)
 async def recognize_image(file: UploadFile = File(...)):
@@ -59,45 +62,64 @@ async def recognize_image(file: UploadFile = File(...)):
         if boxes is None or len(boxes) == 0:
             raise HTTPException(status_code=422, detail="未偵測到任何物件")
 
-        # 優先取非「人」的最高信心值物件，若全是人才取人
-        best_idx = None
-        best_conf = -1.0
-        for i in range(len(boxes)):
+        # 取得不重複的 top 5 物件 (盡量非人)
+        detected_objects = []
+        # 先以信心度排序
+        sorted_indices = boxes.conf.argsort(descending=True)
+        
+        for idx in sorted_indices:
+            i = int(idx)
             lbl = model.names[int(boxes.cls[i])]
             conf = float(boxes.conf[i])
-            if lbl != "person" and conf > best_conf:
-                best_conf = conf
-                best_idx = i
-
-        # 全部都是人才 fallback 到信心值最高的
-        if best_idx is None:
-            best_idx = int(boxes.conf.argmax())
-        label_en = model.names[int(boxes.cls[best_idx])]
-        confidence = float(boxes.conf[best_idx])
-        label_zh = COCO_ZH.get(label_en, label_en)
-
-        # 呼叫 LLM 生成客語例句
-        hakka_sentence = ""
-        chinese_translation = ""
+            if lbl not in [obj["label_en"] for obj in detected_objects]:
+                detected_objects.append({
+                    "label_en": lbl,
+                    "confidence": conf
+                })
+            if len(detected_objects) >= 5:
+                break
+                
+        # 準備請求的 words
+        words = []
+        for obj in detected_objects:
+            lbl_zh = COCO_ZH.get(obj["label_en"], obj["label_en"])
+            obj["label_zh"] = lbl_zh
+            words.append(lbl_zh)
+            
+        # 呼叫 LLM 生成客語多句情境
+        story_result = []
         try:
-            async with httpx.AsyncClient(timeout=30) as client:
+            async with httpx.AsyncClient(timeout=60) as client:
                 resp = await client.post(
-                    "http://localhost:8000/api/learning/generate-sentence",
-                    json={"word": label_zh}
+                    "http://localhost:8000/api/learning/generate-story",
+                    json={"words": words}
                 )
                 if resp.status_code == 200:
-                    data = resp.json()
-                    hakka_sentence = data.get("hakka_sentence", "")
-                    chinese_translation = data.get("chinese_translation", "")
-        except Exception:
-            pass  # LLM 失敗不影響辨識結果
+                    story_result = resp.json()
+        except Exception as e:
+            print(f"Error calling story generation: {e}")
+            pass
+            
+        # 組合結果
+        items = []
+        for obj in detected_objects:
+            hakka_sentence = ""
+            chinese_translation = ""
+            # 尋找對應的句子
+            for s in story_result:
+                if s.get("word") == obj["label_zh"]:
+                    hakka_sentence = s.get("hakka_sentence", "")
+                    chinese_translation = s.get("chinese_translation", "")
+                    break
+                    
+            items.append(RecognizedItem(
+                label_en=obj["label_en"],
+                label_zh=obj["label_zh"],
+                confidence=round(obj["confidence"], 2),
+                hakka_sentence=hakka_sentence,
+                chinese_translation=chinese_translation
+            ))
 
-        return RecognitionResponse(
-            label_en=label_en,
-            label_zh=label_zh,
-            confidence=round(confidence, 2),
-            hakka_sentence=hakka_sentence,
-            chinese_translation=chinese_translation,
-        )
+        return RecognitionResponse(items=items)
     finally:
         os.unlink(tmp_path)
