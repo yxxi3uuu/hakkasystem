@@ -11,6 +11,7 @@ from routers.auth import router as auth_router
 from routers.recognition import router as recognition_router
 from routers.learning import router as learning_router
 from routers.practice import router as practice_router
+from routers.saved_words import router as saved_words_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -28,8 +29,15 @@ app = FastAPI(lifespan=lifespan)
 
 # Static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/voice_practice/audios", StaticFiles(directory="voice_practice/data/audios"), name="vp_audios")
-app.mount("/voice_practice/images", StaticFiles(directory="voice_practice/data/images"), name="vp_images")
+
+# 確保 voice_practice 目錄存在再掛載
+import pathlib
+_vp_audios = pathlib.Path("voice_practice/data/audios")
+_vp_images = pathlib.Path("voice_practice/data/images")
+_vp_audios.mkdir(parents=True, exist_ok=True)
+_vp_images.mkdir(parents=True, exist_ok=True)
+app.mount("/voice_practice/audios", StaticFiles(directory=str(_vp_audios)), name="vp_audios")
+app.mount("/voice_practice/images", StaticFiles(directory=str(_vp_images)), name="vp_images")
 
 # Routers
 app.include_router(profile_router)
@@ -37,6 +45,7 @@ app.include_router(auth_router)
 app.include_router(recognition_router)
 app.include_router(learning_router)
 app.include_router(practice_router)
+app.include_router(saved_words_router)
 
 # Serve pages
 @app.get("/")

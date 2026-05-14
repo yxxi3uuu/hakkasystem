@@ -1,0 +1,12 @@
+fastapi[standard]>=0.112.0
+sqlalchemy>=2.0.49
+asyncpg
+psycopg2-binary>=2.9.11
+pymysql>=1.1.2
+librosa>=0.10.0
+pydub>=0.25.0
+scipy>=1.13.0
+soundfile>=0.12.0
+ultralytics
+python-multipart
+httpx

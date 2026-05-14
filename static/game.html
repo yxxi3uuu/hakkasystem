@@ -1,11 +1,38 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>配對遊戲 - 客語隨拍隨學</title>
   <link rel="stylesheet" href="/static/style.css" />
   <style>
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      margin: 8px 16px 0;
+    }
+
+    .mode-tab {
+      flex: 1;
+      padding: 8px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 2px solid #e0e0e0;
+      background: white;
+      color: #666;
+      transition: all 0.2s;
+    }
+
+    .mode-tab.active {
+      border-color: #4CAF50;
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
     .game-header {
       display: flex;
       justify-content: space-between;
@@ -14,11 +41,23 @@
       background: white;
       margin: 16px;
       border-radius: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     }
-    .game-stat { text-align: center; }
-    .game-stat-val { font-size: 24px; font-weight: 800; color: #2E7D32; }
-    .game-stat-lbl { font-size: 11px; color: #888; }
+
+    .game-stat {
+      text-align: center;
+    }
+
+    .game-stat-val {
+      font-size: 24px;
+      font-weight: 800;
+      color: #2E7D32;
+    }
+
+    .game-stat-lbl {
+      font-size: 11px;
+      color: #888;
+    }
 
     .match-area {
       position: relative;
@@ -27,6 +66,7 @@
       justify-content: space-between;
       gap: 0;
     }
+
     .match-col {
       display: flex;
       flex-direction: column;
@@ -34,6 +74,7 @@
       width: 42%;
       z-index: 2;
     }
+
     .match-item {
       padding: 14px 12px;
       border-radius: 12px;
@@ -45,32 +86,85 @@
       transition: all 0.2s;
       border: 2px solid #e0e0e0;
       background: white;
-    }
-    .match-item:hover { border-color: #4CAF50; background: #f1f8e9; }
-    .match-item.selected { border-color: #4CAF50; background: #E8F5E9; box-shadow: 0 0 0 3px rgba(76,175,80,0.2); }
-    .match-item.matched  { border-color: #4CAF50; background: #C8E6C9; opacity: 0.7; cursor: default; }
-    .match-item.wrong    { border-color: #f44336; background: #FFEBEE; animation: shake 0.4s; }
-    @keyframes shake {
-      0%,100% { transform: translateX(0); }
-      25%     { transform: translateX(-6px); }
-      75%     { transform: translateX(6px); }
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60px;
     }
 
-    .match-item .sub { font-size: 11px; color: #888; margin-top: 3px; font-weight: 400; }
+    .match-item img {
+      width: 100%;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 4px;
+    }
+
+    .match-item:hover {
+      border-color: #4CAF50;
+      background: #f1f8e9;
+    }
+
+    .match-item.selected {
+      border-color: #4CAF50;
+      background: #E8F5E9;
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+    }
+
+    .match-item.matched {
+      border-color: #4CAF50;
+      background: #C8E6C9;
+      opacity: 0.7;
+      cursor: default;
+    }
+
+    .match-item.wrong {
+      border-color: #f44336;
+      background: #FFEBEE;
+      animation: shake 0.4s;
+    }
+
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      25% {
+        transform: translateX(-6px);
+      }
+
+      75% {
+        transform: translateX(6px);
+      }
+    }
+
+    .match-item .sub {
+      font-size: 11px;
+      color: #888;
+      margin-top: 3px;
+      font-weight: 400;
+    }
 
     /* SVG lines */
     svg.lines {
       position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       z-index: 1;
       pointer-events: none;
     }
+
     svg.lines line {
       stroke: #4CAF50;
       stroke-width: 2.5;
       stroke-linecap: round;
     }
+
     svg.lines line.drawing {
       stroke: #4CAF50;
       stroke-dasharray: 6 4;
@@ -86,18 +180,35 @@
       padding: 24px;
       text-align: center;
     }
-    .win-banner h2 { font-size: 22px; margin-bottom: 8px; }
-    .win-banner p  { font-size: 14px; opacity: 0.9; margin-bottom: 16px; }
+
+    .win-banner h2 {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .win-banner p {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-bottom: 16px;
+    }
   </style>
 </head>
+
 <body>
 
   <div class="top-bar">
     <span style="font-size:22px;">🎮</span>
     <h1>連連看</h1>
-    <button class="btn btn-outline" style="padding:6px 14px;font-size:13px;" onclick="initGame()">重新開始</button>
+    <button class="btn btn-outline" style="padding:6px 14px;font-size:13px;" onclick="startGame()">重新開始</button>
   </div>
-  <p style="font-size:13px;color:#888;padding:4px 16px 0;">將左邊的中文詞彙連到右邊對應的客語發音</p>
+
+  <div class="mode-tabs">
+    <div class="mode-tab active" id="tabDefault" onclick="setMode('default')">📝 預設單字</div>
+    <div class="mode-tab" id="tabPhoto" onclick="setMode('photo')">📸 我的照片</div>
+  </div>
+
+  <p id="gameDesc" style="font-size:13px;color:#888;padding:12px 16px 0;">將左邊的中文詞彙連到右邊對應的客語發音</p>
+  <p id="gameSource" style="font-size:12px;color:#4CAF50;padding:2px 16px 0;"></p>
 
   <div class="game-header">
     <div class="game-stat">
@@ -136,26 +247,98 @@
   </div>
 
   <nav class="bottom-nav">
-    <a class="nav-item" href="/"><div class="nav-icon">🏠</div><div class="nav-label">首頁</div></a>
-    <a class="nav-item" href="/recognition"><div class="nav-icon">📷</div><div class="nav-label">拍照學習</div></a>
-    <a class="nav-item" href="/practice"><div class="nav-icon">🎤</div><div class="nav-label">語音練習</div></a>
-    <a class="nav-item active" href="/game"><div class="nav-icon">🎮</div><div class="nav-label">配對遊戲</div></a>
-    <a class="nav-item" href="/record"><div class="nav-icon">📊</div><div class="nav-label">學習記錄</div></a>
-    <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
+    <a class="nav-item" href="/">
+      <div class="nav-icon">🏠</div>
+      <div class="nav-label">首頁</div>
+    </a>
+    <a class="nav-item" href="/recognition">
+      <div class="nav-icon">📷</div>
+      <div class="nav-label">拍照學習</div>
+    </a>
+    <a class="nav-item" href="/practice">
+      <div class="nav-icon">🎤</div>
+      <div class="nav-label">語音練習</div>
+    </a>
+    <a class="nav-item active" href="/game">
+      <div class="nav-icon">🎮</div>
+      <div class="nav-label">配對遊戲</div>
+    </a>
+    <a class="nav-item" href="/record">
+      <div class="nav-icon">📊</div>
+      <div class="nav-label">學習記錄</div>
+    </a>
+    <a class="nav-item" href="/profile">
+      <div class="nav-icon">👤</div>
+      <div class="nav-label">個人中心</div>
+    </a>
   </nav>
 
   <script src="/static/auth.js"></script>
   <script>
     requireLogin();
-    const PAIRS = [
-      { zh: "你好",   rom: "ngì-hó" },
-      { zh: "謝謝",   rom: "án-tsṳ́-sì" },
-      { zh: "蘋果",   rom: "phìn-kó" },
-      { zh: "貓咪",   rom: "miāu" },
-      { zh: "水",     rom: "súi" },
-      { zh: "飯",     rom: "fan" },
+    const DEFAULT_PAIRS = [
+      { zh: "你好", rom: "ngì-hó" },
+      { zh: "謝謝", rom: "án-tsṳ́-sì" },
+      { zh: "蘋果", rom: "phìn-kó" },
+      { zh: "貓咪", rom: "miāu" },
+      { zh: "水", rom: "súi" },
+      { zh: "飯", rom: "fan" },
     ];
 
+    let currentMode = 'default';
+    let PAIRS = [];
+    let savedPhotoPairs = [];
+
+    async function loadSavedPhotos() {
+      const user = getUser();
+      if (!user) return;
+      try {
+        const res = await fetch(`/api/saved_words?user_id=${user.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          savedPhotoPairs = data.map(item => ({
+            zh: item.label_zh,
+            rom: item.label_hakka,
+            img: item.image_path
+          }));
+        }
+      } catch (e) {
+        console.error("Failed to load saved photos", e);
+      }
+    }
+
+    async function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('tabDefault').classList.toggle('active', mode === 'default');
+      document.getElementById('tabPhoto').classList.toggle('active', mode === 'photo');
+
+      if (mode === 'photo' && savedPhotoPairs.length === 0) {
+        await loadSavedPhotos();
+      }
+
+      startGame();
+    }
+
+    function getGamePairs() {
+      if (currentMode === 'photo') {
+        if (savedPhotoPairs.length === 0) {
+          alert('您還沒有儲存任何照片！請先到「拍照學習」儲存。');
+          setMode('default');
+          return getGamePairs();
+        }
+        const shuffled = [...savedPhotoPairs].sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, 6); // Take up to 6
+      } else {
+        const learned = JSON.parse(localStorage.getItem('learnedWords') || '[]');
+        if (learned.length >= 3) {
+          const shuffled = [...learned].sort(() => Math.random() - 0.5);
+          return shuffled.slice(0, 6);
+        }
+        return DEFAULT_PAIRS;
+      }
+    }
+
+    let totalPairs = 0;
     let selectedLeft = null;
     let matched = 0, moves = 0, score = 0;
     let matchedPairs = [];
@@ -169,25 +352,39 @@
       return a;
     }
 
-    function initGame() {
+    function startGame() {
+      PAIRS = getGamePairs();
+      totalPairs = PAIRS.length;
       selectedLeft = null;
       matched = 0; moves = 0; score = 0;
       matchedPairs = [];
       document.getElementById('score').textContent = '0';
       document.getElementById('moves').textContent = '0';
-      document.getElementById('pairs').textContent = '0/6';
+      document.getElementById('pairs').textContent = `0/${totalPairs}`;
       document.getElementById('winBanner').style.display = 'none';
       document.getElementById('svgLines').innerHTML = '';
 
-      const leftOrder  = shuffle(PAIRS);
+      const sourceEl = document.getElementById('gameSource');
+      const descEl = document.getElementById('gameDesc');
+      if (currentMode === 'photo') {
+        descEl.textContent = '將左邊的照片連到右邊對應的客語發音';
+        sourceEl.textContent = `✨ 使用您的 ${totalPairs} 張照片`;
+      } else {
+        descEl.textContent = '將左邊的中文詞彙連到右邊對應的客語發音';
+        const learned = JSON.parse(localStorage.getItem('learnedWords') || '[]');
+        sourceEl.textContent = learned.length >= 3 ? `✨ 使用你拍照學過的 ${totalPairs} 個詞彙` : '使用預設詞彙（拍照學習後會自動換成你學過的詞）';
+      }
+
+      const leftOrder = shuffle(PAIRS);
       const rightOrder = shuffle(PAIRS);
 
-      const leftCol  = document.getElementById('leftCol');
+      const leftCol = document.getElementById('leftCol');
       const rightCol = document.getElementById('rightCol');
 
       leftCol.innerHTML = leftOrder.map((p, i) => `
         <div class="match-item" data-id="${PAIRS.indexOf(p)}" data-side="left" onclick="selectItem(this)">
-          ${p.zh}
+          ${currentMode === 'photo' ? `<img src="${p.img}" alt="photo" onerror="this.src=''" />` : ''}
+          ${currentMode === 'photo' ? '' : p.zh}
         </div>
       `).join('');
 
@@ -213,7 +410,7 @@
         moves++;
         document.getElementById('moves').textContent = moves;
 
-        const leftId  = parseInt(selectedLeft.dataset.id);
+        const leftId = parseInt(selectedLeft.dataset.id);
         const rightId = parseInt(el.dataset.id);
 
         if (leftId === rightId) {
@@ -224,17 +421,32 @@
           score += 10;
           matched++;
           document.getElementById('score').textContent = score;
-          document.getElementById('pairs').textContent = `${matched}/6`;
+          document.getElementById('pairs').textContent = `${matched}/${PAIRS.length}`;
 
           drawLine(selectedLeft, el);
           matchedPairs.push({ left: selectedLeft, right: el });
           selectedLeft = null;
 
-          if (matched === 6) {
-            setTimeout(() => {
+          if (matched === totalPairs) {
+            setTimeout(async () => {
               const banner = document.getElementById('winBanner');
               document.getElementById('winMsg').textContent = `得分 ${score} 分，共嘗試 ${moves} 次！`;
               banner.style.display = 'block';
+
+              const user = getUser();
+              if (user) {
+                try {
+                  await fetch(`/api/profile/${user.id}/activity`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      icon: '🎮',
+                      title: '完成配對遊戲',
+                      score: score
+                    })
+                  });
+                } catch (e) { }
+              }
             }, 400);
           }
         } else {
@@ -252,15 +464,15 @@
     }
 
     function drawLine(leftEl, rightEl) {
-      const svg   = document.getElementById('svgLines');
-      const area  = document.getElementById('matchArea');
+      const svg = document.getElementById('svgLines');
+      const area = document.getElementById('matchArea');
       const aRect = area.getBoundingClientRect();
       const lRect = leftEl.getBoundingClientRect();
       const rRect = rightEl.getBoundingClientRect();
 
-      const x1 = lRect.right  - aRect.left;
+      const x1 = lRect.right - aRect.left;
       const y1 = lRect.top + lRect.height / 2 - aRect.top;
-      const x2 = rRect.left   - aRect.left;
+      const x2 = rRect.left - aRect.left;
       const y2 = rRect.top + rRect.height / 2 - aRect.top;
 
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -278,7 +490,9 @@
       matchedPairs.forEach(p => drawLine(p.left, p.right));
     });
 
-    initGame();
+    // 顯示詞彙來源
+    startGame();
   </script>
 </body>
+
 </html>

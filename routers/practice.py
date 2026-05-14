@@ -123,8 +123,10 @@ async def score_recording(
     y_user, _ = librosa.effects.trim(y_user, top_db=30)
     y_ref,  _ = librosa.effects.trim(y_ref,  top_db=30)
 
-    # 音量太小直接給 0
-    if len(y_user) == 0 or float(np.max(np.abs(y_user))) < 0.01:
+    # RMS 能量檢查：低於門檻視為沒有說話
+    rms = float(np.sqrt(np.mean(y_user ** 2)))
+    print(f"[DEBUG] y_user len={len(y_user)}, duration={len(y_user)/sr:.2f}s, RMS={rms:.6f}")
+    if len(y_user) < sr * 0.2 or rms < 0.005:
         return ScoreResult(score=0, message="偵測不到聲音，請靠近麥克風大聲練習喔！")
 
     # DTW 評分

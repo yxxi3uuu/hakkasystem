@@ -168,6 +168,7 @@
     <div class="result-word"  id="resultWord">--</div>
     <div class="result-roman" id="resultRoman">--</div>
     <div class="result-example" id="resultExample">--</div>
+    <button class="btn btn-outline btn-block" style="margin-top:14px; border: 2px solid #4CAF50; color: #2E7D32;" onclick="saveWordPhoto()" id="saveBtn">💾 儲存照片與單字</button>
     <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="resetAll()">再拍一張</button>
   </div>
 
@@ -198,6 +199,10 @@
     const captured  = document.getElementById('capturedImg');
     let stream      = null;
     let facingMode  = 'user'; // 預設前鏡頭
+    
+    let currentPhotoBlob = null;
+    let currentLabelZh = '';
+    let currentLabelHakka = '';
 
     // ── 相機啟動 ──
     async function startCamera() {
@@ -320,6 +325,7 @@
             const file = document.getElementById('fileInput').files[0];
             blob = file;
           }
+          currentPhotoBlob = blob;
 
           const formData = new FormData();
           formData.append('file', blob, 'photo.jpg');
@@ -328,12 +334,32 @@
 
           if (res.ok) {
             const data = await res.json();
+            currentLabelZh = data.label_zh;
+            currentLabelHakka = data.hakka_sentence ? data.hakka_sentence.split(' ')[0] : data.label_en;
+
             document.getElementById('resultWord').textContent    = `${data.label_zh}（${data.label_en}）`;
             document.getElementById('resultRoman').textContent   = `信心度：${Math.round(data.confidence * 100)}%`;
             document.getElementById('resultExample').textContent =
               data.hakka_sentence
                 ? `客語：${data.hakka_sentence}\n中文：${data.chinese_translation}`
                 : '（例句生成中...）';
+            
+            // 重設儲存按鈕狀態
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = false;
+            saveBtn.textContent = '💾 儲存照片與單字';
+
+            // 儲存學過的詞彙到 localStorage
+            if (data.hakka_sentence) {
+              const learned = JSON.parse(localStorage.getItem('learnedWords') || '[]');
+              const exists = learned.find(w => w.zh === data.label_zh);
+              if (!exists) {
+                learned.push({ zh: data.label_zh, rom: data.hakka_sentence.split(' ')[0] || data.label_en });
+                // 最多保留 30 個
+                if (learned.length > 30) learned.shift();
+                localStorage.setItem('learnedWords', JSON.stringify(learned));
+              }
+            }
           } else {
             const err = await res.json();
             document.getElementById('resultWord').textContent    = '未偵測到物件';
@@ -359,6 +385,47 @@
         document.getElementById('uploadZone').style.display  = 'block';
         document.getElementById('uploadPreview').style.display = 'none';
         document.getElementById('fileInput').value = '';
+      }
+    }
+
+    async function saveWordPhoto() {
+      if (!currentPhotoBlob || !currentLabelZh || !currentLabelHakka) {
+        alert('無有效資料可儲存');
+        return;
+      }
+      
+      const user = getUser();
+      if (!user) {
+        alert('請先登入');
+        return;
+      }
+
+      const btn = document.getElementById('saveBtn');
+      btn.disabled = true;
+      btn.textContent = '儲存中...';
+
+      const formData = new FormData();
+      formData.append('user_id', user.id);
+      formData.append('file', currentPhotoBlob, 'photo.jpg');
+      formData.append('label_zh', currentLabelZh);
+      formData.append('label_hakka', currentLabelHakka);
+
+      try {
+        const res = await fetch('/api/saved_words', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (res.ok) {
+          btn.textContent = '✅ 已儲存';
+        } else {
+          btn.textContent = '❌ 儲存失敗';
+          btn.disabled = false;
+        }
+      } catch (err) {
+        console.error('儲存失敗:', err);
+        btn.textContent = '❌ 儲存失敗';
+        btn.disabled = false;
       }
     }
 

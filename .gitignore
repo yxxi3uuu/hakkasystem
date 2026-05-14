@@ -11,3 +11,5 @@ dist/
 *.gguf
 ffmpeg.exe
 ffprobe.exe
+
+static/uploads/

@@ -32,3 +32,22 @@ class WeeklyGoal(Base):
     title   = Column(String)
     target  = Column(Integer)
     current = Column(Integer, default=0)
+
+class SavedWord(Base):
+    __tablename__ = "saved_words"
+    id          = Column(Integer, primary_key=True, index=True)
+    user_id     = Column(Integer, ForeignKey("users.id"))
+    image_path  = Column(String)
+    label_zh    = Column(String)
+    label_hakka = Column(String)
+
+class Activity(Base):
+    __tablename__ = "activities"
+    id          = Column(Integer, primary_key=True, index=True)
+    user_id     = Column(Integer, ForeignKey("users.id"))
+    icon        = Column(String)
+    title       = Column(String)
+    score       = Column(Integer, default=0)
+    created_at  = Column(String) # YYYY-MM-DD
+
+
