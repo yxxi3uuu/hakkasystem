@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>我的學習 - 客語隨拍隨學</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    .word-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 0 16px 16px;
+    }
+    .word-card {
+      background: white;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .word-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+    .word-card img {
+      width: 100%;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      display: block;
+    }
+    .word-card-body { padding: 10px 12px 12px; }
+    .word-card-zh   { font-size: 18px; font-weight: 800; color: #333; }
+    .word-card-hakka { font-size: 13px; color: #4CAF50; font-weight: 600; margin: 2px 0 6px; }
+    .word-card-sentence {
+      font-size: 11px;
+      color: #888;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .practice-btn {
+      display: block;
+      width: 100%;
+      margin-top: 8px;
+      padding: 6px 0;
+      background: #E8F5E9;
+      color: #2E7D32;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+    .practice-btn:hover { background: #C8E6C9; }
+
+    /* 刪除按鈕（卡片右上角） */
+    .word-card { position: relative; }
+    .delete-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 26px;
+      height: 26px;
+      background: rgba(0,0,0,0.45);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 13px;
+      line-height: 26px;
+      text-align: center;
+      cursor: pointer;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .delete-btn:hover { background: rgba(211,47,47,0.85); }
+
+    /* 刪除確認彈窗 */
+    .confirm-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .confirm-overlay.open { display: flex; }
+    .confirm-box {
+      background: white;
+      border-radius: 16px;
+      padding: 28px 24px 20px;
+      width: 300px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    }
+    .confirm-box .icon { font-size: 40px; margin-bottom: 10px; }
+    .confirm-box h3 { font-size: 17px; font-weight: 700; color: #333; margin: 0 0 6px; }
+    .confirm-box p  { font-size: 13px; color: #888; margin: 0 0 20px; }
+    .confirm-btns { display: flex; gap: 10px; }
+    .confirm-btns button { flex: 1; padding: 11px; border-radius: 10px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; }
+    .btn-confirm-delete { background: #D32F2F; color: white; }
+    .btn-confirm-delete:hover { background: #B71C1C; }
+    .btn-confirm-cancel { background: #f0f0f0; color: #555; }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #aaa;
+    }
+    .empty-state .icon { font-size: 56px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; line-height: 1.6; }
+
+    .loading-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #aaa;
+      font-size: 14px;
+    }
+
+    /* 詳細彈窗 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-sheet {
+      background: white;
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-width: 480px;
+      padding: 24px 20px 40px;
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .modal-handle {
+      width: 40px; height: 4px;
+      background: #ddd;
+      border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+    .modal-img {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      max-height: 220px;
+      object-fit: cover;
+    }
+    .modal-zh    { font-size: 28px; font-weight: 800; color: #333; }
+    .modal-hakka { font-size: 18px; color: #4CAF50; font-weight: 600; margin: 4px 0 16px; }
+    .modal-sentence-box {
+      background: #FFF8E1;
+      border-left: 4px solid #FFC107;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+    }
+    .modal-sentence-label { font-size: 11px; color: #999; margin-bottom: 4px; }
+    .modal-sentence-text  { font-size: 14px; color: #555; line-height: 1.6; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+    .modal-actions button { flex: 1; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; }
+    .btn-practice-modal { background: #4CAF50; color: white; }
+    .btn-close-modal    { background: #f0f0f0; color: #555; }
+    .btn-delete-modal   { background: #FFEBEE; color: #D32F2F; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <span style="font-size:22px;">📚</span>
+    <h1>我的學習單字</h1>
+  </div>
+  <p style="font-size:13px;color:#888;padding:12px 16px 4px;">從拍照學習儲存的單字，點擊可進行語音練習</p>
+
+  <div id="wordContainer">
+    <div class="loading-state">載入中...</div>
+  </div>
+
+  <!-- 詳細彈窗 -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <img class="modal-img" id="modalImg" src="" alt="" />
+      <div class="modal-zh"    id="modalZh"></div>
+      <div class="modal-hakka" id="modalHakka"></div>
+      <div class="modal-sentence-box" id="modalSentenceBox" style="display:none;">
+        <div class="modal-sentence-label">💡 造句練習</div>
+        <div class="modal-sentence-text" id="modalSentence"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-practice-modal" onclick="goToPractice()">🎤 語音練習</button>
+        <button class="btn-delete-modal"   onclick="confirmDelete()">🗑️ 刪除</button>
+        <button class="btn-close-modal"    onclick="closeModalDirect()">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 刪除確認彈窗 -->
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-box">
+      <div class="icon">🗑️</div>
+      <h3>確定要刪除嗎？</h3>
+      <p id="confirmText">刪除後無法復原</p>
+      <div class="confirm-btns">
+        <button class="btn-confirm-cancel" onclick="closeConfirm()">取消</button>
+        <button class="btn-confirm-delete" onclick="doDelete()">確定刪除</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a class="nav-item" href="/"><div class="nav-icon">🏠</div><div class="nav-label">首頁</div></a>
+    <a class="nav-item" href="/recognition"><div class="nav-icon">📷</div><div class="nav-label">拍照學習</div></a>
+    <a class="nav-item active" href="/learning"><div class="nav-icon">📚</div><div class="nav-label">我的學習</div></a>
+    <a class="nav-item" href="/practice"><div class="nav-icon">🎤</div><div class="nav-label">語音練習</div></a>
+    <a class="nav-item" href="/game"><div class="nav-icon">🎮</div><div class="nav-label">配對遊戲</div></a>
+    <a class="nav-item" href="/record"><div class="nav-icon">📊</div><div class="nav-label">學習記錄</div></a>
+    <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
+  </nav>
+
+  <script src="/static/auth.js"></script>
+  <script>
+    requireLogin();
+
+    let selectedWord = null;
+
+    async function loadMyWords() {
+      const user = getUser();
+      if (!user) return;
+
+      try {
+        const res = await fetch(`/api/saved_words?user_id=${user.id}`);
+        if (!res.ok) throw new Error();
+        const words = await res.json();
+
+        // 前端去重（以 label_zh 為基準，保留最新一筆含圖片的）
+        const seen = new Map();
+        for (const w of words) {
+          if (!seen.has(w.label_zh)) {
+            seen.set(w.label_zh, w);
+          }
+        }
+        const unique = Array.from(seen.values());
+
+        const container = document.getElementById('wordContainer');
+
+        if (unique.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="icon">📷</div>
+              <p>還沒有儲存任何單字<br>去拍照學習頁面拍張照片吧！</p>
+              <a href="/recognition" class="btn btn-primary" style="display:inline-block;margin-top:16px;padding:10px 24px;border-radius:12px;text-decoration:none;">前往拍照學習</a>
+            </div>
+          `;
+          return;
+        }
+
+        const grid = document.createElement('div');
+        grid.className = 'word-grid';
+
+        unique.forEach(w => {
+          const card = document.createElement('div');
+          card.className = 'word-card';
+          card.innerHTML = `
+            <button class="delete-btn" title="刪除此單字">✕</button>
+            <img src="${w.image_path}" alt="${w.label_zh}" onerror="this.style.display='none'" />
+            <div class="word-card-body">
+              <div class="word-card-zh">${w.label_zh}</div>
+              <div class="word-card-hakka">${w.label_hakka}</div>
+              ${w.sentence_zh ? `<div class="word-card-sentence">${w.sentence_zh}</div>` : ''}
+              <button class="practice-btn">🎤 練習發音</button>
+            </div>
+          `;
+          // 刪除按鈕：阻止事件冒泡，避免觸發 openModal
+          card.querySelector('.delete-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            confirmDeleteCard(w);
+          });
+          card.addEventListener('click', () => openModal(w));
+          grid.appendChild(card);
+        });
+
+        container.innerHTML = '';
+        container.appendChild(grid);
+
+      } catch (e) {
+        document.getElementById('wordContainer').innerHTML = `
+          <div class="empty-state">
+            <div class="icon">⚠️</div>
+            <p>載入失敗，請確認伺服器是否正常運作</p>
+          </div>
+        `;
+      }
+    }
+
+    function openModal(word) {
+      selectedWord = word;
+      document.getElementById('modalImg').src = word.image_path;
+      document.getElementById('modalImg').style.display = word.image_path ? 'block' : 'none';
+      document.getElementById('modalZh').textContent    = word.label_zh;
+      document.getElementById('modalHakka').textContent = word.label_hakka;
+
+      const sentenceBox = document.getElementById('modalSentenceBox');
+      const sentenceEl  = document.getElementById('modalSentence');
+      if (word.sentence_zh) {
+        sentenceEl.textContent = word.sentence_zh;
+        sentenceBox.style.display = 'block';
+      } else {
+        sentenceBox.style.display = 'none';
+      }
+
+      document.getElementById('modalOverlay').classList.add('open');
+    }
+
+    function closeModal(e) {
+      if (e.target === document.getElementById('modalOverlay')) {
+        closeModalDirect();
+      }
+    }
+
+    function closeModalDirect() {
+      document.getElementById('modalOverlay').classList.remove('open');
+    }
+
+    function goToPractice() {
+      if (!selectedWord) return;
+      // 帶著單字跳到練習頁，練習頁會用 ?word= 參數載入對應題目
+      window.location.href = `/practice?word=${encodeURIComponent(selectedWord.label_zh)}`;
+    }
+
+    // ── 刪除功能 ──────────────────────────────────────────
+    let wordToDelete = null;
+
+    // 從卡片右上角 ✕ 觸發（不開 modal）
+    function confirmDeleteCard(word) {
+      wordToDelete = word;
+      document.getElementById('confirmText').textContent = `「${word.label_zh}」刪除後無法復原`;
+      document.getElementById('confirmOverlay').classList.add('open');
+    }
+
+    // 從詳細 modal 內的刪除按鈕觸發
+    function confirmDelete() {
+      if (!selectedWord) return;
+      wordToDelete = selectedWord;
+      closeModalDirect();
+      document.getElementById('confirmText').textContent = `「${selectedWord.label_zh}」刪除後無法復原`;
+      document.getElementById('confirmOverlay').classList.add('open');
+    }
+
+    function closeConfirm() {
+      document.getElementById('confirmOverlay').classList.remove('open');
+      wordToDelete = null;
+    }
+
+    async function doDelete() {
+      if (!wordToDelete) return;
+      const user = getUser();
+      if (!user) return;
+
+      try {
+        const res = await fetch(`/api/saved_words/${wordToDelete.id}?user_id=${user.id}`, {
+          method: 'DELETE'
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          alert('刪除失敗：' + (err.detail || '未知錯誤'));
+          return;
+        }
+        closeConfirm();
+        // 重新載入單字列表
+        await loadMyWords();
+      } catch (e) {
+        alert('刪除時發生錯誤，請稍後再試');
+      }
+    }
+
+    loadMyWords();
+  </script>
+</body>
+</html>

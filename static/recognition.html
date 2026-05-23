@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>拍照學習 - 客語隨拍隨學</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      margin: 16px 16px 0;
+    }
+    .mode-tab {
+      flex: 1;
+      padding: 10px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 2px solid #e0e0e0;
+      background: white;
+      color: #666;
+      transition: all 0.2s;
+    }
+    .mode-tab.active {
+      border-color: #4CAF50;
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    /* 相機區 */
+    .camera-wrap {
+      margin: 16px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #000;
+      position: relative;
+      aspect-ratio: 4/3;
+    }
+    .camera-wrap video,
+    .camera-wrap canvas,
+    .camera-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .camera-wrap canvas { display: none; }
+    .camera-wrap img    { display: none; }
+
+    .camera-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      padding: 12px 16px;
+    }
+    .shutter-btn {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: white;
+      border: 4px solid #4CAF50;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.15s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .shutter-btn:hover { transform: scale(1.08); }
+    .shutter-inner {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: #4CAF50;
+    }
+    .cam-action-btn {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #333;
+      background: #f0f0f0;
+    }
+
+    /* 上傳區 */
+    .upload-zone {
+      margin: 16px;
+      border: 2px dashed #4CAF50;
+      border-radius: 16px;
+      padding: 48px 20px;
+      text-align: center;
+      background: #F1F8E9;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: none;
+    }
+    .upload-zone:hover { background: #E8F5E9; }
+    .upload-zone input { display: none; }
+    .upload-icon { font-size: 48px; margin-bottom: 12px; }
+    .upload-zone h3 { font-size: 16px; color: #2E7D32; margin-bottom: 6px; }
+    .upload-zone p  { font-size: 13px; color: #888; }
+
+    #uploadPreview { margin: 0 16px 16px; display: none; }
+    #uploadPreview img { width: 100%; border-radius: 12px; }
+
+    /* 結果卡 */
+    .result-card {
+      background: white;
+      border-radius: 16px;
+      margin: 0 16px 16px;
+      padding: 20px;
+      display: none;
+    }
+    .result-word  { font-size: 28px; font-weight: 800; color: #2E7D32; margin-bottom: 4px; }
+    .result-roman { font-size: 16px; color: #666; margin-bottom: 12px; }
+    .result-example { font-size: 13px; color: #888; background: #f5f5f5; border-radius: 8px; padding: 10px; }
+
+    .tip-list { padding: 8px 16px 16px; }
+    .tip-list li { font-size: 13px; color: #666; margin-bottom: 6px; line-height: 1.5; list-style: none; }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <span style="font-size:22px;">📷</span>
+    <h1>拍照學習客語</h1>
+  </div>
+  <p style="font-size:13px;color:#888;padding:12px 16px 0;">拍照或上傳圖片，系統會自動識別並教你客語發音</p>
+
+  <div class="mode-tabs">
+    <div class="mode-tab active" onclick="switchMode('camera')">📷 拍照</div>
+    <div class="mode-tab" onclick="switchMode('upload')">📁 上傳圖片</div>
+  </div>
+
+  <div id="cameraMode">
+    <div class="camera-wrap" id="cameraWrap">
+      <video id="video" autoplay playsinline></video>
+      <canvas id="canvas"></canvas>
+      <img id="capturedImg" alt="拍攝結果" />
+    </div>
+    <div class="camera-controls" id="cameraControls">
+      <button class="cam-action-btn" onclick="switchCamera()">🔄</button>
+      <div class="shutter-btn" onclick="capture()"><div class="shutter-inner"></div></div>
+      <button class="cam-action-btn hidden" id="retakeBtn" onclick="retake()">↩️</button>
+    </div>
+  </div>
+
+  <label class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept="image/*" />
+    <div class="upload-icon">📸</div>
+    <h3>點擊上傳圖片</h3>
+    <p>支援 JPG、PNG 格式</p>
+  </label>
+  <div id="uploadPreview">
+    <img id="uploadPreviewImg" src="" alt="預覽" />
+  </div>
+
+  <div class="result-card" id="resultCard">
+    <div id="resultItemsContainer">
+      <div class="result-word"  id="resultWord">--</div>
+      <div class="result-roman" id="resultRoman">--</div>
+      <div class="result-example" id="resultExample">--</div>
+    </div>
+    <button class="btn btn-outline btn-block" style="margin-top:14px; border: 2px solid #4CAF50; color: #2E7D32;" onclick="saveWordPhoto()" id="saveBtn">💾 儲存照片與單字</button>
+    <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="resetAll()">再拍一張</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">💡 使用提示</div>
+    <ul class="tip-list">
+      <li>• 拍攝時確保光線充足，物品清晰</li>
+      <li>• 支援物品識別與即時客語翻譯</li>
+      <li>• 每個詞彙都會自動生成日常華語句子練習</li>
+    </ul>
+  </div>
+
+  <nav class="bottom-nav">
+    <a class="nav-item" href="/"><div class="nav-icon">🏠</div><div class="nav-label">首頁</div></a>
+    <a class="nav-item active" href="/recognition"><div class="nav-icon">📷</div><div class="nav-label">拍照學習</div></a>
+    <a class="nav-item" href="/learning"><div class="nav-icon">📚</div><div class="nav-label">我的學習</div></a>
+    <a class="nav-item" href="/practice"><div class="nav-icon">🎤</div><div class="nav-label">語音練習</div></a>
+    <a class="nav-item" href="/game"><div class="nav-icon">🎮</div><div class="nav-label">配對遊戲</div></a>
+    <a class="nav-item" href="/record"><div class="nav-icon">📊</div><div class="nav-label">學習記錄</div></a>
+    <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
+  </nav>
+
+  <script src="/static/auth.js"></script>
+  <script>
+    requireLogin();
+
+    const video     = document.getElementById('video');
+    const canvas    = document.getElementById('canvas');
+    const captured  = document.getElementById('capturedImg');
+    let stream      = null;
+    let facingMode  = 'user'; // 預設前鏡頭
+    
+    let currentPhotoBlob = null;
+
+    let currentLabelZh = '';
+    let currentLabelHakka = '';
+    let currentLabelPinyin = '';
+
+    let currentAudioPath = '';
+
+    let currentSentenceZh = '';
+    let currentSentenceHakka = '';
+    let currentSentenceAudioPath = '';
+
+    let currentLabelsJson = '';
+
+    // ── 相機啟動 ──
+    async function startCamera() {
+      try {
+        if (stream) stream.getTracks().forEach(t => t.stop());
+
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 960 } }
+          });
+        } catch (e) {
+          console.warn('指定鏡頭失敗，嘗試任何可用相機:', e);
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        }
+
+        video.srcObject = stream;
+        await video.play();
+        video.style.display = 'block';
+        captured.style.display = 'none';
+        console.log('相機已啟動，解析度:', video.videoWidth, 'x', video.videoHeight);
+      } catch (err) {
+        console.error('無法開啟相機:', err);
+        document.getElementById('cameraWrap').innerHTML = `
+          <div style="color:white;text-align:center;padding:40px 20px;">
+            <div style="font-size:48px;margin-bottom:12px;">📷</div>
+            <p style="font-size:14px;margin-bottom:8px;">無法開啟相機</p>
+            <p style="font-size:12px;opacity:0.7;">請確認：</p>
+            <p style="font-size:12px;opacity:0.7;">1. 已允許瀏覽器使用相機</p>
+            <p style="font-size:12px;opacity:0.7;">2. 使用 localhost 或 HTTPS 開啟</p>
+            <p style="font-size:12px;opacity:0.7;">3. 沒有其他程式佔用相機</p>
+          </div>
+        `;
+      }
+    }
+
+    function switchCamera() {
+      facingMode = facingMode === 'environment' ? 'user' : 'environment';
+      startCamera();
+    }
+
+    function capture() {
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      captured.src = dataUrl;
+      captured.style.display = 'block';
+      video.style.display = 'none';
+
+      if (stream) stream.getTracks().forEach(t => t.stop());
+
+      document.getElementById('retakeBtn').classList.remove('hidden');
+      
+      // 修改載入提示，對應現有流程
+      document.getElementById('resultItemsContainer').innerHTML = `
+        <div class="result-word">物件辨識中...</div>
+        <div class="result-example">正在連線語音資料庫並呼叫 LLM 進行華語造句，請稍候...</div>
+      `;
+      document.getElementById('resultCard').style.display  = 'block';
+      showResult();
+    }
+
+    function retake() {
+      document.getElementById('retakeBtn').classList.add('hidden');
+      document.getElementById('resultCard').style.display = 'none';
+      startCamera();
+    }
+
+    // ── 上傳模式 ──
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        document.getElementById('uploadPreviewImg').src = ev.target.result;
+        document.getElementById('uploadPreview').style.display = 'block';
+        document.getElementById('uploadZone').style.display = 'none';
+        
+        document.getElementById('resultItemsContainer').innerHTML = `
+          <div class="result-word">圖片分析中...</div>
+          <div class="result-example">正在擷取多個物件並同步翻譯客語，請稍候...</div>
+        `;
+        document.getElementById('resultCard').style.display = 'block';
+        showResult();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // ── 模式切換 ──
+    function switchMode(mode) {
+      document.querySelectorAll('.mode-tab').forEach((t, i) => {
+        t.classList.toggle('active', (mode === 'camera' && i === 0) || (mode === 'upload' && i === 1));
+      });
+
+      const camMode = document.getElementById('cameraMode');
+      const upZone  = document.getElementById('uploadZone');
+
+      if (mode === 'camera') {
+        camMode.style.display = 'block';
+        upZone.style.display  = 'none';
+        document.getElementById('uploadPreview').style.display = 'none';
+        startCamera();
+      } else {
+        camMode.style.display = 'none';
+        upZone.style.display  = 'block';
+        if (stream) stream.getTracks().forEach(t => t.stop());
+      }
+      document.getElementById('resultCard').style.display = 'none';
+    }
+
+    // ── 串接後端一條龍結果 ──
+    function showResult() {
+      setTimeout(async () => {
+        try {
+          let blob;
+          const activeTab = document.querySelector('.mode-tab.active').textContent.trim();
+
+          if (activeTab.includes('拍照')) {
+            blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+          } else {
+            blob = document.getElementById('fileInput').files[0];
+          }
+          currentPhotoBlob = blob;
+
+          const formData = new FormData();
+          formData.append('file', blob, 'photo.jpg');
+
+          // 發送請求到整合了客委會 API 與 LLM 的新路由
+          const res = await fetch('/api/recognize', { method: 'POST', body: formData });
+
+          if (res.ok) {
+            const data = await res.json();
+            const items = data.items || [];
+
+            if (items.length > 0) {
+              // 記錄主要物件（Top 1）的中文與客語漢字，供下方儲存按鈕使用
+              currentLabelZh = items[0].label_zh;
+
+              currentLabelHakka =
+                items[0].keyword_hakka || items[0].label_zh;
+
+              currentLabelPinyin = '';
+
+              currentAudioPath =
+                items[0].audio_path || '';
+
+              currentSentenceZh =
+                items[0].sentence_zh || '';
+
+              currentSentenceHakka =
+                items[0].sentence_hakka || '';
+
+              currentSentenceAudioPath =
+                items[0].sentence_audio_path || '';
+
+              currentLabelsJson =
+                JSON.stringify(items);
+              
+              let html = '';
+              items.forEach(item => {
+                // 💡 【核心修改】：標題直接放大顯示客語漢字，下方搭配 LLM 的華語造句
+                html += `
+                  <div style="
+                      margin-bottom:20px;
+                      border-bottom:1px solid #eee;
+                      padding-bottom:15px;
+                  ">
+
+                    <div class="result-word"
+                        style="font-size:26px;font-weight:800;color:#2E7D32;">
+
+                      ${item.keyword_hakka || '（未取得客語翻譯）'}
+
+                      <span style="
+                          font-size:15px;
+                          color:#666;
+                          font-weight:normal;
+                          margin-left:8px;
+                      ">
+                        （中文：${item.label_zh}）
+                      </span>
+                    </div>
+
+                    <div style="margin-top:10px;margin-bottom:12px;">
+
+                      <audio controls style="width:100%;">
+                        <source src="${item.audio_path}" type="audio/wav">
+                      </audio>
+
+                    </div>
+
+                    <div class="result-example"
+                        style="
+                            font-size:14px;
+                            line-height:1.7;
+                            background:#FFF8E1;
+                            color:#795548;
+                            border-left:4px solid #FFC107;
+                        ">
+
+                      <strong>💡 客語情境句子：</strong><br>
+
+                      <div style="margin-top:8px;">
+                        中文：${item.sentence_zh || ''}
+                      </div>
+
+                      <div style="margin-top:6px;color:#2E7D32;">
+                        客語：${item.sentence_hakka || ''}
+                      </div>
+
+                      <div style="margin-top:10px;">
+                        <audio controls style="width:100%;">
+                          <source src="${item.sentence_audio_path}" type="audio/wav">
+                        </audio>
+                      </div>
+
+                    </div>
+
+                  </div>
+                `;
+                
+                // 同步將新學到的客語字更新至本機 localStorage 暫存中
+                if (item.keyword_hakka) {
+                  const learned = JSON.parse(localStorage.getItem('learnedWords') || '[]');
+                  const exists = learned.find(w => w.zh === item.label_zh);
+                  if (!exists) {
+                    learned.push({ zh: item.label_zh, rom: item.keyword_hakka });
+                    if (learned.length > 30) learned.shift();
+                    localStorage.setItem('learnedWords', JSON.stringify(learned));
+                  }
+                }
+              });
+
+              document.getElementById('resultItemsContainer').innerHTML = html;
+
+              // 更新儲存按鈕狀態
+              const saveBtn = document.getElementById('saveBtn');
+              saveBtn.disabled = false;
+              saveBtn.textContent = `💾 儲存照片與客語單字 (${items[0].keyword_hakka})`;
+            } else {
+              document.getElementById('resultItemsContainer').innerHTML = '<div class="result-example">未偵測到任何物品</div>';
+            }
+          } else {
+            const err = await res.json();
+            document.getElementById('resultItemsContainer').innerHTML = `<div class="result-example">${err.detail || '辨識失敗，請重新操作'}</div>`;
+          }
+        } catch (e) {
+          console.error(e);
+          document.getElementById('resultItemsContainer').innerHTML = '<div class="result-example">伺服器連線異常，請確認 FastAPI 是否正常啟動</div>';
+        }
+        document.getElementById('resultCard').style.display = 'block';
+      }, 300);
+    }
+
+    function resetAll() {
+      document.getElementById('resultCard').style.display = 'none';
+      const activeTab = document.querySelector('.mode-tab.active').textContent.trim();
+      if (activeTab.includes('拍照')) {
+        document.getElementById('retakeBtn').classList.add('hidden');
+        startCamera();
+      } else {
+        document.getElementById('uploadZone').style.display  = 'block';
+        document.getElementById('uploadPreview').style.display = 'none';
+        document.getElementById('fileInput').value = '';
+      }
+    }
+
+    // ── 儲存至後端 PostgreSQL ──
+    async function saveWordPhoto() {
+      if (!currentPhotoBlob || !currentLabelZh || !currentLabelHakka) {
+        alert('無有效資料可儲存');
+        return;
+      }
+      
+      const user = getUser();
+      if (!user) {
+        alert('請先登入系統');
+        return;
+      }
+
+      const btn = document.getElementById('saveBtn');
+      btn.disabled = true;
+      btn.textContent = '正在寫入資料庫...';
+
+      const formData = new FormData();
+      formData.append('user_id', user.id);
+      formData.append('file', currentPhotoBlob, 'photo.jpg');
+      formData.append('label_zh', currentLabelZh);
+
+      formData.append('label_hakka', currentLabelHakka);
+
+      formData.append('label_pinyin', '');
+      
+      formData.append('audio_path', currentAudioPath);
+
+      formData.append('labels_json', currentLabelsJson);
+
+      formData.append('sentence_zh', currentSentenceZh);
+
+      formData.append('sentence_hakka', currentSentenceHakka);
+
+      formData.append(
+        'sentence_audio_path',
+        currentSentenceAudioPath
+      );
+
+      try {
+        const res = await fetch('/api/saved_words', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (res.ok) {
+          btn.textContent = '✅ 已成功存入歷史紀錄';
+        } else {
+          const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
+          console.error('儲存失敗:', err);
+          btn.textContent = `❌ 儲存失敗：${err.detail || res.status}`;
+          btn.disabled = false;
+        }
+      } catch (err) {
+        console.error('儲存失敗:', err);
+        btn.textContent = '❌ 連線失敗';
+        btn.disabled = false;
+      }
+    }
+
+    // 預設啟動相機
+    startCamera();
+  </script>
+</body>
+</html>

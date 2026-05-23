@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登入 - 客語隨拍隨學</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    body { background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+
+    .auth-card {
+      background: white;
+      border-radius: 24px;
+      padding: 36px 28px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .auth-logo { text-align: center; margin-bottom: 24px; }
+    .auth-logo .emoji { font-size: 48px; }
+    .auth-logo h1 { font-size: 22px; font-weight: 800; color: #2E7D32; margin-top: 8px; }
+    .auth-logo p  { font-size: 13px; color: #888; margin-top: 4px; }
+
+    .tabs {
+      display: flex;
+      background: #f5f5f5;
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 24px;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #888;
+      transition: all 0.2s;
+    }
+    .tab.active { background: white; color: #2E7D32; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus { border-color: #4CAF50; }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #4CAF50, #2E7D32);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.15s;
+    }
+    .submit-btn:hover { opacity: 0.9; }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-msg {
+      background: #FFEBEE;
+      color: #C62828;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .success-msg {
+      background: #E8F5E9;
+      color: #2E7D32;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="emoji">🎓</div>
+      <h1>客語隨拍隨學</h1>
+      <p>透過拍照、語音、遊戲學習客家話</p>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('login')">登入</div>
+      <div class="tab" onclick="switchTab('register')">註冊</div>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+    <div class="success-msg" id="successMsg"></div>
+
+    <!-- 登入表單 -->
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="請輸入 Email" required />
+      </div>
+      <div class="form-group">
+        <label>密碼</label>
+        <input type="password" id="loginPassword" placeholder="請輸入密碼" required />
+      </div>
+      <button type="submit" class="submit-btn" id="loginBtn">登入</button>
+    </form>
+
+    <!-- 註冊表單 -->
+    <form id="registerForm" style="display:none;" onsubmit="handleRegister(event)">
+      <div class="form-group">
+        <label>名稱</label>
+        <input type="text" id="regName" placeholder="請輸入你的名稱" required />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="regEmail" placeholder="請輸入 Email" required />
+      </div>
+      <div class="form-group">
+        <label>密碼</label>
+        <input type="password" id="regPassword" placeholder="請輸入密碼（至少 6 位）" minlength="6" required />
+      </div>
+      <div class="form-group">
+        <label>確認密碼</label>
+        <input type="password" id="regConfirm" placeholder="再次輸入密碼" required />
+      </div>
+      <button type="submit" class="submit-btn" id="regBtn">註冊</button>
+    </form>
+  </div>
+
+  <script>
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
+      });
+      document.getElementById('loginForm').style.display    = tab === 'login' ? 'block' : 'none';
+      document.getElementById('registerForm').style.display  = tab === 'register' ? 'block' : 'none';
+      hideMessages();
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = msg;
+      el.style.display = 'block';
+      document.getElementById('successMsg').style.display = 'none';
+    }
+    function showSuccess(msg) {
+      const el = document.getElementById('successMsg');
+      el.textContent = msg;
+      el.style.display = 'block';
+      document.getElementById('errorMsg').style.display = 'none';
+    }
+    function hideMessages() {
+      document.getElementById('errorMsg').style.display = 'none';
+      document.getElementById('successMsg').style.display = 'none';
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      hideMessages();
+      const btn = document.getElementById('loginBtn');
+      btn.disabled = true;
+      btn.textContent = '登入中...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: document.getElementById('loginEmail').value,
+            password: document.getElementById('loginPassword').value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showError(data.detail || '登入失敗');
+          return;
+        }
+        // 儲存登入狀態
+        localStorage.setItem('user_id', data.user_id);
+        localStorage.setItem('user_name', data.name);
+        localStorage.setItem('user_email', data.email);
+        window.location.href = '/';
+      } catch (err) {
+        showError('網路錯誤，請稍後再試');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '登入';
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      hideMessages();
+
+      const pw  = document.getElementById('regPassword').value;
+      const pw2 = document.getElementById('regConfirm').value;
+      if (pw !== pw2) { showError('兩次密碼不一致'); return; }
+
+      const btn = document.getElementById('regBtn');
+      btn.disabled = true;
+      btn.textContent = '註冊中...';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: document.getElementById('regName').value,
+            email: document.getElementById('regEmail').value,
+            password: pw,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showError(data.detail || '註冊失敗');
+          return;
+        }
+        showSuccess('註冊成功！正在跳轉...');
+        localStorage.setItem('user_id', data.user_id);
+        localStorage.setItem('user_name', data.name);
+        localStorage.setItem('user_email', data.email);
+        setTimeout(() => { window.location.href = '/'; }, 1000);
+      } catch (err) {
+        showError('網路錯誤，請稍後再試');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '註冊';
+      }
+    }
+
+    // 已登入就跳首頁
+    if (localStorage.getItem('user_id')) {
+      window.location.href = '/';
+    }
+  </script>
+</body>
+</html>
