@@ -32,6 +32,8 @@ async def save_word(
     sentence_hakka: str = Form(""),
     sentence_audio_path: str = Form(""),
 
+    source: str = Form("yolo"),   # yolo | ocr
+
     db: AsyncSession = Depends(get_db)
 ):
     try:
@@ -57,16 +59,20 @@ async def save_word(
 
             sentence_zh=sentence_zh,
             sentence_hakka=sentence_hakka,
-            sentence_audio_path=sentence_audio_path
+            sentence_audio_path=sentence_audio_path,
+
+            source=source,
         )
 
         db.add(new_word)
 
+        icon = "🔤" if source == "ocr" else "📷"
+        title_prefix = "文字辨識" if source == "ocr" else "拍照學習"
         today = datetime.datetime.now().strftime("%Y-%m-%d")
         activity = Activity(
             user_id=user_id,
-            icon="📷",
-            title=f"拍照學習: {label_zh}",
+            icon=icon,
+            title=f"{title_prefix}: {label_zh[:10]}",
             score=10,
             created_at=today
         )
@@ -81,7 +87,8 @@ async def save_word(
             "id": new_word.id,
             "image_path": image_path,
             "audio_path": audio_path,
-            "sentence_audio_path": sentence_audio_path
+            "sentence_audio_path": sentence_audio_path,
+            "source": source,
         }
 
     except Exception as e:
@@ -131,6 +138,7 @@ async def get_unique_saved_words(
                 "sentence_audio_path": getattr(w, "sentence_audio_path", ""),
 
                 "count": count_map.get(w.label_zh, 1),
+                "source": getattr(w, "source", "yolo"),
             })
 
     return unique_words

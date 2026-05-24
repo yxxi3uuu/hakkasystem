@@ -52,6 +52,8 @@ class SavedWord(Base):
     sentence_hakka = Column(String, default="")
     sentence_audio_path = Column(String, default="")
 
+    source = Column(String, default="yolo")   # yolo | ocr
+
 class Activity(Base):
     __tablename__ = "activities"
     id          = Column(Integer, primary_key=True, index=True)

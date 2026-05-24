@@ -27,6 +27,9 @@ services:
       DATABASE_URL: "postgresql+asyncpg://user:hakka2026@db:5432/dbname"
     depends_on:
       - db
+    # FastAPI/Streamlit 服務
+    volumes:
+      - ./data:/app/data  # 👈 新增這一行，把本地的 data 資料夾掛載到容器的 /app/data
 
 volumes:
   postgres_data:
