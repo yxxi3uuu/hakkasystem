@@ -13,3 +13,8 @@ httpx
 uvicorn
 pandas
 llama-cpp-python
+pytesseract>=0.3.10
+paddleocr>=2.7.0
+paddlepaddle>=2.6.0
+Pillow>=10.0.0
+python-dotenv

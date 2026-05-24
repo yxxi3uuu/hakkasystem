@@ -23,6 +23,7 @@ from routers.learning import router as learning_router
 from routers.practice import router as practice_router
 from routers.saved_words import router as saved_words_router
 from routers.hakka_api import router as hakka_router
+from routers.ocr import router as ocr_router
 
 
 @asynccontextmanager
@@ -69,6 +70,7 @@ app.include_router(learning_router)
 app.include_router(practice_router)
 app.include_router(saved_words_router)
 app.include_router(hakka_router)
+app.include_router(ocr_router)
 
 
 # Serve pages
