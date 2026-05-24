@@ -1,5 +1,10 @@
 from contextlib import asynccontextmanager
 import pathlib
+from pathlib import Path
+from dotenv import load_dotenv
+
+# 必須在所有其他 import 之前載入 .env，確保 DATABASE_URL 等環境變數正確
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 
 from fastapi import FastAPI, Depends
 from fastapi.staticfiles import StaticFiles

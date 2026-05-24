@@ -4,7 +4,6 @@ from ultralytics import YOLO
 from sqlalchemy.ext.asyncio import AsyncSession
 from dotenv import load_dotenv
 from pathlib import Path
-import httpx
 import tempfile
 import os
 import shutil
@@ -15,8 +14,8 @@ from database import get_db
 
 from routers.hakka_api import (
     TextRequest,
-    translate_zh_to_hakka,
-    translate_hakka_to_pinyin,
+    get_trans_token,
+    call_hakka_translate_api,
     generate_hakka_tts
 )
 
@@ -113,17 +112,15 @@ def split_lines_text(text: str, expected_count: int) -> list[str]:
 
 
 async def generate_sentences_for_words(words: list[str]) -> list[str]:
+    """直接呼叫 learning router 的函式，避免 HTTP loopback 造成 deadlock"""
+    from routers.learning import generate_hakka_story
+    from pydantic import BaseModel as _BaseModel
+
+    class _WordsRequest(_BaseModel):
+        words: list[str]
+
     try:
-        async with httpx.AsyncClient(timeout=20) as client:
-            response = await client.post(
-                "http://localhost:8000/api/learning/generate-story",
-                json={"words": words}
-            )
-
-        if response.status_code != 200:
-            return [f"這是一個{word}。" for word in words]
-
-        data = response.json()
+        data = await generate_hakka_story(_WordsRequest(words=words))
         sentences = []
 
         if isinstance(data, list):
@@ -137,32 +134,7 @@ async def generate_sentences_for_words(words: list[str]) -> list[str]:
                 else:
                     sentence = f"這是一個{word}。"
                 sentences.append(sentence)
-
             return sentences
-
-        if isinstance(data, dict):
-            raw_sentences = data.get("sentences") or data.get("data")
-
-            if isinstance(raw_sentences, list):
-                for i, word in enumerate(words):
-                    if i < len(raw_sentences):
-                        item = raw_sentences[i]
-
-                        if isinstance(item, dict):
-                            sentence = (
-                                item.get("sentence")
-                                or item.get("sentence_zh")
-                                or item.get("chinese_translation")
-                                or f"這是一個{word}。"
-                            )
-                        else:
-                            sentence = str(item)
-                    else:
-                        sentence = f"這是一個{word}。"
-
-                    sentences.append(sentence)
-
-                return sentences
 
         return [f"這是一個{word}。" for word in words]
 
@@ -213,12 +185,17 @@ async def recognize_image(
 
         words_zh = [obj["label_zh"] for obj in detected_objects]
 
+        # 取得翻譯 token（手動呼叫，不透過 FastAPI Depends）
+        trans_token = await get_trans_token()
+
         # 1. 中文單字 → 客語：分開翻譯，比較不會變成句子用法
         hakka_words = []
 
         for word_zh in words_zh:
-            hakka_result = await translate_zh_to_hakka(
-                TextRequest(text=word_zh)
+            hakka_result = await call_hakka_translate_api(
+                endpoint="/MT/translate/hakka_zh_hk",
+                text=word_zh,
+                token=trans_token
             )
 
             keyword_hakka = hakka_result.get("output", "") or word_zh
@@ -227,8 +204,10 @@ async def recognize_image(
         # 2. 客語單字 → 拼音：批次處理
         hakka_lines = "\n".join(hakka_words)
 
-        batch_pinyin_result = await translate_hakka_to_pinyin(
-            TextRequest(text=hakka_lines)
+        batch_pinyin_result = await call_hakka_translate_api(
+            endpoint="/MT/translate/hakka_hk_py",
+            text=hakka_lines,
+            token=trans_token
         )
 
         pinyin_words = split_lines_text(
@@ -242,8 +221,10 @@ async def recognize_image(
         # 4. 中文句子 → 客語句子：批次翻譯
         sentences_numbered = make_numbered_text(sentences_zh)
 
-        batch_sentence_hakka_result = await translate_zh_to_hakka(
-            TextRequest(text=sentences_numbered)
+        batch_sentence_hakka_result = await call_hakka_translate_api(
+            endpoint="/MT/translate/hakka_zh_hk",
+            text=sentences_numbered,
+            token=trans_token
         )
 
         sentences_hakka = split_numbered_text(

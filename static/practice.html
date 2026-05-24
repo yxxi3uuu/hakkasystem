@@ -28,6 +28,8 @@
     .word-display { font-size: 36px; font-weight: 800; color: #333; margin-bottom: 6px; }
     .word-roman   { font-size: 18px; color: #4CAF50; margin-bottom: 24px; }
 
+    #taskImage { display: block; }
+
     .mic-btn {
       width: 80px; height: 80px;
       border-radius: 50%;
@@ -68,6 +70,61 @@
     .vocab-zh   { font-size: 16px; font-weight: 600; color: #333; flex: 1; }
     .vocab-rom  { font-size: 13px; color: #4CAF50; flex: 1; }
     .vocab-diff { margin-left: auto; }
+
+    /* 單字詳細 modal */
+    .word-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .word-modal-overlay.open { display: flex; }
+    .word-modal-sheet {
+      background: white;
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-width: 480px;
+      padding: 24px 20px 100px;
+      animation: slideUp 0.25s ease;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding-bottom: max(100px, calc(80px + env(safe-area-inset-bottom)));
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .word-modal-handle {
+      width: 40px; height: 4px;
+      background: #ddd; border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+    .word-modal-img {
+      width: 100%; border-radius: 12px;
+      margin-bottom: 16px;
+      max-height: 200px; object-fit: cover;
+      display: block;
+    }
+    .word-modal-zh    { font-size: 28px; font-weight: 800; color: #333; }
+    .word-modal-hakka { font-size: 18px; color: #4CAF50; font-weight: 600; margin: 4px 0 12px; }
+    .word-modal-audio { width: 100%; margin-bottom: 16px; }
+    .word-modal-sentence-box {
+      background: #FFF8E1;
+      border-left: 4px solid #FFC107;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+    }
+    .word-modal-sentence-label { font-size: 11px; color: #999; margin-bottom: 4px; }
+    .word-modal-sentence-zh    { font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 6px; }
+    .word-modal-sentence-hakka { font-size: 14px; color: #2E7D32; line-height: 1.6; margin-bottom: 10px; }
+    .word-modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+    .word-modal-actions button { flex: 1; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; }
+    .btn-practice-word { background: #4CAF50; color: white; }
+    .btn-close-word    { background: #f0f0f0; color: #555; }
   </style>
 </head>
 <body>
@@ -81,7 +138,7 @@
   <!-- 練習卡 -->
   <div class="practice-card">
     <span class="difficulty-badge easy" id="diffBadge">難度：簡單</span>
-    <img id="taskImage" src="" alt="題目圖片" style="display:none;width:200px;border-radius:12px;margin-bottom:12px;" />
+    <img id="taskImage" src="" alt="題目圖片" style="display:none;width:200px;border-radius:12px;margin:0 auto 12px;" />
     <div class="word-display" id="wordDisplay">載入中...</div>
     <div class="word-roman"   id="wordRoman"></div>
 
@@ -124,6 +181,27 @@
     </ul>
   </div>
 
+  <!-- 單字詳細 modal -->
+  <div class="word-modal-overlay" id="wordModalOverlay" onclick="closeWordModal(event)">
+    <div class="word-modal-sheet">
+      <div class="word-modal-handle"></div>
+      <img class="word-modal-img" id="wordModalImg" src="" alt="" />
+      <div class="word-modal-zh"    id="wordModalZh"></div>
+      <div class="word-modal-hakka" id="wordModalHakka"></div>
+      <audio class="word-modal-audio" id="wordModalAudio" controls></audio>
+      <div class="word-modal-sentence-box" id="wordModalSentenceBox" style="display:none;">
+        <div class="word-modal-sentence-label">💡 客語情境句子</div>
+        <div class="word-modal-sentence-zh"    id="wordModalSentenceZh"></div>
+        <div class="word-modal-sentence-hakka" id="wordModalSentenceHakka"></div>
+        <audio class="word-modal-audio" id="wordModalSentenceAudio" controls style="display:none;"></audio>
+      </div>
+      <div class="word-modal-actions">
+        <button class="btn-practice-word" onclick="practiceThisWord()">🎤 練習發音</button>
+        <button class="btn-close-word"    onclick="closeWordModalDirect()">關閉</button>
+      </div>
+    </div>
+  </div>
+
   <nav class="bottom-nav">
     <a class="nav-item" href="/"><div class="nav-icon">🏠</div><div class="nav-label">首頁</div></a>
     <a class="nav-item" href="/recognition"><div class="nav-icon">📷</div><div class="nav-label">拍照學習</div></a>
@@ -154,11 +232,17 @@
           ? `/api/practice/task?word=${encodeURIComponent(word)}&user_id=${user.id}`
           : `/api/practice/task?user_id=${user.id}`;
         const res  = await fetch(url);
-        if (!res.ok) throw new Error();
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          document.getElementById('wordDisplay').textContent = err.detail || '載入失敗';
+          document.getElementById('wordRoman').textContent = '';
+          document.getElementById('taskImage').style.display = 'none';
+          return;
+        }
         currentTask = await res.json();
 
         document.getElementById('wordDisplay').textContent = currentTask.word;
-        document.getElementById('wordRoman').textContent   = '';   // db.csv 若有拼音欄位可在此顯示
+        document.getElementById('wordRoman').textContent   = currentTask.hakka || '';
         const img = document.getElementById('taskImage');
         img.src   = currentTask.image_path;
         img.style.display = 'block';
@@ -268,18 +352,38 @@
   }
 }
 
-    // ── 從詞彙列表選題 ──
+    // ── 從 API 載入預設詞彙列表 ──
     async function loadVocabList() {
-      // 直接用 db.csv 的詞彙；這裡先用固定清單，後續可改成 API
-      const words = ['蘋果', '椅子', '電視'];
-      document.getElementById('vocabList').innerHTML = words.map(w => `
-        <div class="vocab-item" onclick="loadTask('${w}')">
-          <span class="vocab-zh">${w}</span>
-        </div>
-      `).join('');
+      try {
+        const res = await fetch('/api/practice/presets');
+        if (!res.ok) throw new Error();
+        const presets = await res.json();
+        document.getElementById('vocabList').innerHTML = presets.map(p => `
+          <div class="vocab-item" onclick="loadTask('${p.word.replace(/'/g, "\\'")}')">
+            <span class="vocab-zh">${p.word}</span>
+            <span class="vocab-rom">${p.hakka}</span>
+            <span class="vocab-diff"><span class="difficulty-badge easy">預設</span></span>
+          </div>
+        `).join('');
+      } catch {
+        // fallback 靜態清單
+        const words = [
+          { word: '蘋果', hakka: '頻果' },
+          { word: '椅子', hakka: '椅仔' },
+          { word: '電視', hakka: '電視' },
+        ];
+        document.getElementById('vocabList').innerHTML = words.map(p => `
+          <div class="vocab-item" onclick="loadTask('${p.word}')">
+            <span class="vocab-zh">${p.word}</span>
+            <span class="vocab-rom">${p.hakka}</span>
+          </div>
+        `).join('');
+      }
     }
 
-    // ── 載入我的單字（去重，純文字列表）──
+    // ── 載入我的單字（去重，點擊開 modal）──
+    let _myWordsData = [];
+
     async function loadMyWords() {
       const user = getUser();
       const container = document.getElementById('myWordsList');
@@ -292,6 +396,7 @@
         const res = await fetch(`/api/saved_words/unique?user_id=${user.id}`);
         if (!res.ok) throw new Error();
         const words = await res.json();
+        _myWordsData = words;
 
         if (words.length === 0) {
           container.innerHTML = `
@@ -302,16 +407,88 @@
           return;
         }
 
-        container.innerHTML = words.map(w => `
-          <div class="vocab-item" onclick="loadTask('${w.label_zh.replace(/'/g, "\\'")}')">
+        container.innerHTML = words.map((w, i) => `
+          <div class="vocab-item" onclick="openWordModal(${i})">
             <span class="vocab-zh">${w.label_zh}</span>
             <span class="vocab-rom">${w.label_hakka}</span>
+            <span style="margin-left:auto;font-size:18px;color:#ccc;">›</span>
           </div>
         `).join('');
 
       } catch (e) {
         container.innerHTML = '<div style="padding:16px;color:#aaa;font-size:13px;text-align:center;">載入失敗</div>';
       }
+    }
+
+    // ── 單字詳細 modal ──
+    let _selectedWord = null;
+
+    function openWordModal(index) {
+      const w = _myWordsData[index];
+      if (!w) return;
+      _selectedWord = w;
+
+      // 圖片
+      const img = document.getElementById('wordModalImg');
+      if (w.image_path) {
+        img.src = w.image_path;
+        img.style.display = 'block';
+      } else {
+        img.style.display = 'none';
+      }
+
+      // 中文 & 客語
+      document.getElementById('wordModalZh').textContent    = w.label_zh;
+      document.getElementById('wordModalHakka').textContent = w.label_hakka;
+
+      // 單字音檔
+      const audio = document.getElementById('wordModalAudio');
+      if (w.audio_path) {
+        audio.src = w.audio_path;
+        audio.style.display = 'block';
+      } else {
+        audio.style.display = 'none';
+      }
+
+      // 造句區
+      const sentenceBox = document.getElementById('wordModalSentenceBox');
+      if (w.sentence_zh || w.sentence_hakka) {
+        document.getElementById('wordModalSentenceZh').textContent    = w.sentence_zh    ? `中文：${w.sentence_zh}`    : '';
+        document.getElementById('wordModalSentenceHakka').textContent = w.sentence_hakka ? `客語：${w.sentence_hakka}` : '';
+
+        const sentAudio = document.getElementById('wordModalSentenceAudio');
+        if (w.sentence_audio_path) {
+          sentAudio.src = w.sentence_audio_path;
+          sentAudio.style.display = 'block';
+        } else {
+          sentAudio.style.display = 'none';
+        }
+        sentenceBox.style.display = 'block';
+      } else {
+        sentenceBox.style.display = 'none';
+      }
+
+      document.getElementById('wordModalOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeWordModal(e) {
+      if (e.target === document.getElementById('wordModalOverlay')) closeWordModalDirect();
+    }
+
+    function closeWordModalDirect() {
+      document.getElementById('wordModalOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+      // 停止播放
+      document.getElementById('wordModalAudio').pause();
+      document.getElementById('wordModalSentenceAudio').pause();
+    }
+
+    function practiceThisWord() {
+      if (!_selectedWord) return;
+      closeWordModalDirect();
+      loadTask(_selectedWord.label_zh);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     // 初始化：若 URL 帶有 ?word= 參數則直接載入該題

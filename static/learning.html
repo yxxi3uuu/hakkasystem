@@ -128,7 +128,7 @@
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.5);
-      z-index: 100;
+      z-index: 200;
       align-items: flex-end;
       justify-content: center;
     }
@@ -138,8 +138,11 @@
       border-radius: 20px 20px 0 0;
       width: 100%;
       max-width: 480px;
-      padding: 24px 20px 40px;
+      padding: 24px 20px 100px;
       animation: slideUp 0.25s ease;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding-bottom: max(100px, calc(80px + env(safe-area-inset-bottom)));
     }
     @keyframes slideUp {
       from { transform: translateY(100%); }
@@ -241,18 +244,9 @@
       if (!user) return;
 
       try {
-        const res = await fetch(`/api/saved_words?user_id=${user.id}`);
+        const res = await fetch(`/api/saved_words/unique?user_id=${user.id}`);
         if (!res.ok) throw new Error();
-        const words = await res.json();
-
-        // 前端去重（以 label_zh 為基準，保留最新一筆含圖片的）
-        const seen = new Map();
-        for (const w of words) {
-          if (!seen.has(w.label_zh)) {
-            seen.set(w.label_zh, w);
-          }
-        }
-        const unique = Array.from(seen.values());
+        const unique = await res.json();
 
         const container = document.getElementById('wordContainer');
 
@@ -273,9 +267,13 @@
         unique.forEach(w => {
           const card = document.createElement('div');
           card.className = 'word-card';
+          const countBadge = (w.count && w.count > 1)
+            ? `<div style="position:absolute;top:6px;left:6px;background:rgba(76,175,80,0.85);color:white;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;z-index:10;">×${w.count}</div>`
+            : '';
           card.innerHTML = `
+            ${countBadge}
             <button class="delete-btn" title="刪除此單字">✕</button>
-            <img src="${w.image_path}" alt="${w.label_zh}" onerror="this.style.display='none'" />
+            <img src="${w.image_path}" alt="${w.label_zh}" onerror="this.src='';this.style.background='#f0f0f0';this.style.display='flex';this.insertAdjacentHTML('afterend','<div style=\'width:100%;aspect-ratio:4/3;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:32px;\'>🖼️</div>');this.remove();" />
             <div class="word-card-body">
               <div class="word-card-zh">${w.label_zh}</div>
               <div class="word-card-hakka">${w.label_hakka}</div>
@@ -322,6 +320,7 @@
       }
 
       document.getElementById('modalOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
     }
 
     function closeModal(e) {
@@ -332,6 +331,7 @@
 
     function closeModalDirect() {
       document.getElementById('modalOverlay').classList.remove('open');
+      document.body.style.overflow = '';
     }
 
     function goToPractice() {
@@ -348,6 +348,7 @@
       wordToDelete = word;
       document.getElementById('confirmText').textContent = `「${word.label_zh}」刪除後無法復原`;
       document.getElementById('confirmOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
     }
 
     // 從詳細 modal 內的刪除按鈕觸發
@@ -357,10 +358,12 @@
       closeModalDirect();
       document.getElementById('confirmText').textContent = `「${selectedWord.label_zh}」刪除後無法復原`;
       document.getElementById('confirmOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
     }
 
     function closeConfirm() {
       document.getElementById('confirmOverlay').classList.remove('open');
+      document.body.style.overflow = '';
       wordToDelete = null;
     }
 

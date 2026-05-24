@@ -26,6 +26,33 @@ else:
 
 router = APIRouter(prefix="/api/practice")
 
+# ── 內建預設詞彙（對應 voice_practice/data/ 的音檔與圖片）──
+_VP_BASE = "voice_practice/data"
+PRESET_WORDS = [
+    {
+        "word": "蘋果",
+        "hakka": "頻果",
+        "audio_url": "/voice_practice/audios/apple.wav",
+        "image_path": "/voice_practice/images/images.jpg",
+        "audio_file": os.path.join(_VP_BASE, "audios", "apple.wav"),
+    },
+    {
+        "word": "椅子",
+        "hakka": "椅仔",
+        "audio_url": "/voice_practice/audios/chair.wav",
+        "image_path": "/voice_practice/images/800x.jpg",
+        "audio_file": os.path.join(_VP_BASE, "audios", "chair.wav"),
+    },
+    {
+        "word": "電視",
+        "hakka": "電視",
+        "audio_url": "/voice_practice/audios/TV.wav",
+        "image_path": "/voice_practice/images/Samsung_LE26R41BD_and_Yamada_DVD_player_20030624.jpg",
+        "audio_file": os.path.join(_VP_BASE, "audios", "TV.wav"),
+    },
+]
+PRESET_BY_WORD = {p["word"]: p for p in PRESET_WORDS}
+
 
 class Task(BaseModel):
     word: str
@@ -99,36 +126,51 @@ def dtw_score_ssl(y_user: np.ndarray, y_ref: np.ndarray, sr: int) -> int:
     return int(np.clip(final_score, 0, 100))
 
 
+@router.get("/presets")
+async def get_preset_words():
+    """回傳內建預設詞彙列表"""
+    return [
+        {"word": p["word"], "hakka": p["hakka"], "audio_url": p["audio_url"], "image_path": p["image_path"]}
+        for p in PRESET_WORDS
+    ]
+
+
 @router.get("/task", response_model=Task)
 async def get_task(
     word: str | None = None,
     user_id: int = 1,
     db: AsyncSession = Depends(get_db)
 ):
+    # 1. 先嘗試從使用者的 saved_words 找
     query = select(SavedWord).where(SavedWord.user_id == user_id)
-
     if word:
         query = query.where(SavedWord.label_zh == word)
 
     result = await db.execute(query)
     rows = result.scalars().all()
+    rows = [row for row in rows if row.audio_path and row.image_path]
 
-    rows = [
-        row for row in rows
-        if row.audio_path and row.image_path
-    ]
+    if rows:
+        row = random.choice(rows)
+        return Task(
+            word=row.label_zh,
+            hakka=row.label_hakka,
+            image_path=row.image_path,
+            audio_url=row.audio_path
+        )
 
-    if not rows:
-        raise HTTPException(status_code=404, detail="找不到可練習的詞彙")
+    # 2. Fallback：使用內建預設詞彙
+    if word and word in PRESET_BY_WORD:
+        p = PRESET_BY_WORD[word]
+        return Task(word=p["word"], hakka=p["hakka"], image_path=p["image_path"], audio_url=p["audio_url"])
 
-    row = random.choice(rows)
+    if word:
+        # 指定了單字但找不到（既不在 saved_words 也不在預設）
+        raise HTTPException(status_code=404, detail=f"找不到「{word}」的練習資料")
 
-    return Task(
-        word=row.label_zh,
-        hakka=row.label_hakka,
-        image_path=row.image_path,
-        audio_url=row.audio_path
-    )
+    # 隨機從預設詞彙選一個
+    p = random.choice(PRESET_WORDS)
+    return Task(word=p["word"], hakka=p["hakka"], image_path=p["image_path"], audio_url=p["audio_url"])
 
 
 @router.post("/score", response_model=ScoreResult)
@@ -138,25 +180,40 @@ async def score_recording(
     user_id: int = Form(1),
     db: AsyncSession = Depends(get_db)
 ):
-    query = select(SavedWord).where(
-        SavedWord.user_id == user_id,
-        SavedWord.audio_path != ""
-    )
+    ref_path = None
 
+    # 1. 先從使用者 saved_words 找標準音
     if word:
-        query = query.where(SavedWord.label_zh == word)
+        query = select(SavedWord).where(
+            SavedWord.user_id == user_id,
+            SavedWord.audio_path != "",
+            SavedWord.label_zh == word
+        )
+        result = await db.execute(query)
+        rows = result.scalars().all()
+        if rows:
+            ref_path = rows[0].audio_path.lstrip("/")
 
-    result = await db.execute(query)
-    rows = result.scalars().all()
+    # 2. Fallback：用內建預設詞彙的音檔
+    if not ref_path and word and word in PRESET_BY_WORD:
+        ref_path = PRESET_BY_WORD[word]["audio_file"]
 
-    if not rows:
+    # 3. 還是找不到：從所有 saved_words 隨機選一個
+    if not ref_path:
+        query = select(SavedWord).where(
+            SavedWord.user_id == user_id,
+            SavedWord.audio_path != ""
+        )
+        result = await db.execute(query)
+        rows = result.scalars().all()
+        if rows:
+            ref_path = rows[0].audio_path.lstrip("/")
+
+    if not ref_path:
         raise HTTPException(status_code=422, detail="找不到該詞彙的標準音")
 
-    row = rows[0]
-    ref_path = row.audio_path.lstrip("/")
-
     if not os.path.exists(ref_path):
-        raise HTTPException(status_code=500, detail="標準音檔不存在")
+        raise HTTPException(status_code=500, detail=f"標準音檔不存在：{ref_path}")
 
     audio_bytes = await audio.read()
 

@@ -13,3 +13,8 @@ ffmpeg.exe
 ffprobe.exe
 
 static/uploads/
+static/audios/
+
+check_practice.py
+find_ffmpeg.py
+tempCodeRunnerFile.py

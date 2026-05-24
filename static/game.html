@@ -293,13 +293,15 @@
       const user = getUser();
       if (!user) return;
       try {
-        const res = await fetch(`/api/saved_words?user_id=${user.id}`);
+        const res = await fetch(`/api/saved_words/unique?user_id=${user.id}`);
         if (res.ok) {
           const data = await res.json();
+          // /unique 已去重並含 count
           savedPhotoPairs = data.map(item => ({
             zh: item.label_zh,
             rom: item.label_hakka,
-            img: item.image_path
+            img: item.image_path,
+            count: item.count || 1
           }));
         }
       } catch (e) {
@@ -378,8 +380,13 @@
 
       leftCol.innerHTML = leftOrder.map((p, i) => `
         <div class="match-item" data-id="${PAIRS.indexOf(p)}" data-side="left" onclick="selectItem(this)">
-          ${currentMode === 'photo' ? `<img src="${p.img}" alt="photo" onerror="this.src=''" />` : ''}
-          ${currentMode === 'photo' ? '' : p.zh}
+          ${currentMode === 'photo' ? `
+            <div style="position:relative;width:100%;">
+              <img src="${p.img}" alt="photo" onerror="this.src=''" />
+              ${p.count > 1 ? `<div style="position:absolute;top:4px;left:4px;background:rgba(76,175,80,0.9);color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;">×${p.count}</div>` : ''}
+            </div>
+            <div style="font-size:13px;font-weight:600;margin-top:4px;">${p.zh}</div>
+          ` : p.zh}
         </div>
       `).join('');
 

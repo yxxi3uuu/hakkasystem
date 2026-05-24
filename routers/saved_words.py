@@ -103,6 +103,11 @@ async def get_unique_saved_words(
 
     words = result.scalars().all()
 
+    # 計算每個 label_zh 出現幾次
+    count_map: dict[str, int] = {}
+    for w in words:
+        count_map[w.label_zh] = count_map.get(w.label_zh, 0) + 1
+
     seen = set()
     unique_words = []
 
@@ -123,7 +128,9 @@ async def get_unique_saved_words(
 
                 "sentence_zh": w.sentence_zh,
                 "sentence_hakka": w.sentence_hakka,
-                "sentence_audio_path": getattr(w, "sentence_audio_path", "")
+                "sentence_audio_path": getattr(w, "sentence_audio_path", ""),
+
+                "count": count_map.get(w.label_zh, 1),
             })
 
     return unique_words
