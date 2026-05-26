@@ -31,10 +31,16 @@ async def lifespan(app: FastAPI):
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-
         print("DB tables ready")
     except Exception as e:
         print(f"DB init warning: {e}")
+
+    # 預設練習音檔：若不存在則自動用 TTS API 產生
+    try:
+        from routers.practice import ensure_preset_audios
+        await ensure_preset_audios()
+    except Exception as e:
+        print(f"[Practice] 預設音檔初始化失敗（不影響啟動）: {e}")
 
     print("App started")
     yield

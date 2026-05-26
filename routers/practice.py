@@ -26,32 +26,64 @@ else:
 
 router = APIRouter(prefix="/api/practice")
 
-# ── 內建預設詞彙（對應 voice_practice/data/ 的音檔與圖片）──
+# ── 內建預設詞彙 ──
+# audio_file 指向本地快取路徑；若不存在會在 lifespan 時自動用 TTS API 產生
 _VP_BASE = "voice_practice/data"
 PRESET_WORDS = [
     {
         "word": "蘋果",
         "hakka": "頻果",
-        "audio_url": "/voice_practice/audios/apple.wav",
         "image_path": "/voice_practice/images/images.jpg",
         "audio_file": os.path.join(_VP_BASE, "audios", "apple.wav"),
+        "audio_url":  "/voice_practice/audios/apple.wav",
     },
     {
         "word": "椅子",
         "hakka": "椅仔",
-        "audio_url": "/voice_practice/audios/chair.wav",
         "image_path": "/voice_practice/images/800x.jpg",
         "audio_file": os.path.join(_VP_BASE, "audios", "chair.wav"),
+        "audio_url":  "/voice_practice/audios/chair.wav",
     },
     {
         "word": "電視",
         "hakka": "電視",
-        "audio_url": "/voice_practice/audios/TV.wav",
         "image_path": "/voice_practice/images/Samsung_LE26R41BD_and_Yamada_DVD_player_20030624.jpg",
         "audio_file": os.path.join(_VP_BASE, "audios", "TV.wav"),
+        "audio_url":  "/voice_practice/audios/TV.wav",
     },
 ]
 PRESET_BY_WORD = {p["word"]: p for p in PRESET_WORDS}
+
+
+async def ensure_preset_audios():
+    """
+    啟動時檢查預設詞彙的音檔是否存在。
+    若不存在，呼叫客語 TTS API 產生並存到 voice_practice/data/audios/。
+    """
+    from routers.hakka_api import get_tts_token, generate_hakka_tts
+    import shutil
+
+    os.makedirs(os.path.join(_VP_BASE, "audios"), exist_ok=True)
+
+    for preset in PRESET_WORDS:
+        target = preset["audio_file"]
+        if os.path.exists(target) and os.path.getsize(target) > 1000:
+            print(f"[Practice] 預設音檔已存在：{target}")
+            continue
+
+        print(f"[Practice] 產生預設音檔：{preset['word']} ({preset['hakka']}) → {target}")
+        try:
+            # generate_hakka_tts 會存到 static/audios/words/ 並回傳路徑
+            # 我們把它複製到 voice_practice/data/audios/
+            tmp_path = await generate_hakka_tts(preset["hakka"], folder="words")
+            src = tmp_path.lstrip("/")   # 去掉開頭的 /
+            if os.path.exists(src):
+                shutil.copy2(src, target)
+                print(f"[Practice] ✅ 已產生：{target}")
+            else:
+                print(f"[Practice] ❌ TTS 回傳路徑不存在：{src}")
+        except Exception as e:
+            print(f"[Practice] ❌ 產生音檔失敗 ({preset['word']}): {e}")
 
 
 class Task(BaseModel):

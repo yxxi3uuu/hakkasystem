@@ -1,215 +1,170 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>配對遊戲 - 客語隨拍隨學</title>
+  <title>遊戲中心 - 客語隨拍隨學</title>
   <link rel="stylesheet" href="/static/style.css" />
   <style>
-    .mode-tabs {
-      display: flex;
-      gap: 8px;
-      margin: 8px 16px 0;
+    /* ── 共用 ── */
+    .game-tabs { display:flex; gap:6px; margin:10px 16px 0; flex-wrap:wrap; }
+    .game-tab {
+      flex:1; min-width:70px; padding:8px 4px; border-radius:10px;
+      text-align:center; font-size:12px; font-weight:600; cursor:pointer;
+      border:2px solid #e0e0e0; background:white; color:#666; transition:all 0.2s;
     }
+    .game-tab.active { border-color:#4CAF50; background:#E8F5E9; color:#2E7D32; }
 
-    .mode-tab {
-      flex: 1;
-      padding: 8px;
-      border-radius: 10px;
-      text-align: center;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      border: 2px solid #e0e0e0;
-      background: white;
-      color: #666;
-      transition: all 0.2s;
+    .src-tabs { display:flex; gap:8px; margin:8px 16px 0; }
+    .src-tab {
+      flex:1; padding:7px; border-radius:10px; text-align:center;
+      font-size:13px; font-weight:600; cursor:pointer;
+      border:2px solid #e0e0e0; background:white; color:#666; transition:all 0.2s;
     }
-
-    .mode-tab.active {
-      border-color: #4CAF50;
-      background: #E8F5E9;
-      color: #2E7D32;
-    }
+    .src-tab.active { border-color:#4CAF50; background:#E8F5E9; color:#2E7D32; }
 
     .game-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      background: white;
-      margin: 16px;
-      border-radius: 16px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      display:flex; justify-content:space-between; align-items:center;
+      padding:10px 16px; background:white; margin:10px 16px;
+      border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,0.06);
     }
-
-    .game-stat {
-      text-align: center;
-    }
-
-    .game-stat-val {
-      font-size: 24px;
-      font-weight: 800;
-      color: #2E7D32;
-    }
-
-    .game-stat-lbl {
-      font-size: 11px;
-      color: #888;
-    }
-
-    .match-area {
-      position: relative;
-      margin: 0 16px 16px;
-      display: flex;
-      justify-content: space-between;
-      gap: 0;
-    }
-
-    .match-col {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      width: 42%;
-      z-index: 2;
-    }
-
-    .match-item {
-      padding: 14px 12px;
-      border-radius: 12px;
-      text-align: center;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      user-select: none;
-      transition: all 0.2s;
-      border: 2px solid #e0e0e0;
-      background: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 60px;
-    }
-
-    .match-item img {
-      width: 100%;
-      height: 60px;
-      object-fit: cover;
-      border-radius: 8px;
-      margin-bottom: 4px;
-    }
-
-    .match-item:hover {
-      border-color: #4CAF50;
-      background: #f1f8e9;
-    }
-
-    .match-item.selected {
-      border-color: #4CAF50;
-      background: #E8F5E9;
-      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
-    }
-
-    .match-item.matched {
-      border-color: #4CAF50;
-      background: #C8E6C9;
-      opacity: 0.7;
-      cursor: default;
-    }
-
-    .match-item.wrong {
-      border-color: #f44336;
-      background: #FFEBEE;
-      animation: shake 0.4s;
-    }
-
-    @keyframes shake {
-
-      0%,
-      100% {
-        transform: translateX(0);
-      }
-
-      25% {
-        transform: translateX(-6px);
-      }
-
-      75% {
-        transform: translateX(6px);
-      }
-    }
-
-    .match-item .sub {
-      font-size: 11px;
-      color: #888;
-      margin-top: 3px;
-      font-weight: 400;
-    }
-
-    /* SVG lines */
-    svg.lines {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1;
-      pointer-events: none;
-    }
-
-    svg.lines line {
-      stroke: #4CAF50;
-      stroke-width: 2.5;
-      stroke-linecap: round;
-    }
-
-    svg.lines line.drawing {
-      stroke: #4CAF50;
-      stroke-dasharray: 6 4;
-      opacity: 0.5;
-    }
+    .game-stat { text-align:center; }
+    .game-stat-val { font-size:22px; font-weight:800; color:#2E7D32; }
+    .game-stat-lbl { font-size:11px; color:#888; }
 
     .win-banner {
-      display: none;
-      background: linear-gradient(135deg, #4CAF50, #2E7D32);
-      color: white;
-      border-radius: 16px;
-      margin: 0 16px 16px;
-      padding: 24px;
-      text-align: center;
+      display:none; background:linear-gradient(135deg,#4CAF50,#2E7D32);
+      color:white; border-radius:16px; margin:0 16px 16px; padding:24px; text-align:center;
     }
+    .win-banner h2 { font-size:22px; margin-bottom:8px; }
+    .win-banner p  { font-size:14px; opacity:0.9; margin-bottom:16px; }
 
-    .win-banner h2 {
-      font-size: 22px;
-      margin-bottom: 8px;
+    /* ── 遊戲區容器 ── */
+    #gameArea { margin:0 16px 16px; }
+
+    /* ── 連連看 ── */
+    .match-area {
+      position:relative; display:flex; justify-content:space-between;
     }
+    .match-col { display:flex; flex-direction:column; gap:10px; width:42%; z-index:2; }
+    .match-item {
+      padding:12px 8px; border-radius:12px; text-align:center; font-size:14px;
+      font-weight:600; cursor:pointer; user-select:none; transition:all 0.2s;
+      border:2px solid #e0e0e0; background:white;
+      display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:54px;
+    }
+    .match-item img { width:100%; height:54px; object-fit:cover; border-radius:8px; margin-bottom:4px; }
+    .match-item:hover  { border-color:#4CAF50; background:#f1f8e9; }
+    .match-item.selected { border-color:#4CAF50; background:#E8F5E9; box-shadow:0 0 0 3px rgba(76,175,80,0.2); }
+    .match-item.matched  { border-color:#4CAF50; background:#C8E6C9; opacity:0.7; cursor:default; }
+    .match-item.wrong    { border-color:#f44336; background:#FFEBEE; animation:shake 0.4s; }
+    .match-item .sub { font-size:10px; color:#888; margin-top:2px; font-weight:400; }
+    svg.lines { position:absolute; top:0; left:0; width:100%; height:100%; z-index:1; pointer-events:none; }
+    svg.lines line { stroke:#4CAF50; stroke-width:2.5; stroke-linecap:round; }
 
-    .win-banner p {
-      font-size: 14px;
-      opacity: 0.9;
-      margin-bottom: 16px;
+    /* ── 翻牌配對 ── */
+    .flip-grid {
+      display:grid; grid-template-columns:repeat(4,1fr); gap:10px;
+    }
+    .flip-card {
+      aspect-ratio:1; perspective:600px; cursor:pointer;
+    }
+    .flip-inner {
+      width:100%; height:100%; position:relative;
+      transform-style:preserve-3d; transition:transform 0.4s;
+      border-radius:12px;
+    }
+    .flip-card.flipped .flip-inner { transform:rotateY(180deg); }
+    .flip-front, .flip-back {
+      position:absolute; inset:0; border-radius:12px;
+      display:flex; align-items:center; justify-content:center;
+      backface-visibility:hidden; font-weight:700;
+    }
+    .flip-front {
+      background:linear-gradient(135deg,#4CAF50,#2E7D32);
+      color:white; font-size:28px;
+    }
+    .flip-back {
+      background:white; border:2px solid #e0e0e0;
+      transform:rotateY(180deg); font-size:13px; text-align:center;
+      padding:6px; color:#333; flex-direction:column; gap:4px;
+    }
+    .flip-back img { width:100%; height:50px; object-fit:cover; border-radius:6px; }
+    .flip-card.matched .flip-front { background:linear-gradient(135deg,#81C784,#4CAF50); }
+    .flip-card.matched .flip-back  { border-color:#4CAF50; background:#E8F5E9; }
+
+    /* ── 聽音選字 ── */
+    .listen-question {
+      text-align:center; padding:20px 0 10px;
+    }
+    .listen-play-btn {
+      width:80px; height:80px; border-radius:50%; background:#4CAF50;
+      border:none; font-size:32px; cursor:pointer; margin:0 auto 12px;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 4px 16px rgba(76,175,80,0.4); transition:transform 0.15s;
+    }
+    .listen-play-btn:hover { transform:scale(1.05); }
+    .listen-options {
+      display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px;
+    }
+    .listen-opt {
+      padding:16px 10px; border-radius:12px; text-align:center;
+      font-size:16px; font-weight:700; cursor:pointer;
+      border:2px solid #e0e0e0; background:white; transition:all 0.2s;
+    }
+    .listen-opt:hover  { border-color:#4CAF50; background:#f1f8e9; }
+    .listen-opt.correct { border-color:#4CAF50; background:#C8E6C9; }
+    .listen-opt.wrong   { border-color:#f44336; background:#FFEBEE; }
+
+    /* ── 填字測驗 ── */
+    .quiz-question {
+      text-align:center; padding:16px 0;
+    }
+    .quiz-zh { font-size:36px; font-weight:800; color:#333; margin-bottom:6px; }
+    .quiz-img { width:140px; height:105px; object-fit:cover; border-radius:12px; margin:0 auto 12px; display:block; }
+    .quiz-input {
+      width:100%; padding:14px; border:2px solid #e0e0e0; border-radius:12px;
+      font-size:16px; outline:none; text-align:center; margin-bottom:12px;
+      transition:border-color 0.2s;
+    }
+    .quiz-input:focus { border-color:#4CAF50; }
+    .quiz-input.correct { border-color:#4CAF50; background:#E8F5E9; }
+    .quiz-input.wrong   { border-color:#f44336; background:#FFEBEE; }
+    .quiz-hint { font-size:12px; color:#aaa; margin-bottom:12px; }
+    .quiz-answer { font-size:14px; color:#2E7D32; font-weight:600; margin-bottom:12px; display:none; }
+
+    @keyframes shake {
+      0%,100% { transform:translateX(0); }
+      25%      { transform:translateX(-6px); }
+      75%      { transform:translateX(6px); }
     }
   </style>
 </head>
-
 <body>
 
   <div class="top-bar">
     <span style="font-size:22px;">🎮</span>
-    <h1>連連看</h1>
-    <button class="btn btn-outline" style="padding:6px 14px;font-size:13px;" onclick="startGame()">重新開始</button>
+    <h1 id="gameTitle">遊戲中心</h1>
+    <button class="btn btn-outline" style="padding:6px 14px;font-size:13px;" onclick="restartGame()">重新開始</button>
   </div>
 
-  <div class="mode-tabs">
-    <div class="mode-tab active" id="tabDefault" onclick="setMode('default')">📝 預設單字</div>
-    <div class="mode-tab" id="tabPhoto" onclick="setMode('photo')">📸 我的照片</div>
+  <!-- 遊戲類型選擇 -->
+  <div class="game-tabs">
+    <div class="game-tab active" id="gt0" onclick="setGameType(0)">🔗 連連看</div>
+    <div class="game-tab" id="gt1" onclick="setGameType(1)">🃏 翻牌配對</div>
+    <div class="game-tab" id="gt2" onclick="setGameType(2)">🔊 聽音選字</div>
+    <div class="game-tab" id="gt3" onclick="setGameType(3)">✏️ 填字測驗</div>
   </div>
 
-  <p id="gameDesc" style="font-size:13px;color:#888;padding:12px 16px 0;">將左邊的中文詞彙連到右邊對應的客語發音</p>
-  <p id="gameSource" style="font-size:12px;color:#4CAF50;padding:2px 16px 0;"></p>
+  <!-- 詞彙來源選擇 -->
+  <div class="src-tabs">
+    <div class="src-tab active" id="srcDefault" onclick="setSrc('default')">📝 預設單字</div>
+    <div class="src-tab" id="srcPhoto" onclick="setSrc('photo')">📸 我的單字</div>
+  </div>
 
+  <p id="gameDesc" style="font-size:13px;color:#888;padding:8px 16px 0;"></p>
+
+  <!-- 計分板 -->
   <div class="game-header">
     <div class="game-stat">
       <div class="game-stat-val" id="score">0</div>
@@ -217,284 +172,402 @@
     </div>
     <div class="game-stat">
       <div class="game-stat-val" id="moves">0</div>
-      <div class="game-stat-lbl">嘗試次數</div>
+      <div class="game-stat-lbl">次數</div>
     </div>
     <div class="game-stat">
-      <div class="game-stat-val" id="pairs">0/6</div>
-      <div class="game-stat-lbl">配對</div>
+      <div class="game-stat-val" id="progress">0/0</div>
+      <div class="game-stat-lbl">進度</div>
     </div>
   </div>
 
-  <div class="match-area" id="matchArea">
-    <div class="match-col" id="leftCol"></div>
-    <svg class="lines" id="svgLines"></svg>
-    <div class="match-col" id="rightCol"></div>
-  </div>
+  <!-- 遊戲主區域 -->
+  <div id="gameArea"></div>
 
+  <!-- 完成橫幅 -->
   <div class="win-banner" id="winBanner">
     <h2>🎉 恭喜完成！</h2>
     <p id="winMsg"></p>
-    <button class="btn btn-outline" style="color:white;border-color:white;" onclick="initGame()">再玩一次</button>
+    <button class="btn btn-outline" style="color:white;border-color:white;" onclick="restartGame()">再玩一次</button>
   </div>
 
   <div class="section">
-    <div class="section-title">🎮 遊戲說明</div>
-    <ul style="padding:8px 16px 16px;list-style:none;">
-      <li style="font-size:13px;color:#666;margin-bottom:6px;">• 點擊左邊的中文詞彙，再點擊右邊對應的客語發音</li>
-      <li style="font-size:13px;color:#666;margin-bottom:6px;">• 配對成功會畫出連線，得 10 分</li>
-      <li style="font-size:13px;color:#666;">• 嘗試次數越少越好</li>
-    </ul>
+    <div class="section-title" id="ruleTitle">🎮 遊戲說明</div>
+    <ul id="ruleList" style="padding:8px 16px 16px;list-style:none;"></ul>
   </div>
 
   <nav class="bottom-nav">
-    <a class="nav-item" href="/">
-      <div class="nav-icon">🏠</div>
-      <div class="nav-label">首頁</div>
-    </a>
-    <a class="nav-item" href="/recognition">
-      <div class="nav-icon">📷</div>
-      <div class="nav-label">拍照學習</div>
-    </a>
-    <a class="nav-item" href="/practice">
-      <div class="nav-icon">🎤</div>
-      <div class="nav-label">語音練習</div>
-    </a>
-    <a class="nav-item active" href="/game">
-      <div class="nav-icon">🎮</div>
-      <div class="nav-label">配對遊戲</div>
-    </a>
-    <a class="nav-item" href="/record">
-      <div class="nav-icon">📊</div>
-      <div class="nav-label">學習記錄</div>
-    </a>
-    <a class="nav-item" href="/profile">
-      <div class="nav-icon">👤</div>
-      <div class="nav-label">個人中心</div>
-    </a>
+    <a class="nav-item" href="/"><div class="nav-icon">🏠</div><div class="nav-label">首頁</div></a>
+    <a class="nav-item" href="/recognition"><div class="nav-icon">📷</div><div class="nav-label">拍照學習</div></a>
+    <a class="nav-item" href="/practice"><div class="nav-icon">🎤</div><div class="nav-label">語音練習</div></a>
+    <a class="nav-item active" href="/game"><div class="nav-icon">🎮</div><div class="nav-label">配對遊戲</div></a>
+    <a class="nav-item" href="/record"><div class="nav-icon">📊</div><div class="nav-label">學習記錄</div></a>
+    <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
   </nav>
 
   <script src="/static/auth.js"></script>
   <script>
-    requireLogin();
-    const DEFAULT_PAIRS = [
-      { zh: "你好", rom: "ngì-hó" },
-      { zh: "謝謝", rom: "án-tsṳ́-sì" },
-      { zh: "蘋果", rom: "phìn-kó" },
-      { zh: "貓咪", rom: "miāu" },
-      { zh: "水", rom: "súi" },
-      { zh: "飯", rom: "fan" },
-    ];
+  requireLogin();
 
-    let currentMode = 'default';
-    let PAIRS = [];
-    let savedPhotoPairs = [];
+  // ════════════════════════════════════════
+  //  資料層
+  // ════════════════════════════════════════
+  const DEFAULT_PAIRS = [
+    { zh:"你好",  rom:"ngì-hó",    img:"", audio:"" },
+    { zh:"謝謝",  rom:"án-tsṳ́-sì", img:"", audio:"" },
+    { zh:"蘋果",  rom:"phìn-kó",   img:"/voice_practice/images/images.jpg", audio:"/voice_practice/audios/apple.wav" },
+    { zh:"椅子",  rom:"椅仔",       img:"/voice_practice/images/800x.jpg",   audio:"/voice_practice/audios/chair.wav" },
+    { zh:"電視",  rom:"電視",       img:"/voice_practice/images/Samsung_LE26R41BD_and_Yamada_DVD_player_20030624.jpg", audio:"/voice_practice/audios/TV.wav" },
+    { zh:"水",    rom:"súi",        img:"", audio:"" },
+  ];
 
-    async function loadSavedPhotos() {
-      const user = getUser();
-      if (!user) return;
-      try {
-        const res = await fetch(`/api/saved_words/unique?user_id=${user.id}`);
-        if (res.ok) {
-          const data = await res.json();
-          // /unique 已去重並含 count
-          savedPhotoPairs = data.map(item => ({
-            zh: item.label_zh,
-            rom: item.label_hakka,
-            img: item.image_path,
-            count: item.count || 1
-          }));
-        }
-      } catch (e) {
-        console.error("Failed to load saved photos", e);
+  let currentSrc     = 'default';
+  let currentGame    = 0;
+  let PAIRS          = [];
+  let savedPairs     = [];
+  let score=0, moves=0, progress=0, total=0;
+
+  async function loadSavedPairs() {
+    const user = getUser();
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/saved_words/unique?user_id=${user.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        savedPairs = data.map(w => ({
+          zh: w.label_zh, rom: w.label_hakka,
+          img: w.image_path || "", audio: w.audio_path || ""
+        }));
       }
-    }
+    } catch(e) {}
+  }
 
-    async function setMode(mode) {
-      currentMode = mode;
-      document.getElementById('tabDefault').classList.toggle('active', mode === 'default');
-      document.getElementById('tabPhoto').classList.toggle('active', mode === 'photo');
-
-      if (mode === 'photo' && savedPhotoPairs.length === 0) {
-        await loadSavedPhotos();
-      }
-
-      startGame();
-    }
-
-    function getGamePairs() {
-      if (currentMode === 'photo') {
-        if (savedPhotoPairs.length === 0) {
-          alert('您還沒有儲存任何照片！請先到「拍照學習」儲存。');
-          setMode('default');
-          return getGamePairs();
-        }
-        const shuffled = [...savedPhotoPairs].sort(() => Math.random() - 0.5);
-        return shuffled.slice(0, 6); // Take up to 6
-      } else {
-        // 預設模式就只回傳預設單字，不拿使用者拍過的
+  function getActivePairs() {
+    if (currentSrc === 'photo') {
+      if (savedPairs.length === 0) {
+        alert('還沒有儲存任何單字！請先到「拍照學習」儲存。');
+        setSrc('default');
         return DEFAULT_PAIRS;
       }
+      return [...savedPairs].sort(()=>Math.random()-0.5).slice(0,8);
     }
+    return DEFAULT_PAIRS;
+  }
 
-    let totalPairs = 0;
-    let selectedLeft = null;
-    let matched = 0, moves = 0, score = 0;
-    let matchedPairs = [];
+  function shuffle(arr) {
+    const a=[...arr];
+    for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+    return a;
+  }
 
-    function shuffle(arr) {
-      const a = [...arr];
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
+  async function setSrc(src) {
+    currentSrc = src;
+    document.getElementById('srcDefault').classList.toggle('active', src==='default');
+    document.getElementById('srcPhoto').classList.toggle('active', src==='photo');
+    if (src==='photo' && savedPairs.length===0) await loadSavedPairs();
+    restartGame();
+  }
+
+  function setGameType(idx) {
+    currentGame = idx;
+    document.querySelectorAll('.game-tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
+    restartGame();
+  }
+
+  function restartGame() {
+    score=0; moves=0; progress=0;
+    document.getElementById('score').textContent='0';
+    document.getElementById('moves').textContent='0';
+    document.getElementById('winBanner').style.display='none';
+    PAIRS = getActivePairs();
+    total = PAIRS.length;
+    document.getElementById('progress').textContent=`0/${total}`;
+    const games=[initMatch, initFlip, initListen, initQuiz];
+    const titles=['🔗 連連看','🃏 翻牌配對','🔊 聽音選字','✏️ 填字測驗'];
+    const descs=[
+      '點左邊詞彙，再點右邊客語，連線配對',
+      '翻開兩張牌，找出中文與客語的配對',
+      '聽客語發音，選出對應的中文',
+      '看中文，輸入對應的客語'
+    ];
+    const rules=[
+      ['點左邊中文，再點右邊客語','配對成功畫出連線，得 10 分','嘗試次數越少越好'],
+      ['每次翻兩張牌','中文牌與客語牌配對成功才算','記住位置，減少翻牌次數'],
+      ['按喇叭播放客語音檔','從四個選項中選出正確中文','答對得 10 分，答錯扣 5 分'],
+      ['看中文，輸入客語（漢字或拼音皆可）','按確認或 Enter 送出','答對得 10 分，可查看答案']
+    ];
+    document.getElementById('gameTitle').textContent = titles[currentGame];
+    document.getElementById('gameDesc').textContent  = descs[currentGame];
+    document.getElementById('ruleTitle').textContent = `🎮 ${titles[currentGame]} 說明`;
+    document.getElementById('ruleList').innerHTML = rules[currentGame].map(r=>`<li style="font-size:13px;color:#666;margin-bottom:6px;">• ${r}</li>`).join('');
+    games[currentGame]();
+  }
+
+  function addScore(n) {
+    score = Math.max(0, score+n);
+    document.getElementById('score').textContent = score;
+  }
+  function addMove() {
+    moves++;
+    document.getElementById('moves').textContent = moves;
+  }
+  function addProgress() {
+    progress++;
+    document.getElementById('progress').textContent = `${progress}/${total}`;
+    if (progress >= total) setTimeout(showWin, 500);
+  }
+  async function showWin() {
+    document.getElementById('winMsg').textContent = `得分 ${score} 分，共 ${moves} 次！`;
+    document.getElementById('winBanner').style.display = 'block';
+    const user = getUser();
+    if (user) {
+      const titles=['連連看','翻牌配對','聽音選字','填字測驗'];
+      try {
+        await fetch(`/api/profile/${user.id}/activity`,{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({icon:'🎮', title:`完成${titles[currentGame]}`, score})
+        });
+      } catch(e){}
     }
+  }
 
-    function startGame() {
-      PAIRS = getGamePairs();
-      totalPairs = PAIRS.length;
-      selectedLeft = null;
-      matched = 0; moves = 0; score = 0;
-      matchedPairs = [];
-      document.getElementById('score').textContent = '0';
-      document.getElementById('moves').textContent = '0';
-      document.getElementById('pairs').textContent = `0/${totalPairs}`;
-      document.getElementById('winBanner').style.display = 'none';
-      document.getElementById('svgLines').innerHTML = '';
+  // ════════════════════════════════════════
+  //  遊戲 1：連連看
+  // ════════════════════════════════════════
+  let matchedPairs=[], selectedLeft=null;
 
-      const sourceEl = document.getElementById('gameSource');
-      const descEl = document.getElementById('gameDesc');
-      if (currentMode === 'photo') {
-        descEl.textContent = '將左邊的照片連到右邊對應的客語發音';
-        sourceEl.textContent = `✨ 使用您的 ${totalPairs} 張照片`;
+  function initMatch() {
+    matchedPairs=[]; selectedLeft=null;
+    const pairs = PAIRS.slice(0,6);
+    total = pairs.length;
+    document.getElementById('progress').textContent=`0/${total}`;
+    const L=shuffle(pairs), R=shuffle(pairs);
+    document.getElementById('gameArea').innerHTML=`
+      <div class="match-area" id="matchArea">
+        <div class="match-col" id="leftCol">
+          ${L.map(p=>`
+            <div class="match-item" data-id="${pairs.indexOf(p)}" data-side="left" onclick="matchClick(this)">
+              ${currentSrc==='photo'&&p.img?`<img src="${p.img}" onerror="this.style.display='none'"/>`:''}
+              <span>${p.zh}</span>
+            </div>`).join('')}
+        </div>
+        <svg class="lines" id="svgLines"></svg>
+        <div class="match-col" id="rightCol">
+          ${R.map(p=>`
+            <div class="match-item" data-id="${pairs.indexOf(p)}" data-side="right" onclick="matchClick(this)">
+              ${p.rom}<div class="sub">${p.zh}</div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  function matchClick(el) {
+    if (el.classList.contains('matched')) return;
+    const side = el.dataset.side;
+    if (side==='left') {
+      document.querySelectorAll('#leftCol .match-item').forEach(e=>e.classList.remove('selected'));
+      el.classList.add('selected'); selectedLeft=el;
+    } else if (side==='right' && selectedLeft) {
+      addMove();
+      if (selectedLeft.dataset.id === el.dataset.id) {
+        selectedLeft.classList.remove('selected'); selectedLeft.classList.add('matched');
+        el.classList.add('matched');
+        drawMatchLine(selectedLeft, el);
+        matchedPairs.push({left:selectedLeft,right:el});
+        addScore(10); addProgress(); selectedLeft=null;
       } else {
-        descEl.textContent = '將左邊的中文詞彙連到右邊對應的客語發音';
-        sourceEl.textContent = '📖 使用系統預設基礎詞彙';
+        selectedLeft.classList.add('wrong'); el.classList.add('wrong');
+        const pl=selectedLeft;
+        setTimeout(()=>{pl.classList.remove('selected','wrong');el.classList.remove('wrong');},600);
+        selectedLeft=null;
       }
+    }
+  }
 
-      const leftOrder = shuffle(PAIRS);
-      const rightOrder = shuffle(PAIRS);
+  function drawMatchLine(lEl, rEl) {
+    const svg=document.getElementById('svgLines');
+    const area=document.getElementById('matchArea');
+    const aR=area.getBoundingClientRect(), lR=lEl.getBoundingClientRect(), rR=rEl.getBoundingClientRect();
+    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',lR.right-aR.left); line.setAttribute('y1',lR.top+lR.height/2-aR.top);
+    line.setAttribute('x2',rR.left-aR.left);  line.setAttribute('y2',rR.top+rR.height/2-aR.top);
+    svg.appendChild(line);
+  }
+  window.addEventListener('resize',()=>{
+    const svg=document.getElementById('svgLines'); if(!svg)return;
+    svg.innerHTML=''; matchedPairs.forEach(p=>drawMatchLine(p.left,p.right));
+  });
 
-      const leftCol = document.getElementById('leftCol');
-      const rightCol = document.getElementById('rightCol');
+  // ════════════════════════════════════════
+  //  遊戲 2：翻牌配對
+  // ════════════════════════════════════════
+  let flipFirst=null, flipLock=false, flipMatched=0;
 
-      leftCol.innerHTML = leftOrder.map((p, i) => `
-        <div class="match-item" data-id="${PAIRS.indexOf(p)}" data-side="left" onclick="selectItem(this)">
-          ${currentMode === 'photo' ? `
-            <div style="position:relative;width:100%;">
-              <img src="${p.img}" alt="photo" onerror="this.src=''" />
-              ${p.count > 1 ? `<div style="position:absolute;top:4px;left:4px;background:rgba(76,175,80,0.9);color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;">×${p.count}</div>` : ''}
+  function initFlip() {
+    flipFirst=null; flipLock=false; flipMatched=0;
+    const pairs = PAIRS.slice(0,6);
+    total = pairs.length;
+    document.getElementById('progress').textContent=`0/${total}`;
+    // 每對產生兩張：中文牌 + 客語牌
+    const cards = shuffle([
+      ...pairs.map((p,i)=>({id:i, type:'zh',  label:p.zh,  img:p.img})),
+      ...pairs.map((p,i)=>({id:i, type:'rom', label:p.rom, img:''}))
+    ]);
+    document.getElementById('gameArea').innerHTML=`
+      <div class="flip-grid" id="flipGrid">
+        ${cards.map((c,idx)=>`
+          <div class="flip-card" data-idx="${idx}" data-id="${c.id}" data-type="${c.type}" onclick="flipClick(this)">
+            <div class="flip-inner">
+              <div class="flip-front">🀄</div>
+              <div class="flip-back">
+                ${c.type==='zh'&&c.img?`<img src="${c.img}" onerror="this.style.display='none'"/>`:''}
+                <span>${c.label}</span>
+              </div>
             </div>
-            <div style="font-size:13px;font-weight:600;margin-top:4px;">${p.zh}</div>
-          ` : p.zh}
+          </div>`).join('')}
+      </div>`;
+  }
+
+  function flipClick(el) {
+    if (flipLock || el.classList.contains('flipped') || el.classList.contains('matched')) return;
+    el.classList.add('flipped');
+    addMove();
+    if (!flipFirst) { flipFirst=el; return; }
+    const second=el;
+    if (flipFirst.dataset.id===second.dataset.id && flipFirst.dataset.type!==second.dataset.type) {
+      flipFirst.classList.add('matched'); second.classList.add('matched');
+      addScore(10); flipMatched++; addProgress(); flipFirst=null;
+    } else {
+      flipLock=true;
+      const f=flipFirst;
+      setTimeout(()=>{ f.classList.remove('flipped'); second.classList.remove('flipped'); flipLock=false; },900);
+      flipFirst=null;
+    }
+  }
+
+  // ════════════════════════════════════════
+  //  遊戲 3：聽音選字
+  // ════════════════════════════════════════
+  let listenIdx=0, listenPairs=[], listenAnswered=false;
+
+  function initListen() {
+    listenPairs = shuffle(PAIRS.filter(p=>p.audio||p.rom));
+    listenIdx=0; total=listenPairs.length;
+    document.getElementById('progress').textContent=`0/${total}`;
+    renderListen();
+  }
+
+  function renderListen() {
+    if (listenIdx >= listenPairs.length) return;
+    listenAnswered=false;
+    const correct = listenPairs[listenIdx];
+    // 取 3 個錯誤選項
+    const others = shuffle(listenPairs.filter((_,i)=>i!==listenIdx)).slice(0,3);
+    const opts = shuffle([correct, ...others]);
+    document.getElementById('gameArea').innerHTML=`
+      <div class="listen-question">
+        <div style="font-size:13px;color:#888;margin-bottom:8px;">第 ${listenIdx+1} / ${listenPairs.length} 題</div>
+        <button class="listen-play-btn" onclick="listenPlay()">🔊</button>
+        <div style="font-size:13px;color:#888;">點擊喇叭播放客語，選出正確中文</div>
+      </div>
+      <div class="listen-options">
+        ${opts.map(p=>`
+          <div class="listen-opt" data-zh="${p.zh}" onclick="listenAnswer(this,'${correct.zh}')">
+            ${p.zh}
+          </div>`).join('')}
+      </div>`;
+    // 自動播放
+    setTimeout(listenPlay, 300);
+  }
+
+  function listenPlay() {
+    const p = listenPairs[listenIdx];
+    if (p.audio) {
+      new Audio(p.audio).play().catch(()=>{});
+    }
+  }
+
+  function listenAnswer(el, correctZh) {
+    if (listenAnswered) return;
+    listenAnswered=true; addMove();
+    if (el.dataset.zh === correctZh) {
+      el.classList.add('correct'); addScore(10); addProgress();
+    } else {
+      el.classList.add('wrong'); addScore(-5);
+      document.querySelectorAll('.listen-opt').forEach(o=>{
+        if(o.dataset.zh===correctZh) o.classList.add('correct');
+      });
+    }
+    listenIdx++;
+    if (listenIdx < listenPairs.length) {
+      setTimeout(renderListen, 1200);
+    }
+  }
+
+  // ════════════════════════════════════════
+  //  遊戲 4：填字測驗
+  // ════════════════════════════════════════
+  let quizIdx=0, quizPairs=[], quizAnswered=false;
+
+  function initQuiz() {
+    quizPairs = shuffle(PAIRS);
+    quizIdx=0; total=quizPairs.length;
+    document.getElementById('progress').textContent=`0/${total}`;
+    renderQuiz();
+  }
+
+  function renderQuiz() {
+    if (quizIdx >= quizPairs.length) return;
+    quizAnswered=false;
+    const p = quizPairs[quizIdx];
+    document.getElementById('gameArea').innerHTML=`
+      <div class="quiz-question">
+        <div style="font-size:13px;color:#888;margin-bottom:8px;">第 ${quizIdx+1} / ${quizPairs.length} 題</div>
+        ${p.img?`<img class="quiz-img" src="${p.img}" onerror="this.style.display='none'"/>`:''}
+        <div class="quiz-zh">${p.zh}</div>
+        <div style="font-size:13px;color:#888;margin-bottom:12px;">請輸入客語（漢字或拼音）</div>
+        <input class="quiz-input" id="quizInput" placeholder="輸入客語..." onkeydown="if(event.key==='Enter')quizSubmit()" />
+        <div class="quiz-hint">提示：共 ${p.rom.length} 個字元</div>
+        <div class="quiz-answer" id="quizAnswer">正確答案：${p.rom}</div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-primary" style="flex:1;" onclick="quizSubmit()">確認</button>
+          <button class="btn btn-outline" style="flex:1;" onclick="quizSkip()">跳過 / 看答案</button>
         </div>
-      `).join('');
+      </div>`;
+    document.getElementById('quizInput').focus();
+  }
 
-      rightCol.innerHTML = rightOrder.map((p, i) => `
-        <div class="match-item" data-id="${PAIRS.indexOf(p)}" data-side="right" onclick="selectItem(this)">
-          ${p.rom}
-          <div class="sub">${p.zh}</div>
-        </div>
-      `).join('');
+  function quizSubmit() {
+    if (quizAnswered) return;
+    const input = document.getElementById('quizInput');
+    const val = input.value.trim();
+    if (!val) return;
+    quizAnswered=true; addMove();
+    const correct = quizPairs[quizIdx].rom;
+    // 比對：去空白、忽略大小寫、允許漢字或拼音
+    const norm = s => s.replace(/\s/g,'').toLowerCase();
+    if (norm(val)===norm(correct) || norm(val)===norm(quizPairs[quizIdx].zh)) {
+      input.classList.add('correct'); addScore(10); addProgress();
+    } else {
+      input.classList.add('wrong');
+      document.getElementById('quizAnswer').style.display='block';
     }
+    quizIdx++;
+    if (quizIdx < quizPairs.length) setTimeout(renderQuiz, 1500);
+  }
 
-    function selectItem(el) {
-      if (el.classList.contains('matched')) return;
-      const side = el.dataset.side;
+  function quizSkip() {
+    if (quizAnswered) return;
+    quizAnswered=true; addMove();
+    document.getElementById('quizAnswer').style.display='block';
+    quizIdx++;
+    if (quizIdx < quizPairs.length) setTimeout(renderQuiz, 1500);
+    else addProgress();
+  }
 
-      if (side === 'left') {
-        // 選左邊
-        document.querySelectorAll('#leftCol .match-item').forEach(e => e.classList.remove('selected'));
-        el.classList.add('selected');
-        selectedLeft = el;
-      } else if (side === 'right' && selectedLeft) {
-        // 選右邊 → 嘗試配對
-        moves++;
-        document.getElementById('moves').textContent = moves;
-
-        const leftId = parseInt(selectedLeft.dataset.id);
-        const rightId = parseInt(el.dataset.id);
-
-        if (leftId === rightId) {
-          // 配對成功
-          selectedLeft.classList.remove('selected');
-          selectedLeft.classList.add('matched');
-          el.classList.add('matched');
-          score += 10;
-          matched++;
-          document.getElementById('score').textContent = score;
-          document.getElementById('pairs').textContent = `${matched}/${PAIRS.length}`;
-
-          drawLine(selectedLeft, el);
-          matchedPairs.push({ left: selectedLeft, right: el });
-          selectedLeft = null;
-
-          if (matched === totalPairs) {
-            setTimeout(async () => {
-              const banner = document.getElementById('winBanner');
-              document.getElementById('winMsg').textContent = `得分 ${score} 分，共嘗試 ${moves} 次！`;
-              banner.style.display = 'block';
-
-              const user = getUser();
-              if (user) {
-                try {
-                  await fetch(`/api/profile/${user.id}/activity`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      icon: '🎮',
-                      title: '完成配對遊戲',
-                      score: score
-                    })
-                  });
-                } catch (e) { }
-              }
-            }, 400);
-          }
-        } else {
-          // 配對失敗
-          selectedLeft.classList.add('wrong');
-          el.classList.add('wrong');
-          const prevLeft = selectedLeft;
-          setTimeout(() => {
-            prevLeft.classList.remove('selected', 'wrong');
-            el.classList.remove('wrong');
-          }, 600);
-          selectedLeft = null;
-        }
-      }
-    }
-
-    function drawLine(leftEl, rightEl) {
-      const svg = document.getElementById('svgLines');
-      const area = document.getElementById('matchArea');
-      const aRect = area.getBoundingClientRect();
-      const lRect = leftEl.getBoundingClientRect();
-      const rRect = rightEl.getBoundingClientRect();
-
-      const x1 = lRect.right - aRect.left;
-      const y1 = lRect.top + lRect.height / 2 - aRect.top;
-      const x2 = rRect.left - aRect.left;
-      const y2 = rRect.top + rRect.height / 2 - aRect.top;
-
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', x1);
-      line.setAttribute('y1', y1);
-      line.setAttribute('x2', x2);
-      line.setAttribute('y2', y2);
-      svg.appendChild(line);
-    }
-
-    // 視窗大小改變時重繪連線
-    window.addEventListener('resize', () => {
-      const svg = document.getElementById('svgLines');
-      svg.innerHTML = '';
-      matchedPairs.forEach(p => drawLine(p.left, p.right));
-    });
-
-    // 顯示詞彙來源
-    startGame();
+  // ════════════════════════════════════════
+  //  初始化
+  // ════════════════════════════════════════
+  loadSavedPairs().then(()=>restartGame());
   </script>
 </body>
-
 </html>
