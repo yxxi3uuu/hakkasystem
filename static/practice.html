@@ -125,6 +125,47 @@
     .word-modal-actions button { flex: 1; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; }
     .btn-practice-word { background: #4CAF50; color: white; }
     .btn-close-word    { background: #f0f0f0; color: #555; }
+
+    /* ── 回報錯誤面板 ── */
+    #reportPanel {
+      display: none;
+      margin: 0 16px 16px;
+      background: #FFFDE7;
+      border: 1.5px solid #FFC107;
+      border-radius: 14px;
+      padding: 18px 16px 14px;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    #reportPanel h3 {
+      font-size: 14px; font-weight: 700; color: #795548;
+      margin: 0 0 14px; display: flex; align-items: center; gap: 6px;
+    }
+    .report-field { margin-bottom: 12px; }
+    .report-field label {
+      display: block; font-size: 12px; color: #888;
+      font-weight: 600; margin-bottom: 4px;
+    }
+    .report-field input,
+    .report-field select {
+      width: 100%; padding: 9px 12px;
+      border: 1.5px solid #e0e0e0; border-radius: 10px;
+      font-size: 14px; color: #333; background: white;
+      box-sizing: border-box;
+      outline: none; transition: border-color 0.15s;
+    }
+    .report-field input:focus,
+    .report-field select:focus { border-color: #FFC107; }
+    .report-field input[readonly] { background: #f5f5f5; color: #999; }
+    .report-actions { display: flex; gap: 8px; margin-top: 4px; }
+    .report-actions button {
+      flex: 1; padding: 11px; border-radius: 10px;
+      font-size: 14px; font-weight: 600; border: none; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .report-actions button:active { opacity: 0.75; }
+    #reportSubmitBtn { background: #FF8F00; color: white; }
+    #reportCancelBtn { background: #f0f0f0; color: #555; }
   </style>
 </head>
 <body>
@@ -151,6 +192,37 @@
       <div class="score-bar"><div class="score-fill" id="scoreFill" style="width:0%"></div></div>
       <div class="score-text" id="scoreText">0 分</div>
       <p id="scoreMsg" style="font-size:13px;color:#555;margin-top:8px;"></p>
+      <button
+        onclick="openReportPanel()"
+        style="margin-top:10px;padding:8px 18px;border-radius:20px;border:1.5px solid #FFC107;
+               background:white;color:#795548;font-size:13px;font-weight:600;cursor:pointer;">
+        ✏️ 辨識有誤？回報修正
+      </button>
+    </div>
+  </div>
+
+  <!-- 回報錯誤面板 -->
+  <div id="reportPanel">
+    <h3>✏️ 回報辨識錯誤 / 修正客語</h3>
+    <div class="report-field">
+      <label>❌ 錯誤辨識結果（自動帶入）</label>
+      <input type="text" id="reportWrongText" readonly placeholder="系統辨識到的字" />
+    </div>
+    <div class="report-field">
+      <label>✅ 正確客語字（請手動輸入）</label>
+      <input type="text" id="reportCorrectText" placeholder="例：頻果" />
+    </div>
+    <div class="report-field">
+      <label>🏷️ 誤判情境</label>
+      <select id="reportScenario">
+        <option value="complex_background">複雜背景噪音 (complex_background)</option>
+        <option value="dialect_missing">官方詞彙缺漏 (dialect_missing)</option>
+        <option value="other">口齒不清／方言混雜 (other)</option>
+      </select>
+    </div>
+    <div class="report-actions">
+      <button id="reportSubmitBtn" onclick="submitReport()">📤 確認送出修正</button>
+      <button id="reportCancelBtn" onclick="closeReportPanel()">取消</button>
     </div>
   </div>
 
@@ -186,8 +258,8 @@
     <div class="word-modal-sheet">
       <div class="word-modal-handle"></div>
       <img class="word-modal-img" id="wordModalImg" src="" alt="" />
-      <div class="word-modal-zh"    id="wordModalZh"></div>
       <div class="word-modal-hakka" id="wordModalHakka"></div>
+      <div class="word-modal-zh" id="wordModalZh" style="font-size:14px;color:#888;font-weight:400;margin:-8px 0 12px;"></div>
       <audio class="word-modal-audio" id="wordModalAudio" controls></audio>
       <div class="word-modal-sentence-box" id="wordModalSentenceBox" style="display:none;">
         <div class="word-modal-sentence-label">💡 客語情境句子</div>
@@ -241,8 +313,18 @@
         }
         currentTask = await res.json();
 
-        document.getElementById('wordDisplay').textContent = currentTask.word;
-        document.getElementById('wordRoman').textContent   = currentTask.hakka || '';
+        // 大字：客語漢字；中字：拼音；小字：中文
+        document.getElementById('wordDisplay').textContent = currentTask.hakka || currentTask.word;
+        document.getElementById('wordRoman').textContent   = currentTask.pinyin || '';
+        // 中文標示（插在 wordRoman 下方，若已存在則更新）
+        let zhLabel = document.getElementById('wordZhLabel');
+        if (!zhLabel) {
+          zhLabel = document.createElement('div');
+          zhLabel.id = 'wordZhLabel';
+          zhLabel.style.cssText = 'font-size:14px;color:#888;margin-bottom:16px;';
+          document.getElementById('wordRoman').insertAdjacentElement('afterend', zhLabel);
+        }
+        zhLabel.textContent = currentTask.word ? `中文：${currentTask.word}` : '';
         const img = document.getElementById('taskImage');
         img.src   = currentTask.image_path;
         img.style.display = 'block';
@@ -352,6 +434,70 @@
   }
 }
 
+    // ── 回報錯誤：開啟面板 ──
+    function openReportPanel() {
+      // wrong_text 自動帶入：優先用 scoreMsg 裡的辨識字，fallback 用題目字
+      const wrongText = (currentTask && currentTask.word) ? currentTask.word : '';
+      document.getElementById('reportWrongText').value  = wrongText;
+      document.getElementById('reportCorrectText').value = '';
+      document.getElementById('reportScenario').value   = 'complex_background';
+      document.getElementById('reportPanel').style.display = 'block';
+      document.getElementById('reportPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function closeReportPanel() {
+      document.getElementById('reportPanel').style.display = 'none';
+    }
+
+    // ── 回報錯誤：送出 ──
+    async function submitReport() {
+      const wrongText   = document.getElementById('reportWrongText').value.trim();
+      const correctText = document.getElementById('reportCorrectText').value.trim();
+      const scenario    = document.getElementById('reportScenario').value;
+
+      if (!correctText) {
+        alert('請填寫正確客語字');
+        return;
+      }
+
+      // 從 audioChunks 組出 Blob（錄音結束後 chunks 仍保留）
+      const mime = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'audio/webm';
+      const ext  = mime.includes('wav') ? 'wav' : 'webm';
+      const audioBlob = audioChunks.length > 0
+        ? new Blob(audioChunks, { type: mime })
+        : new Blob([], { type: 'audio/webm' });   // 若無錄音仍可送出文字修正
+
+      const btn = document.getElementById('reportSubmitBtn');
+      btn.disabled = true;
+      btn.textContent = '送出中...';
+
+      try {
+        const formData = new FormData();
+        formData.append('audio',        audioBlob, `recording.${ext}`);
+        formData.append('wrong_text',   wrongText);
+        formData.append('correct_text', correctText);
+        formData.append('scenario',     scenario);
+
+        const res = await fetch('/api/v1/dataset/collect', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (res.ok) {
+          alert('✅ 感謝您的回報！資料已成功收集，將用於改善客語辨識模型。');
+          closeReportPanel();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert('❌ 送出失敗：' + (err.detail || res.status));
+        }
+      } catch (e) {
+        alert('❌ 連線失敗，請確認伺服器是否正常運作');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '📤 確認送出修正';
+      }
+    }
+
     // ── 從 API 載入預設詞彙列表 ──
     async function loadVocabList() {
       try {
@@ -360,8 +506,10 @@
         const presets = await res.json();
         document.getElementById('vocabList').innerHTML = presets.map(p => `
           <div class="vocab-item" onclick="loadTask('${p.word.replace(/'/g, "\\'")}')">
-            <span class="vocab-zh">${p.word}</span>
-            <span class="vocab-rom">${p.hakka}</span>
+            <div style="flex:1;">
+              <div class="vocab-rom" style="font-size:16px;font-weight:700;color:#2E7D32;">${p.hakka}</div>
+              <div class="vocab-zh" style="font-size:12px;color:#888;margin-top:1px;">${p.word}</div>
+            </div>
             <span class="vocab-diff"><span class="difficulty-badge easy">預設</span></span>
           </div>
         `).join('');
@@ -413,8 +561,11 @@
             : (w.count > 1 ? `<span style="background:#E8F5E9;color:#2E7D32;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;margin-left:6px;">×${w.count}</span>` : '');
           return `
           <div class="vocab-item" onclick="openWordModal(${i})">
-            <span class="vocab-zh">${w.label_zh}${badge}</span>
-            <span class="vocab-rom">${w.label_hakka}</span>
+            <div style="flex:1;">
+              <div style="font-size:16px;font-weight:700;color:#2E7D32;">${w.label_hakka}${badge}</div>
+              ${w.label_pinyin ? `<div style="font-size:11px;color:#4CAF50;margin:1px 0;">${w.label_pinyin}</div>` : ''}
+              <div style="font-size:12px;color:#888;">${w.label_zh}</div>
+            </div>
             <span style="margin-left:auto;font-size:18px;color:#ccc;">›</span>
           </div>
         `}).join('');
@@ -441,9 +592,18 @@
         img.style.display = 'none';
       }
 
-      // 中文 & 客語
-      document.getElementById('wordModalZh').textContent    = w.label_zh;
+      // 客語（大字）、拼音（中字）、中文（小字）
       document.getElementById('wordModalHakka').textContent = w.label_hakka;
+      // 拼音行（動態插入，避免改 HTML 結構）
+      let pinyinEl = document.getElementById('wordModalPinyin');
+      if (!pinyinEl) {
+        pinyinEl = document.createElement('div');
+        pinyinEl.id = 'wordModalPinyin';
+        pinyinEl.style.cssText = 'font-size:14px;color:#4CAF50;margin:-6px 0 6px;';
+        document.getElementById('wordModalHakka').insertAdjacentElement('afterend', pinyinEl);
+      }
+      pinyinEl.textContent = w.label_pinyin || '';
+      document.getElementById('wordModalZh').textContent = w.label_zh ? `中文：${w.label_zh}` : '';
 
       // 單字音檔
       const audio = document.getElementById('wordModalAudio');

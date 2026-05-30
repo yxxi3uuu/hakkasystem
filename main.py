@@ -6,9 +6,9 @@ from dotenv import load_dotenv
 # 必須在所有其他 import 之前載入 .env，確保 DATABASE_URL 等環境變數正確
 load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import text
@@ -24,6 +24,7 @@ from routers.practice import router as practice_router
 from routers.saved_words import router as saved_words_router
 from routers.hakka_api import router as hakka_router
 from routers.ocr import router as ocr_router
+from routers.dataset import router as dataset_router
 
 
 @asynccontextmanager
@@ -47,6 +48,20 @@ async def lifespan(app: FastAPI):
     print("App stopped")
 
 app = FastAPI(lifespan=lifespan)
+
+# 開發模式：所有 HTML 頁面禁止快取，確保每次都拿到最新版本
+@app.middleware("http")
+async def no_cache_html(request: Request, call_next):
+    response = await call_next(request)
+    # HTML 頁面 + 靜態 JS/CSS 全部禁止快取
+    path = request.url.path
+    if (path.endswith(".html") or path.endswith(".js") or path.endswith(".css")
+            or path in ("/", "/login", "/profile", "/recognition",
+                        "/practice", "/learning", "/game", "/record")):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 
 # Static files
@@ -77,6 +92,7 @@ app.include_router(practice_router)
 app.include_router(saved_words_router)
 app.include_router(hakka_router)
 app.include_router(ocr_router)
+app.include_router(dataset_router)
 
 
 # Serve pages

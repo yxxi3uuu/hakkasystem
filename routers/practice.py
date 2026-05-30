@@ -89,6 +89,7 @@ async def ensure_preset_audios():
 class Task(BaseModel):
     word: str
     hakka: str = ""
+    pinyin: str = ""
     image_path: str
     audio_url: str
 
@@ -187,6 +188,7 @@ async def get_task(
         return Task(
             word=row.label_zh,
             hakka=row.label_hakka,
+            pinyin=getattr(row, "label_pinyin", ""),
             image_path=row.image_path,
             audio_url=row.audio_path
         )

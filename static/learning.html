@@ -28,8 +28,8 @@
       display: block;
     }
     .word-card-body { padding: 10px 12px 12px; }
-    .word-card-zh   { font-size: 18px; font-weight: 800; color: #333; }
-    .word-card-hakka { font-size: 13px; color: #4CAF50; font-weight: 600; margin: 2px 0 6px; }
+    .word-card-hakka { font-size: 18px; font-weight: 800; color: #2E7D32; }
+    .word-card-zh   { font-size: 12px; font-weight: 600; color: #888; margin: 2px 0 6px; }
     .word-card-sentence {
       font-size: 11px;
       color: #888;
@@ -161,8 +161,8 @@
       max-height: 220px;
       object-fit: cover;
     }
-    .modal-zh    { font-size: 28px; font-weight: 800; color: #333; }
-    .modal-hakka { font-size: 18px; color: #4CAF50; font-weight: 600; margin: 4px 0 16px; }
+    .modal-hakka { font-size: 28px; color: #2E7D32; font-weight: 800; margin: 4px 0 4px; }
+    .modal-zh    { font-size: 14px; font-weight: 400; color: #888; margin: 0 0 16px; }
     .modal-sentence-box {
       background: #FFF8E1;
       border-left: 4px solid #FFC107;
@@ -196,8 +196,8 @@
     <div class="modal-sheet">
       <div class="modal-handle"></div>
       <img class="modal-img" id="modalImg" src="" alt="" />
-      <div class="modal-zh"    id="modalZh"></div>
       <div class="modal-hakka" id="modalHakka"></div>
+      <div class="modal-zh"    id="modalZh"></div>
       <div class="modal-sentence-box" id="modalSentenceBox" style="display:none;">
         <div class="modal-sentence-label">💡 造句練習</div>
         <div class="modal-sentence-text" id="modalSentence"></div>
@@ -278,8 +278,9 @@
             <button class="delete-btn" title="刪除此單字">✕</button>
             <img src="${w.image_path}" alt="${w.label_zh}" onerror="this.src='';this.style.background='#f0f0f0';this.style.display='flex';this.insertAdjacentHTML('afterend','<div style=\'width:100%;aspect-ratio:4/3;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:32px;\'>🖼️</div>');this.remove();" />
             <div class="word-card-body">
-              <div class="word-card-zh">${w.label_zh}</div>
               <div class="word-card-hakka">${w.label_hakka}</div>
+              ${w.label_pinyin ? `<div style="font-size:11px;color:#4CAF50;margin:1px 0 3px;">${w.label_pinyin}</div>` : ''}
+              <div class="word-card-zh" style="font-size:12px;font-weight:600;color:#888;">${w.label_zh}</div>
               ${w.sentence_zh ? `<div class="word-card-sentence">${w.sentence_zh}</div>` : ''}
               <button class="practice-btn">🎤 練習發音</button>
             </div>
@@ -310,8 +311,17 @@
       selectedWord = word;
       document.getElementById('modalImg').src = word.image_path;
       document.getElementById('modalImg').style.display = word.image_path ? 'block' : 'none';
-      document.getElementById('modalZh').textContent    = word.label_zh;
       document.getElementById('modalHakka').textContent = word.label_hakka;
+      document.getElementById('modalZh').textContent    = word.label_zh ? `中文：${word.label_zh}` : '';
+      // 拼音：插在客語下方
+      let pinyinEl = document.getElementById('modalPinyin');
+      if (!pinyinEl) {
+        pinyinEl = document.createElement('div');
+        pinyinEl.id = 'modalPinyin';
+        pinyinEl.style.cssText = 'font-size:14px;color:#4CAF50;margin:-8px 0 12px;';
+        document.getElementById('modalHakka').insertAdjacentElement('afterend', pinyinEl);
+      }
+      pinyinEl.textContent = word.label_pinyin || '';
 
       const sentenceBox = document.getElementById('modalSentenceBox');
       const sentenceEl  = document.getElementById('modalSentence');
