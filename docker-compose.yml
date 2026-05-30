@@ -25,6 +25,9 @@ services:
       # 注意：這裡的主機名要寫 "db" (服務名稱)，而不是 localhost
       # 修正後的第 27 行
       DATABASE_URL: "postgresql+asyncpg://user:hakka2026@db:5432/dbname"
+      LLM_MODEL_PATH: "${LLM_MODEL_PATH:-/app/data/qwen2.5-3b-instruct-q4_k_m.gguf}"
+      HAKKA_USERNAME: "${HAKKA_USERNAME}"
+      HAKKA_PASSWORD: "${HAKKA_PASSWORD}"
     depends_on:
       - db
     # FastAPI/Streamlit 服務

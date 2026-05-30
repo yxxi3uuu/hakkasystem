@@ -8,6 +8,8 @@ routers/learning.py
 import json
 import logging
 import os
+import re
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -22,13 +24,19 @@ class WordRequest(BaseModel):
 
 
 class WordsRequest(BaseModel):
-    words: list[str]
+    words: list[str] | str
 
 
-# ── 載入本地 LLM（路徑從環境變數讀取）──────────────────────────────────────
+# ── 載入本地 LLM（預設使用 Qwen GGUF，可用環境變數覆蓋）────────────────────
 llm = None
 
-_model_path = os.getenv("LLM_MODEL_PATH", "").strip()
+DEFAULT_MODEL_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "data"
+    / "qwen2.5-3b-instruct-q4_k_m.gguf"
+)
+
+_model_path = os.getenv("LLM_MODEL_PATH", str(DEFAULT_MODEL_PATH)).strip()
 
 if _model_path:
     if not os.path.exists(_model_path):
@@ -49,6 +57,64 @@ if _model_path:
             print(f"[LLM] 載入失敗（將使用 fallback）: {e}")
 else:
     print("[LLM] LLM_MODEL_PATH 未設定，將使用 fallback 例句庫")
+
+
+def _clean_json_text(text: str) -> str:
+    backticks = chr(96) * 3
+    cleaned = (
+        text.replace(f"{backticks}json\n", "")
+        .replace(f"{backticks}json", "")
+        .replace(backticks, "")
+        .strip()
+    )
+    match = re.search(r"(\[[\s\S]*\]|\{[\s\S]*\})", cleaned)
+    return match.group(1).strip() if match else cleaned
+
+
+def _ask_llm_json(system_prompt: str, user_prompt: str, max_tokens: int, temperature: float):
+    response = llm.create_chat_completion(
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        max_tokens=max_tokens,
+        temperature=temperature,
+    )
+    result_text = response["choices"][0]["message"]["content"].strip()
+    return json.loads(_clean_json_text(result_text))
+
+
+def _normalize_words(words: list[str] | str, max_words: int = 5) -> list[str]:
+    if isinstance(words, str):
+        raw_words = words.split()
+    else:
+        raw_words = []
+        for item in words:
+            raw_words.extend(str(item).split())
+
+    return [word.strip() for word in raw_words if word.strip()][:max_words]
+
+
+def _with_compatible_sentence_fields(items: list[dict], words: list[str]) -> list[dict]:
+    results = []
+
+    for index, word in enumerate(words):
+        item = items[index] if index < len(items) and isinstance(items[index], dict) else {}
+        sentence = (
+            item.get("sentence")
+            or item.get("sentence_zh")
+            or item.get("chinese_translation")
+            or f"這是一個{word}。"
+        )
+
+        results.append({
+            "word": item.get("word") or word,
+            "sentence": sentence,
+            "sentence_zh": sentence,
+            "chinese_translation": sentence,
+        })
+
+    return results
 
 
 # ── Fallback 範例句庫 ─────────────────────────────────────────────────────
@@ -72,33 +138,19 @@ async def generate_hakka_sentence(request: WordRequest):
         raise HTTPException(status_code=400, detail="單字不可為空")
 
     if llm:
-        prompt = f"""[INST] 你是一個專業的台灣客語教師。請根據輸入的中文單字，生成一句適合國小生學習的生活化客語例句（長度在 10 個字以內）。
-請務必只輸出合法的 JSON 格式，包含 "hakka_sentence" 與 "chinese_translation" 兩個鍵值，絕對不要輸出任何其他說明文字。
-
-輸入：椅子 [/INST]
+        system_prompt = """你是一個專業的台灣客語教師。
+請根據輸入的中文單字，生成一句適合國小生學習的生活化客語例句，長度在 10 個字以內。
+請務必只輸出合法 JSON，包含 "hakka_sentence" 與 "chinese_translation" 兩個鍵值，絕對不要輸出任何其他說明文字。"""
+        user_prompt = f"""範例：
+輸入：椅子
 {{"hakka_sentence": "這張椅子當好坐。", "chinese_translation": "這張椅子很好坐。"}}
 
-[INST] 輸入：吃飯 [/INST]
+輸入：吃飯
 {{"hakka_sentence": "大家來食飯囉。", "chinese_translation": "大家來吃飯囉。"}}
 
-[INST] 輸入：{word} [/INST]
-"""
+輸入：{word}"""
         try:
-            backticks = chr(96) * 3
-            response = llm(
-                prompt,
-                max_tokens=150,
-                temperature=0.2,
-                echo=False,
-                stop=["[INST]", backticks],
-            )
-            result_text = response["choices"][0]["text"].strip()
-            cleaned = (result_text
-                       .replace(f"{backticks}json\n", "")
-                       .replace(f"{backticks}json", "")
-                       .replace(backticks, "")
-                       .strip())
-            return json.loads(cleaned)
+            return _ask_llm_json(system_prompt, user_prompt, max_tokens=150, temperature=0.2)
         except json.JSONDecodeError:
             raise HTTPException(status_code=500, detail="模型未輸出正確的 JSON 格式")
         except Exception as e:
@@ -114,45 +166,32 @@ async def generate_hakka_sentence(request: WordRequest):
 # ── 生成多單字故事 ────────────────────────────────────────────────────────
 @router.post("/generate-story")
 async def generate_hakka_story(request: WordsRequest):
-    words = [w.strip() for w in request.words if w.strip()]
+    words = _normalize_words(request.words)
     if not words:
         raise HTTPException(status_code=400, detail="單字列表不可為空")
 
     words_str = "、".join(words)
 
     if llm:
-        prompt = f"""[INST] 你是一個專業的「客語故事寫作助手」。請根據我提供的多個單字，為每個單字造一個客語句子。
+        system_prompt = """你是一個專業的中文寫作助手。請根據我提供的 1 到 5 個中文單字，為每個單字造一個中文句子。
 要求：
-1. 【最重要】這些句子必須構成一個「有前後因果關係、流暢的連續情境或故事」！絕對不要各說各話的獨立造句。
-2. 每個句子的長度必須控制在 10 到 20 個字左右，適合國小生學習。
-3. 每個單字對應的輸出，都必須包含客語發音句 (hakka_sentence) 以及白話文翻譯 (chinese_translation)。
-4. 請務必只輸出合法的 JSON 陣列 (Array) 格式，包含 "word", "hakka_sentence" 與 "chinese_translation" 三個鍵值，絕對不要輸出任何其他說明文字。
-
-輸入單字：蘋果、公園、下雨 [/INST]
+1. 這些句子必須構成一個有關聯的連續情境或故事。
+2. 每個句子的長度必須控制在大約 20 個字左右。
+3. 請務必只輸出合法的 JSON 陣列 (Array) 格式，包含 "word" 與 "sentence" 兩個鍵值，絕對不要輸出任何其他說明文字。"""
+        user_prompt = f"""範例：
+輸入單字：蘋果、公園、下雨
 [
-  {{"word": "蘋果", "hakka_sentence": "他手項拿一粒蘋果，當歡喜。", "chinese_translation": "他手裡拿著一顆紅透的蘋果，看起來非常愉快。"}},
-  {{"word": "公園", "hakka_sentence": "𠊎兜原本約好要在這大公園食水菓。", "chinese_translation": "我們原本約好要在這座寬敞的公園裡一起野餐吃水果。"}},
-  {{"word": "下雨", "hakka_sentence": "沒想到天公突然落雨，打亂了行程。", "chinese_translation": "沒想到天空突然下雨，打亂了所有原本規劃好的行程。"}}
+  {{"word": "蘋果", "sentence": "他手裡拿著一顆紅透的蘋果，心情看起來非常愉快。"}},
+  {{"word": "公園", "sentence": "我們原本約好要在這座寬敞的公園裡一起野餐吃水果。"}},
+  {{"word": "下雨", "sentence": "沒想到天空突然下雨，打亂了所有原本規劃好的行程。"}}
 ]
 
-[INST] 輸入單字：{words_str} [/INST]
-"""
+輸入單字：{words_str}"""
         try:
-            backticks = chr(96) * 3
-            response = llm(
-                prompt,
-                max_tokens=400,
-                temperature=0.3,
-                echo=False,
-                stop=["[INST]", backticks],
-            )
-            result_text = response["choices"][0]["text"].strip()
-            cleaned = (result_text
-                       .replace(f"{backticks}json\n", "")
-                       .replace(f"{backticks}json", "")
-                       .replace(backticks, "")
-                       .strip())
-            return json.loads(cleaned)
+            parsed = _ask_llm_json(system_prompt, user_prompt, max_tokens=400, temperature=0.3)
+            if not isinstance(parsed, list):
+                raise json.JSONDecodeError("Expected JSON array", str(parsed), 0)
+            return _with_compatible_sentence_fields(parsed, words)
         except json.JSONDecodeError:
             raise HTTPException(status_code=500, detail="模型未輸出正確的 JSON 格式")
         except Exception as e:
@@ -162,10 +201,9 @@ async def generate_hakka_story(request: WordsRequest):
     return [
         {
             "word": w,
-            **FALLBACK.get(w, {
-                "hakka_sentence":      f"這個{w}當靚。",
-                "chinese_translation": f"這個{w}很漂亮。",
-            }),
+            "sentence": f"這是一個關於{w}的生活句子。",
+            "sentence_zh": f"這是一個關於{w}的生活句子。",
+            "chinese_translation": f"這是一個關於{w}的生活句子。",
         }
         for w in words
     ]
