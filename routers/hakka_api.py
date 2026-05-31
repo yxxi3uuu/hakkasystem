@@ -188,6 +188,15 @@ async def generate_hakka_tts(text: str, folder: str = "words") -> str:
     return "/" + str(filepath).replace("\\", "/")
 
 
+_SUPERSCRIPT = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+
+
+def to_superscript_tone(pinyin: str) -> str:
+    """把客語拼音的數字調號轉成上標數字，例如 gieu31 e31 → gieu³¹ e³¹"""
+    import re
+    return re.sub(r"\d+", lambda m: m.group().translate(_SUPERSCRIPT), pinyin)
+
+
 @router.post("/zh-to-hakka")
 async def translate_zh_to_hakka(req: TextRequest, token: str = Depends(get_trans_token)):
     return await call_hakka_translate_api(

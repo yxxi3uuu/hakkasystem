@@ -16,7 +16,8 @@ from routers.hakka_api import (
     TextRequest,
     get_trans_token,
     call_hakka_translate_api,
-    generate_hakka_tts
+    generate_hakka_tts,
+    to_superscript_tone
 )
 
 env_path = Path(__file__).resolve().parent.parent / ".env"
@@ -214,6 +215,7 @@ async def recognize_image(
             batch_pinyin_result.get("output", ""),
             expected_count=len(words_zh)
         )
+        pinyin_words = [to_superscript_tone(p) for p in pinyin_words]
 
         # 3. LLM 批次造句：每個詞各自一句
         sentences_zh = await generate_sentences_for_words(words_zh)

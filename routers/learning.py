@@ -27,36 +27,37 @@ class WordsRequest(BaseModel):
     words: list[str] | str
 
 
-# ── 載入本地 LLM（預設使用 Qwen GGUF，可用環境變數覆蓋）────────────────────
+# ── 載入本地 LLM（由 main.py lifespan 呼叫 init_llm() 完成初始化）────────
 llm = None
 
-DEFAULT_MODEL_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "data"
-    / "qwen2.5-3b-instruct-q4_k_m.gguf"
-)
 
-_model_path = os.getenv("LLM_MODEL_PATH", str(DEFAULT_MODEL_PATH)).strip()
+def init_llm() -> None:
+    """由 main.py lifespan 在 .env 確定載入後呼叫，初始化全域 llm 物件。"""
+    global llm
 
-if _model_path:
+    _model_path = os.getenv("LLM_MODEL_PATH", "").strip()
+
+    if not _model_path:
+        print("[LLM] LLM_MODEL_PATH 未設定，將使用 fallback 例句庫")
+        return
+
     if not os.path.exists(_model_path):
         print(f"[LLM] 模型路徑不存在：{_model_path}（將使用 fallback）")
-    else:
-        try:
-            from llama_cpp import Llama
-            llm = Llama(
-                model_path=_model_path,
-                n_gpu_layers=20,
-                n_ctx=2048,
-                n_batch=256,
-                flash_attn=True,
-                verbose=False,
-            )
-            print(f"[LLM] 模型載入成功：{_model_path}")
-        except Exception as e:
-            print(f"[LLM] 載入失敗（將使用 fallback）: {e}")
-else:
-    print("[LLM] LLM_MODEL_PATH 未設定，將使用 fallback 例句庫")
+        return
+
+    try:
+        from llama_cpp import Llama
+        llm = Llama(
+            model_path=_model_path,
+            n_gpu_layers=20,
+            n_ctx=2048,
+            n_batch=256,
+            flash_attn=True,
+            verbose=False,
+        )
+        print(f"[LLM] 模型載入成功：{_model_path}")
+    except Exception as e:
+        print(f"[LLM] 載入失敗（將使用 fallback）: {e}")
 
 
 def _clean_json_text(text: str) -> str:

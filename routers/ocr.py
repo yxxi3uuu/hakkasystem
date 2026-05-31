@@ -212,9 +212,7 @@ async def extract_and_translate(file: UploadFile = File(...)):
     """
     OCR + 客語翻譯 + TTS：上傳圖片，辨識文字後直接翻成客語並產生音檔。
     """
-    from routers.hakka_api import get_trans_token, call_hakka_translate_api, generate_hakka_tts
-
-    suffix = os.path.splitext(file.filename or "")[1] or ".jpg"
+    from routers.hakka_api import get_trans_token, call_hakka_translate_api, generate_hakka_tts, to_superscript_tone
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp.write(await file.read())
@@ -417,7 +415,7 @@ async def extract_and_keywords(file: UploadFile = File(...)):
     4. 每個詞彙各自翻成客語 + 生成 TTS（讓使用者逐一選擇儲存）
     """
     import asyncio
-    from routers.hakka_api import get_trans_token, call_hakka_translate_api, generate_hakka_tts
+    from routers.hakka_api import get_trans_token, call_hakka_translate_api, generate_hakka_tts, to_superscript_tone
 
     suffix = _os.path.splitext(file.filename or "")[1] or ".jpg"
 
@@ -485,7 +483,7 @@ async def extract_and_keywords(file: UploadFile = File(...)):
                             text=hakka,
                             token=token,
                         )
-                        return py_result.get("output", "").strip()
+                        return to_superscript_tone(py_result.get("output", "").strip())
                     except Exception as e:
                         print(f"[OCR] 詞彙「{word}」拼音失敗：{e}")
                         return ""

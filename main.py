@@ -19,7 +19,7 @@ from models import User
 from routers.profile import router as profile_router
 from routers.auth import router as auth_router
 from routers.recognition import router as recognition_router
-from routers.learning import router as learning_router
+from routers.learning import router as learning_router, init_llm
 from routers.practice import router as practice_router
 from routers.saved_words import router as saved_words_router
 from routers.hakka_api import router as hakka_router
@@ -35,6 +35,12 @@ async def lifespan(app: FastAPI):
         print("DB tables ready")
     except Exception as e:
         print(f"DB init warning: {e}")
+
+    # 在 .env 確定載入後初始化 LLM
+    try:
+        init_llm()
+    except Exception as e:
+        print(f"[LLM] 初始化失敗（不影響啟動）: {e}")
 
     # 預設練習音檔：若不存在則自動用 TTS API 產生
     try:
