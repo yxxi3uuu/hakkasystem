@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>語音練習 - 客語隨拍隨學</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    .practice-card {
+      background: white;
+      border-radius: 16px;
+      margin: 16px;
+      padding: 24px;
+      text-align: center;
+    }
+    .difficulty-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .easy   { background: #E8F5E9; color: #2E7D32; }
+    .medium { background: #FFF3E0; color: #E65100; }
+    .hard   { background: #FFEBEE; color: #C62828; }
+
+    .word-display { font-size: 36px; font-weight: 800; color: #333; margin-bottom: 6px; }
+    .word-roman   { font-size: 18px; color: #4CAF50; margin-bottom: 24px; }
+
+    #taskImage { display: block; }
+
+    .mic-btn {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: #4CAF50;
+      border: none;
+      font-size: 36px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 12px;
+      box-shadow: 0 4px 16px rgba(76,175,80,0.4);
+      transition: transform 0.15s, background 0.15s;
+    }
+    .mic-btn.recording { background: #f44336; animation: pulse 1s infinite; }
+    .mic-btn:hover { transform: scale(1.05); }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 4px 16px rgba(244,67,54,0.4); }
+      50%      { box-shadow: 0 4px 28px rgba(244,67,54,0.7); }
+    }
+    .mic-hint { font-size: 13px; color: #888; }
+
+    .score-bar {
+      height: 10px; background: #E8F5E9; border-radius: 5px;
+      margin: 16px 0 6px; overflow: hidden;
+    }
+    .score-fill { height: 100%; background: #4CAF50; border-radius: 5px; transition: width 0.6s; }
+    .score-text { font-size: 13px; color: #666; text-align: right; }
+
+    /* vocab list */
+    .vocab-item {
+      display: flex; align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid #f5f5f5;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .vocab-item:last-child { border-bottom: none; }
+    .vocab-item:hover { background: #f9f9f9; }
+    .vocab-zh   { font-size: 16px; font-weight: 600; color: #333; flex: 1; }
+    .vocab-rom  { font-size: 13px; color: #4CAF50; flex: 1; }
+    .vocab-diff { margin-left: auto; }
+
+    /* 單字詳細 modal */
+    .word-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .word-modal-overlay.open { display: flex; }
+    .word-modal-sheet {
+      background: white;
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-width: 480px;
+      padding: 24px 20px 100px;
+      animation: slideUp 0.25s ease;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding-bottom: max(100px, calc(80px + env(safe-area-inset-bottom)));
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .word-modal-handle {
+      width: 40px; height: 4px;
+      background: #ddd; border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+    .word-modal-img {
+      width: 100%; border-radius: 12px;
+      margin-bottom: 16px;
+      max-height: 200px; object-fit: cover;
+      display: block;
+    }
+    .word-modal-zh    { font-size: 28px; font-weight: 800; color: #333; }
+    .word-modal-hakka { font-size: 18px; color: #4CAF50; font-weight: 600; margin: 4px 0 12px; }
+    .word-modal-audio { width: 100%; margin-bottom: 16px; }
+    .word-modal-sentence-box {
+      background: #FFF8E1;
+      border-left: 4px solid #FFC107;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+    }
+    .word-modal-sentence-label { font-size: 11px; color: #999; margin-bottom: 4px; }
+    .word-modal-sentence-zh    { font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 6px; }
+    .word-modal-sentence-hakka { font-size: 14px; color: #2E7D32; line-height: 1.6; margin-bottom: 10px; }
+    .word-modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+    .word-modal-actions button { flex: 1; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; }
+    .btn-practice-word { background: #4CAF50; color: white; }
+    .btn-close-word    { background: #f0f0f0; color: #555; }
+
+    /* ── 回報錯誤面板 ── */
+    #reportPanel {
+      display: none;
+      margin: 0 16px 16px;
+      background: #FFFDE7;
+      border: 1.5px solid #FFC107;
+      border-radius: 14px;
+      padding: 18px 16px 14px;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    #reportPanel h3 {
+      font-size: 14px; font-weight: 700; color: #795548;
+      margin: 0 0 14px; display: flex; align-items: center; gap: 6px;
+    }
+    .report-field { margin-bottom: 12px; }
+    .report-field label {
+      display: block; font-size: 12px; color: #888;
+      font-weight: 600; margin-bottom: 4px;
+    }
+    .report-field input,
+    .report-field select {
+      width: 100%; padding: 9px 12px;
+      border: 1.5px solid #e0e0e0; border-radius: 10px;
+      font-size: 14px; color: #333; background: white;
+      box-sizing: border-box;
+      outline: none; transition: border-color 0.15s;
+    }
+    .report-field input:focus,
+    .report-field select:focus { border-color: #FFC107; }
+    .report-field input[readonly] { background: #f5f5f5; color: #999; }
+    .report-actions { display: flex; gap: 8px; margin-top: 4px; }
+    .report-actions button {
+      flex: 1; padding: 11px; border-radius: 10px;
+      font-size: 14px; font-weight: 600; border: none; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .report-actions button:active { opacity: 0.75; }
+    #reportSubmitBtn { background: #FF8F00; color: white; }
+    #reportCancelBtn { background: #f0f0f0; color: #555; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <span style="font-size:22px;">🎤</span>
+    <h1>語音練習</h1>
+  </div>
+  <p style="font-size:13px;color:#888;padding:12px 16px 4px;">聽標準發音，然後錄下你的發音，系統會給你評分和建議</p>
+
+  <!-- 練習卡 -->
+  <div class="practice-card">
+    <span class="difficulty-badge easy" id="diffBadge">難度：簡單</span>
+    <img id="taskImage" src="" alt="題目圖片" style="display:none;width:200px;border-radius:12px;margin:0 auto 12px;" />
+    <div class="word-display" id="wordDisplay">載入中...</div>
+    <div class="word-roman"   id="wordRoman"></div>
+
+    <button class="btn btn-outline" style="margin-bottom:20px;" onclick="playAudio()">▶ 播放標準發音</button>
+
+    <button class="mic-btn" id="micBtn" onclick="toggleRecord()">🎤</button>
+    <div class="mic-hint" id="micHint">點擊麥克風開始錄音</div>
+
+    <div id="scoreWrap" style="display:none;">
+      <div class="score-bar"><div class="score-fill" id="scoreFill" style="width:0%"></div></div>
+      <div class="score-text" id="scoreText">0 分</div>
+      <p id="scoreMsg" style="font-size:13px;color:#555;margin-top:8px;"></p>
+      <button
+        onclick="openReportPanel()"
+        style="margin-top:10px;padding:8px 18px;border-radius:20px;border:1.5px solid #FFC107;
+               background:white;color:#795548;font-size:13px;font-weight:600;cursor:pointer;">
+        ✏️ 辨識有誤？回報修正
+      </button>
+    </div>
+  </div>
+
+  <!-- 回報錯誤面板 -->
+  <div id="reportPanel">
+    <h3>✏️ 回報辨識錯誤 / 修正客語</h3>
+    <div class="report-field">
+      <label>❌ 錯誤辨識結果（自動帶入）</label>
+      <input type="text" id="reportWrongText" readonly placeholder="系統辨識到的字" />
+    </div>
+    <div class="report-field">
+      <label>✅ 正確客語字（請手動輸入）</label>
+      <input type="text" id="reportCorrectText" placeholder="例：頻果" />
+    </div>
+    <div class="report-field">
+      <label>🏷️ 誤判情境</label>
+      <select id="reportScenario">
+        <option value="complex_background">複雜背景噪音 (complex_background)</option>
+        <option value="dialect_missing">官方詞彙缺漏 (dialect_missing)</option>
+        <option value="other">口齒不清／方言混雜 (other)</option>
+      </select>
+    </div>
+    <div class="report-actions">
+      <button id="reportSubmitBtn" onclick="submitReport()">📤 確認送出修正</button>
+      <button id="reportCancelBtn" onclick="closeReportPanel()">取消</button>
+    </div>
+  </div>
+
+  <!-- 詞彙列表 -->
+  <div class="section">
+    <div class="section-title">📝 練習詞彙列表</div>
+    <div id="vocabList"></div>
+    <div style="padding:12px 16px;">
+      <button class="btn btn-primary btn-block" onclick="loadTask()">🔄 隨機換一題</button>
+    </div>
+  </div>
+
+  <!-- 我的單字 -->
+  <div class="section">
+    <div class="section-title">⭐ 我的單字</div>
+    <div id="myWordsList">
+      <div style="padding:16px;color:#aaa;font-size:13px;text-align:center;">載入中...</div>
+    </div>
+  </div>
+
+  <!-- 技巧 -->
+  <div class="section">
+    <div class="section-title">💡 發音技巧</div>
+    <ul style="padding:8px 16px 16px;list-style:none;">
+      <li style="font-size:13px;color:#666;margin-bottom:6px;">• 先仔細聽標準發音，注意聲調變化</li>
+      <li style="font-size:13px;color:#666;margin-bottom:6px;">• 錄音時找個安靜的環境</li>
+      <li style="font-size:13px;color:#666;">• 多練習幾次，熟能生巧</li>
+    </ul>
+  </div>
+
+  <!-- 單字詳細 modal -->
+  <div class="word-modal-overlay" id="wordModalOverlay" onclick="closeWordModal(event)">
+    <div class="word-modal-sheet">
+      <div class="word-modal-handle"></div>
+      <img class="word-modal-img" id="wordModalImg" src="" alt="" />
+      <div class="word-modal-hakka" id="wordModalHakka"></div>
+      <div class="word-modal-zh" id="wordModalZh" style="font-size:14px;color:#888;font-weight:400;margin:-8px 0 12px;"></div>
+      <audio class="word-modal-audio" id="wordModalAudio" controls></audio>
+      <div class="word-modal-sentence-box" id="wordModalSentenceBox" style="display:none;">
+        <div class="word-modal-sentence-label">💡 客語情境句子</div>
+        <div class="word-modal-sentence-zh"    id="wordModalSentenceZh"></div>
+        <div class="word-modal-sentence-hakka" id="wordModalSentenceHakka"></div>
+        <audio class="word-modal-audio" id="wordModalSentenceAudio" controls style="display:none;"></audio>
+      </div>
+      <div class="word-modal-actions">
+        <button class="btn-practice-word" onclick="practiceThisWord()">🎤 練習發音</button>
+        <button class="btn-close-word"    onclick="closeWordModalDirect()">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a class="nav-item" href="/"><div class="nav-icon">🏠</div><div class="nav-label">首頁</div></a>
+    <a class="nav-item" href="/recognition"><div class="nav-icon">📷</div><div class="nav-label">拍照學習</div></a>
+    <a class="nav-item" href="/learning"><div class="nav-icon">📚</div><div class="nav-label">我的學習</div></a>
+    <a class="nav-item active" href="/practice"><div class="nav-icon">🎤</div><div class="nav-label">語音練習</div></a>
+    <a class="nav-item" href="/game"><div class="nav-icon">🎮</div><div class="nav-label">配對遊戲</div></a>
+    <a class="nav-item" href="/record"><div class="nav-icon">📊</div><div class="nav-label">學習記錄</div></a>
+    <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
+  </nav>
+
+  <script src="/static/auth.js"></script>
+  <script>
+    requireLogin();
+
+    let currentTask  = null;   // { word, image_path, audio_url }
+    let mediaRecorder = null;
+    let audioChunks   = [];
+    let recording     = false;
+
+    // ── 載入隨機題目 ──
+    async function loadTask(word = null) {
+      document.getElementById('scoreWrap').style.display = 'none';
+      document.getElementById('scoreMsg').textContent    = '';
+      try {
+        const user = getUser();
+
+        const url = word
+          ? `/api/practice/task?word=${encodeURIComponent(word)}&user_id=${user.id}`
+          : `/api/practice/task?user_id=${user.id}`;
+        const res  = await fetch(url);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          document.getElementById('wordDisplay').textContent = err.detail || '載入失敗';
+          document.getElementById('wordRoman').textContent = '';
+          document.getElementById('taskImage').style.display = 'none';
+          return;
+        }
+        currentTask = await res.json();
+
+        // 大字：客語漢字；中字：拼音；小字：中文
+        document.getElementById('wordDisplay').textContent = currentTask.hakka || currentTask.word;
+        document.getElementById('wordRoman').textContent   = currentTask.pinyin || '';
+        // 中文標示（插在 wordRoman 下方，若已存在則更新）
+        let zhLabel = document.getElementById('wordZhLabel');
+        if (!zhLabel) {
+          zhLabel = document.createElement('div');
+          zhLabel.id = 'wordZhLabel';
+          zhLabel.style.cssText = 'font-size:14px;color:#888;margin-bottom:16px;';
+          document.getElementById('wordRoman').insertAdjacentElement('afterend', zhLabel);
+        }
+        zhLabel.textContent = currentTask.word ? `中文：${currentTask.word}` : '';
+        const img = document.getElementById('taskImage');
+        img.src   = currentTask.image_path;
+        img.style.display = 'block';
+      } catch {
+        document.getElementById('wordDisplay').textContent = '載入失敗';
+      }
+    }
+
+    // ── 播放標準音 ──
+    function playAudio() {
+      if (!currentTask) return;
+      const a = new Audio(currentTask.audio_url);
+      a.play();
+    }
+
+    // ── 錄音切換 ──
+    async function toggleRecord() {
+      const btn  = document.getElementById('micBtn');
+      const hint = document.getElementById('micHint');
+
+      if (!recording) {
+        // 開始錄音
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          audioChunks  = [];
+          // 優先用 wav，不行才 fallback
+          const mimeType = MediaRecorder.isTypeSupported('audio/wav')
+            ? 'audio/wav'
+            : MediaRecorder.isTypeSupported('audio/webm;codecs=pcm')
+              ? 'audio/webm;codecs=pcm'
+              : 'audio/webm';
+          mediaRecorder = new MediaRecorder(stream, { mimeType });
+          mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+          mediaRecorder.onstop = async () => {
+            stream.getTracks().forEach(t => t.stop());
+            await submitRecording();
+          };
+          mediaRecorder.start();
+          recording = true;
+          btn.classList.add('recording');
+          hint.textContent = '錄音中... 再次點擊停止';
+        } catch {
+          hint.textContent = '無法開啟麥克風，請確認權限';
+        }
+      } else {
+        // 停止錄音
+        recording = false;
+        btn.classList.remove('recording');
+        hint.textContent = '分析中...';
+        mediaRecorder.stop();
+      }
+    }
+
+    // ── 送出錄音並取得分數 ──
+    async function submitRecording() {
+  const hint = document.getElementById('micHint');
+  hint.textContent = '分析中，請稍候...';
+
+  try {
+    const mime = mediaRecorder.mimeType || 'audio/webm';
+    const blob = new Blob(audioChunks, { type: mime });
+    const ext = mime.includes('wav') ? 'wav' : 'webm';
+
+    const formData = new FormData();
+    formData.append('audio', blob, `recording.${ext}`);
+
+    if (currentTask) {
+      formData.append('word', currentTask.word);
+    }
+
+    const user = getUser();
+    if (user) {
+      formData.append('user_id', user.id);
+    }
+
+    const res = await fetch('/api/practice/score', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!res.ok) {
+      throw new Error((await res.json()).detail || '評分失敗');
+    }
+
+    const data = await res.json();
+
+    document.getElementById('scoreWrap').style.display = 'block';
+    document.getElementById('scoreFill').style.width = data.score + '%';
+    document.getElementById('scoreText').textContent = data.score + ' 分';
+    document.getElementById('scoreMsg').textContent = data.message;
+    hint.textContent = '點擊麥克風開始錄音';
+
+    if (user && data.score > 0) {
+      fetch(`/api/profile/${user.id}/activity`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          icon: '🎤',
+          title: `語音練習: ${currentTask ? currentTask.word : ''}`,
+          score: data.score
+        })
+      }).catch(() => {});
+    }
+
+  } catch (e) {
+    hint.textContent = e.message || '評分失敗，請重試';
+  }
+}
+
+    // ── 回報錯誤：開啟面板 ──
+    function openReportPanel() {
+      // wrong_text 自動帶入：優先用 scoreMsg 裡的辨識字，fallback 用題目字
+      const wrongText = (currentTask && currentTask.word) ? currentTask.word : '';
+      document.getElementById('reportWrongText').value  = wrongText;
+      document.getElementById('reportCorrectText').value = '';
+      document.getElementById('reportScenario').value   = 'complex_background';
+      document.getElementById('reportPanel').style.display = 'block';
+      document.getElementById('reportPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function closeReportPanel() {
+      document.getElementById('reportPanel').style.display = 'none';
+    }
+
+    // ── 回報錯誤：送出 ──
+    async function submitReport() {
+      const wrongText   = document.getElementById('reportWrongText').value.trim();
+      const correctText = document.getElementById('reportCorrectText').value.trim();
+      const scenario    = document.getElementById('reportScenario').value;
+
+      if (!correctText) {
+        alert('請填寫正確客語字');
+        return;
+      }
+
+      // 從 audioChunks 組出 Blob（錄音結束後 chunks 仍保留）
+      const mime = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'audio/webm';
+      const ext  = mime.includes('wav') ? 'wav' : 'webm';
+      const audioBlob = audioChunks.length > 0
+        ? new Blob(audioChunks, { type: mime })
+        : new Blob([], { type: 'audio/webm' });   // 若無錄音仍可送出文字修正
+
+      const btn = document.getElementById('reportSubmitBtn');
+      btn.disabled = true;
+      btn.textContent = '送出中...';
+
+      try {
+        const formData = new FormData();
+        formData.append('audio',        audioBlob, `recording.${ext}`);
+        formData.append('wrong_text',   wrongText);
+        formData.append('correct_text', correctText);
+        formData.append('scenario',     scenario);
+
+        const res = await fetch('/api/v1/dataset/collect', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (res.ok) {
+          alert('✅ 感謝您的回報！資料已成功收集，將用於改善客語辨識模型。');
+          closeReportPanel();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert('❌ 送出失敗：' + (err.detail || res.status));
+        }
+      } catch (e) {
+        alert('❌ 連線失敗，請確認伺服器是否正常運作');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '📤 確認送出修正';
+      }
+    }
+
+    // ── 從 API 載入預設詞彙列表 ──
+    async function loadVocabList() {
+      try {
+        const res = await fetch('/api/practice/presets');
+        if (!res.ok) throw new Error();
+        const presets = await res.json();
+        document.getElementById('vocabList').innerHTML = presets.map(p => `
+          <div class="vocab-item" onclick="loadTask('${p.word.replace(/'/g, "\\'")}')">
+            <div style="flex:1;">
+              <div class="vocab-rom" style="font-size:16px;font-weight:700;color:#2E7D32;">${p.hakka}</div>
+              <div class="vocab-zh" style="font-size:12px;color:#888;margin-top:1px;">${p.word}</div>
+            </div>
+            <span class="vocab-diff"><span class="difficulty-badge easy">預設</span></span>
+          </div>
+        `).join('');
+      } catch {
+        // fallback 靜態清單
+        const words = [
+          { word: '蘋果', hakka: '頻果' },
+          { word: '椅子', hakka: '椅仔' },
+          { word: '電視', hakka: '電視' },
+        ];
+        document.getElementById('vocabList').innerHTML = words.map(p => `
+          <div class="vocab-item" onclick="loadTask('${p.word}')">
+            <span class="vocab-zh">${p.word}</span>
+            <span class="vocab-rom">${p.hakka}</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    // ── 載入我的單字（去重，點擊開 modal）──
+    let _myWordsData = [];
+
+    async function loadMyWords() {
+      const user = getUser();
+      const container = document.getElementById('myWordsList');
+      if (!user) {
+        container.innerHTML = '<div style="padding:16px;color:#aaa;font-size:13px;text-align:center;">請先登入</div>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/saved_words/unique?user_id=${user.id}`);
+        if (!res.ok) throw new Error();
+        const words = await res.json();
+        _myWordsData = words;
+
+        if (words.length === 0) {
+          container.innerHTML = `
+            <div style="padding:16px;color:#aaa;font-size:13px;text-align:center;">
+              還沒有儲存任何單字，去<a href="/recognition" style="color:#4CAF50;">拍照學習</a>頁面儲存吧！
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = words.map((w, i) => {
+          const badge = w.source === 'ocr'
+            ? `<span style="background:#F3E5F5;color:#6A1B9A;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;margin-left:6px;">🔤</span>`
+            : (w.count > 1 ? `<span style="background:#E8F5E9;color:#2E7D32;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;margin-left:6px;">×${w.count}</span>` : '');
+          return `
+          <div class="vocab-item" onclick="openWordModal(${i})">
+            <div style="flex:1;">
+              <div style="font-size:16px;font-weight:700;color:#2E7D32;">${w.label_hakka}${badge}</div>
+              ${w.label_pinyin ? `<div style="font-size:11px;color:#4CAF50;margin:1px 0;">${w.label_pinyin}</div>` : ''}
+              <div style="font-size:12px;color:#888;">${w.label_zh}</div>
+            </div>
+            <span style="margin-left:auto;font-size:18px;color:#ccc;">›</span>
+          </div>
+        `}).join('');
+
+      } catch (e) {
+        container.innerHTML = '<div style="padding:16px;color:#aaa;font-size:13px;text-align:center;">載入失敗</div>';
+      }
+    }
+
+    // ── 單字詳細 modal ──
+    let _selectedWord = null;
+
+    function openWordModal(index) {
+      const w = _myWordsData[index];
+      if (!w) return;
+      _selectedWord = w;
+
+      // 圖片
+      const img = document.getElementById('wordModalImg');
+      if (w.image_path) {
+        img.src = w.image_path;
+        img.style.display = 'block';
+      } else {
+        img.style.display = 'none';
+      }
+
+      // 客語（大字）、拼音（中字）、中文（小字）
+      document.getElementById('wordModalHakka').textContent = w.label_hakka;
+      // 拼音行（動態插入，避免改 HTML 結構）
+      let pinyinEl = document.getElementById('wordModalPinyin');
+      if (!pinyinEl) {
+        pinyinEl = document.createElement('div');
+        pinyinEl.id = 'wordModalPinyin';
+        pinyinEl.style.cssText = 'font-size:14px;color:#4CAF50;margin:-6px 0 6px;';
+        document.getElementById('wordModalHakka').insertAdjacentElement('afterend', pinyinEl);
+      }
+      pinyinEl.textContent = w.label_pinyin || '';
+      document.getElementById('wordModalZh').textContent = w.label_zh ? `中文：${w.label_zh}` : '';
+
+      // 單字音檔
+      const audio = document.getElementById('wordModalAudio');
+      if (w.audio_path) {
+        audio.src = w.audio_path;
+        audio.style.display = 'block';
+      } else {
+        audio.style.display = 'none';
+      }
+
+      // 造句區
+      const sentenceBox = document.getElementById('wordModalSentenceBox');
+      if (w.sentence_zh || w.sentence_hakka) {
+        document.getElementById('wordModalSentenceZh').textContent    = w.sentence_zh    ? `中文：${w.sentence_zh}`    : '';
+        document.getElementById('wordModalSentenceHakka').textContent = w.sentence_hakka ? `客語：${w.sentence_hakka}` : '';
+
+        const sentAudio = document.getElementById('wordModalSentenceAudio');
+        if (w.sentence_audio_path) {
+          sentAudio.src = w.sentence_audio_path;
+          sentAudio.style.display = 'block';
+        } else {
+          sentAudio.style.display = 'none';
+        }
+        sentenceBox.style.display = 'block';
+      } else {
+        sentenceBox.style.display = 'none';
+      }
+
+      document.getElementById('wordModalOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeWordModal(e) {
+      if (e.target === document.getElementById('wordModalOverlay')) closeWordModalDirect();
+    }
+
+    function closeWordModalDirect() {
+      document.getElementById('wordModalOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+      // 停止播放
+      document.getElementById('wordModalAudio').pause();
+      document.getElementById('wordModalSentenceAudio').pause();
+    }
+
+    function practiceThisWord() {
+      if (!_selectedWord) return;
+      closeWordModalDirect();
+      loadTask(_selectedWord.label_zh);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 初始化：若 URL 帶有 ?word= 參數則直接載入該題
+    const urlParams = new URLSearchParams(window.location.search);
+    const wordParam = urlParams.get('word');
+    loadTask(wordParam || null);
+    loadVocabList();
+    loadMyWords();
+  </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # 資料庫服務
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: hakka2026
+      POSTGRES_DB: dbname
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # FastAPI 服務
+  api:
+    build: .
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"
+    environment:
+      # 注意：這裡的主機名要寫 "db" (服務名稱)，而不是 localhost
+      # 修正後的第 27 行
+      DATABASE_URL: "postgresql+asyncpg://user:hakka2026@db:5432/dbname"
+      LLM_MODEL_PATH: "${LLM_MODEL_PATH:-/app/data/qwen2.5-3b-instruct-q4_k_m.gguf}"
+      HAKKA_USERNAME: "${HAKKA_USERNAME}"
+      HAKKA_PASSWORD: "${HAKKA_PASSWORD}"
+    depends_on:
+      - db
+    # FastAPI/Streamlit 服務
+    volumes:
+      - ./data:/app/data  # 👈 新增這一行，把本地的 data 資料夾掛載到容器的 /app/data
+
+volumes:
+  postgres_data:
+
+
