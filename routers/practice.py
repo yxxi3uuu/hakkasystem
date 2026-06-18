@@ -99,64 +99,93 @@ class ScoreResult(BaseModel):
     message: str
 
 
-def dtw_score_ssl(y_user: np.ndarray, y_ref: np.ndarray, sr: int) -> int:
+def dtw_score_ssl(y_user: np.ndarray, y_ref: np.ndarray, sr: int) -> tuple[int, str]:
+    # 1. 前處理 (保持原本寫好的高鑑別度設定)
     y_user, _ = librosa.effects.trim(y_user, top_db=15)
-    y_user = y_user / (np.max(np.abs(y_user)) + 1e-6) * np.max(np.abs(y_ref))
+    y_user = y_user / (np.max(np.abs(y_user)) + 1e-6) * np.max(np.abs(y_ref)) 
 
-    mfcc_ref = librosa.feature.mfcc(y=y_ref, sr=sr, n_mfcc=13)
-    mfcc_user = librosa.feature.mfcc(y=y_user, sr=sr, n_mfcc=13)
+    mfcc_ref = librosa.feature.mfcc(y=y_ref, sr=sr, n_mfcc=13) 
+    mfcc_user = librosa.feature.mfcc(y=y_user, sr=sr, n_mfcc=13) 
 
-    feat_ref = np.concatenate(
-        [mfcc_ref, librosa.feature.delta(mfcc_ref), librosa.feature.delta(mfcc_ref, order=2)],
-        axis=0
-    )
-    feat_user = np.concatenate(
-        [mfcc_user, librosa.feature.delta(mfcc_user), librosa.feature.delta(mfcc_user, order=2)],
-        axis=0
-    )
+    feat_ref = np.concatenate([mfcc_ref, librosa.feature.delta(mfcc_ref), librosa.feature.delta(mfcc_ref, order=2)], axis=0) 
+    feat_user = np.concatenate([mfcc_user, librosa.feature.delta(mfcc_user), librosa.feature.delta(mfcc_user, order=2)], axis=0) 
 
-    feat_ref = (feat_ref - np.mean(feat_ref)) / (np.std(feat_ref) + 1e-6)
-    feat_user = (feat_user - np.mean(feat_user)) / (np.std(feat_user) + 1e-6)
+    feat_ref = (feat_ref - np.mean(feat_ref)) / (np.std(feat_ref) + 1e-6) 
+    feat_user = (feat_user - np.mean(feat_user)) / (np.std(feat_user) + 1e-6) 
 
-    D, wp = librosa.sequence.dtw(X=feat_ref, Y=feat_user, metric="euclidean")
+    D, wp = librosa.sequence.dtw(X=feat_ref, Y=feat_user, metric="euclidean") 
     avg_dist = D[-1, -1] / len(wp)
 
-    user_len = feat_user.shape[1]
-    ref_len = feat_ref.shape[1]
-    coverage_ratio = user_len / ref_len
-    path_deviation = len(wp) / max(user_len, ref_len)
+    user_len = feat_user.shape[1] 
+    ref_len = feat_ref.shape[1] 
+    coverage_ratio = user_len / ref_len 
+    path_deviation = len(wp) / max(user_len, ref_len) 
 
-    if avg_dist < 3.2:
-        base_score = 100 - (avg_dist * 1.5)
-    elif avg_dist < 6.0:
-        base_score = 85 - (avg_dist - 3.2) * 15.0
+    # 分數映射邏輯 
+    if avg_dist < 3.2: 
+        base_score = 100 - (avg_dist * 1.5) 
+    elif avg_dist < 6.0: 
+        base_score = 85 - (avg_dist - 3.2) * 15.0 
+    else: 
+        base_score = 10 
+
+    final_score = base_score 
+
+    user_vol = np.mean(np.std(feat_user, axis=1)) 
+    ref_vol = np.mean(np.std(feat_ref, axis=1)) 
+    vol_ratio = user_vol / (ref_vol + 1e-6) 
+
+    if vol_ratio < 0.85: 
+        final_score *= 0.4 
+    if path_deviation > 1.05: 
+        final_score *= 0.3 
+    if coverage_ratio < 0.80 or coverage_ratio > 1.30: 
+        penalty = min(coverage_ratio, 1 / coverage_ratio) ** 2 
+        final_score *= penalty 
+
+    # --- 🌟 核心升級：物理能量音節切分與分析 🌟 ---
+    # 利用短時能量 (RMS) 分析標準音有幾個音節起伏
+    rms_ref = librosa.feature.rms(y=y_ref)[0]
+    threshold = np.max(rms_ref) * 0.3
+    voiced_frames = np.where(rms_ref > threshold)[0]
+    
+    peaks = []
+    if len(voiced_frames) > 0:
+        current_peak = [voiced_frames[0]]
+        for f in voiced_frames[1:]:
+            if f - current_peak[-1] > 5:  # 空隙大於 5 幀視為不同音節
+                peaks.append(int(np.mean(current_peak)))
+                current_peak = [f]
+            else:
+                current_peak.append(f)
+        peaks.append(int(np.mean(current_peak)))
+
+    num_syllables = len(peaks)
+    bad_segments = []
+
+    # 如果有明顯多個音節，檢查使用者在哪個區間表現較差
+    if num_syllables > 1:
+        for i, peak_frame in enumerate(peaks):
+            seg_dists = [
+                np.linalg.norm(feat_ref[:, r] - feat_user[:, u]) 
+                for r, u in wp if abs(r - peak_frame) < (ref_len / (num_syllables * 2))
+            ]
+            if seg_dists and np.mean(seg_dists) > 4.5:
+                bad_segments.append(i + 1)
+
+    # 組合死板的診斷數據報告，留給 AI 當作 Prompt 輸入
+    if final_score < 45:
+        diagnostic_report = "整體語速、音調或發音嚴重偏離標準音節節奏。"
+    elif len(bad_segments) == 0:
+        diagnostic_report = "所有音節的發音、咬字與音調起伏皆完美契合標準音。"
     else:
-        base_score = 10
+        seg_str = "、".join([f"第 {x} 個音節" for x in bad_segments])
+        diagnostic_report = f"大部分發音良好，但偵測到【{seg_str}】的音調或咬字有些許瑕疵。"
 
-    final_score = base_score
-
-    user_vol = np.mean(np.std(feat_user, axis=1))
-    ref_vol = np.mean(np.std(feat_ref, axis=1))
-    vol_ratio = user_vol / (ref_vol + 1e-6)
-
-    if vol_ratio < 0.85:
-        final_score *= 0.4
-
-    if path_deviation > 1.05:
-        final_score *= 0.3
-
-    if coverage_ratio < 0.80 or coverage_ratio > 1.30:
-        penalty = min(coverage_ratio, 1 / coverage_ratio) ** 2
-        final_score *= penalty
-
-    print(
-        f"\n[DEBUG] 距離: {avg_dist:.2f} | "
-        f"覆蓋率: {coverage_ratio:.2f} | "
-        f"偏差: {path_deviation:.2f} | "
-        f"分數: {final_score}"
-    )
-
-    return int(np.clip(final_score, 0, 100))
+    print(f"[DEBUG] 總分: {final_score:.1f} | 物理診斷報告: {diagnostic_report}")
+    
+    # 傳回最終分數與診斷數據報告
+    return int(np.clip(final_score, 0, 100)), diagnostic_report
 
 
 @router.get("/presets")
@@ -206,6 +235,14 @@ async def get_task(
     p = random.choice(PRESET_WORDS)
     return Task(word=p["word"], hakka=p["hakka"], image_path=p["image_path"], audio_url=p["audio_url"])
 
+class ScoreResult(BaseModel):
+    score: int 
+    message: str 
+    ai_advice: str  
+
+# 初始化 Gemini 客戶端 (請記得在環境變數或程式中設定你的 API 金鑰)
+from google import genai
+ai_client = genai.Client()
 
 @router.post("/score", response_model=ScoreResult)
 async def score_recording(
@@ -300,16 +337,39 @@ async def score_recording(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"資源處理失敗：{e}")
 
-    if len(y_user) == 0:
-        return ScoreResult(score=0, message="偵測不到有效發音。")
+    if len(y_user) == 0: 
+        return ScoreResult(score=0, message="偵測不到有效發音。", ai_advice="請靠近麥克風再試一次。")
 
-    final_score = dtw_score_ssl(y_user, y_ref, sr)
+    # 執行我們升級後的 DTW 演算法，拿到分數與數據報告
+    final_score, diagnostic_report = dtw_score_ssl(y_user, y_ref, sr)
 
     if final_score > 80:
-        message = "太棒了！你的發音與標準音契合度極高。"
+        message = "太棒了！你的發音非常標準。"
     elif final_score > 50:
         message = "表現不錯，請嘗試注意發音細節後再挑戰！"
     else:
         message = "差距明顯，建議先多聽幾次標準發音喔。"
+        
+    try:
+        prompt = f"""
+        你是一位極具親和力且溫柔的台灣客家話家教老師。
+        有一位學生剛剛練習了這個客語詞彙：『{word}』。
+        
+        後端聲學演算法給出的客觀評分與數據報告如下：
+        - 學生得分：{final_score} 分
+        - 演算法診斷結果：{diagnostic_report}
+        
+        請根據以上數據，用 30 個字以內、親切多變的口吻，給予學生一句具體的發音優化建議或鼓勵。
+        嚴格限制：不要重複演算法專有名詞，直接告訴他哪裡好、哪裡需要微調即可。
+        """
+        
+        response = ai_client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=prompt,
+        )
+        ai_advice = response.text.strip()
+    except Exception as e:
+        # 保底機制：如果 API 網路有問題，就使用原本的診斷報告
+        ai_advice = f"{diagnostic_report}"
 
-    return ScoreResult(score=final_score, message=message)
+    return ScoreResult(score=final_score, message=message, ai_advice=ai_advice)
