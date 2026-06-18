@@ -192,6 +192,10 @@
       <div class="score-bar"><div class="score-fill" id="scoreFill" style="width:0%"></div></div>
       <div class="score-text" id="scoreText">0 分</div>
       <p id="scoreMsg" style="font-size:13px;color:#555;margin-top:8px;"></p>
+      <div id="aiAdviceWrap" style="background: #E8F5E9; border-left: 4px solid #4CAF50; border-radius: 8px; padding: 12px; margin-top: 12px; text-align: left;">
+        <div style="font-size: 11px; color: #2E7D32; font-weight: bold; margin-bottom: 4px;">🤖 客家 AI 老師的悄悄話</div>
+        <p id="aiAdviceText" style="font-size: 13px; color: #333; margin: 0; line-height: 1.5;">正在思考發音建議...</p>
+      </div>
       <button
         onclick="openReportPanel()"
         style="margin-top:10px;padding:8px 18px;border-radius:20px;border:1.5px solid #FFC107;
@@ -297,6 +301,9 @@
     async function loadTask(word = null) {
       document.getElementById('scoreWrap').style.display = 'none';
       document.getElementById('scoreMsg').textContent    = '';
+      if (document.getElementById('aiAdviceWrap')) {
+        document.getElementById('aiAdviceWrap').style.display = 'none';
+      }
       try {
         const user = getUser();
 
@@ -415,6 +422,14 @@
     document.getElementById('scoreFill').style.width = data.score + '%';
     document.getElementById('scoreText').textContent = data.score + ' 分';
     document.getElementById('scoreMsg').textContent = data.message;
+
+    if (data.ai_advice) {
+      document.getElementById('aiAdviceWrap').style.display = 'block';
+      document.getElementById('aiAdviceText').textContent = data.ai_advice;
+    } else {
+      document.getElementById('aiAdviceWrap').style.display = 'none';
+    }
+
     hint.textContent = '點擊麥克風開始錄音';
 
     if (user && data.score > 0) {
