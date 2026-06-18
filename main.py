@@ -4,7 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # 必須在所有其他 import 之前載入 .env，確保 DATABASE_URL 等環境變數正確
-load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env", override=True)
+load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 
 from fastapi import FastAPI, Depends, Request
 from fastapi.staticfiles import StaticFiles
@@ -32,10 +32,6 @@ async def lifespan(app: FastAPI):
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-            await conn.execute(text(
-                "ALTER TABLE saved_words "
-                "ADD COLUMN IF NOT EXISTS source VARCHAR DEFAULT 'yolo'"
-            ))
         print("DB tables ready")
     except Exception as e:
         print(f"DB init warning: {e}")
