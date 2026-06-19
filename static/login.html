@@ -118,6 +118,10 @@
         <input type="password" id="loginPassword" placeholder="請輸入密碼" required />
       </div>
       <button type="submit" class="submit-btn" id="loginBtn">登入</button>
+      <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:13px;">
+        <span onclick="switchTab('reset')" style="color:#4CAF50;cursor:pointer;">忘記密碼？</span>
+        <span onclick="switchTab('register')" style="color:#4CAF50;cursor:pointer;">還沒有帳號？立即註冊</span>
+      </div>
     </form>
 
     <!-- 註冊表單 -->
@@ -139,6 +143,29 @@
         <input type="password" id="regConfirm" placeholder="再次輸入密碼" required />
       </div>
       <button type="submit" class="submit-btn" id="regBtn">註冊</button>
+      <div style="text-align:center;margin-top:14px;font-size:13px;">
+        已有帳號？<span onclick="switchTab('login')" style="color:#4CAF50;cursor:pointer;">直接登入</span>
+      </div>
+    </form>
+
+    <!-- 忘記密碼表單 -->
+    <form id="resetForm" style="display:none;" onsubmit="handleReset(event)">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="resetEmail" placeholder="請輸入註冊時的 Email" required />
+      </div>
+      <div class="form-group">
+        <label>新密碼</label>
+        <input type="password" id="resetPassword" placeholder="請輸入新密碼（至少 6 位）" minlength="6" required />
+      </div>
+      <div class="form-group">
+        <label>確認新密碼</label>
+        <input type="password" id="resetConfirm" placeholder="再次輸入新密碼" required />
+      </div>
+      <button type="submit" class="submit-btn" id="resetBtn">重設密碼</button>
+      <div style="text-align:center;margin-top:14px;font-size:13px;">
+        想起密碼了？<span onclick="switchTab('login')" style="color:#4CAF50;cursor:pointer;">返回登入</span>
+      </div>
     </form>
   </div>
 
@@ -147,8 +174,9 @@
       document.querySelectorAll('.tab').forEach((t, i) => {
         t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
       });
-      document.getElementById('loginForm').style.display    = tab === 'login' ? 'block' : 'none';
-      document.getElementById('registerForm').style.display  = tab === 'register' ? 'block' : 'none';
+      document.getElementById('loginForm').style.display   = tab === 'login'    ? 'block' : 'none';
+      document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+      document.getElementById('resetForm').style.display   = tab === 'reset'    ? 'block' : 'none';
       hideMessages();
     }
 
@@ -242,6 +270,36 @@
       } finally {
         btn.disabled = false;
         btn.textContent = '註冊';
+      }
+    }
+
+    async function handleReset(e) {
+      e.preventDefault();
+      hideMessages();
+      const pw  = document.getElementById('resetPassword').value;
+      const pw2 = document.getElementById('resetConfirm').value;
+      if (pw !== pw2) { showError('兩次密碼不一致'); return; }
+      const btn = document.getElementById('resetBtn');
+      btn.disabled = true;
+      btn.textContent = '重設中...';
+      try {
+        const res = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: document.getElementById('resetEmail').value,
+            new_password: pw,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) { showError(data.detail || '重設失敗'); return; }
+        showSuccess('密碼重設成功！請重新登入');
+        setTimeout(() => switchTab('login'), 1500);
+      } catch (err) {
+        showError('網路錯誤，請稍後再試');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '重設密碼';
       }
     }
 

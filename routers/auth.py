@@ -84,6 +84,25 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
         message="登入成功",
     )
 
+# ── 重設密碼 ──
+class ResetPasswordRequest(BaseModel):
+    email: str
+    new_password: str
+
+@router.post("/reset-password")
+async def reset_password(req: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+    user = (await db.execute(
+        select(User).where(User.email == req.email)
+    )).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="此 Email 尚未註冊")
+    if len(req.new_password) < 6:
+        raise HTTPException(status_code=400, detail="密碼至少需要 6 位")
+    user.password = hash_password(req.new_password)
+    await db.commit()
+    return {"message": "密碼已重設成功"}
+
+
 # ── 登出 ──
 @router.post("/logout")
 async def logout():
