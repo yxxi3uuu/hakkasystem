@@ -7,6 +7,29 @@ class User(Base):
     name     = Column(String)
     email    = Column(String, unique=True)
     password = Column(String)  # hashed password
+    is_admin = Column(Boolean, default=False)
+    role     = Column(String, default="student")  # student | teacher | admin
+
+
+class Class(Base):
+    __tablename__ = "classes"
+    id          = Column(Integer, primary_key=True, index=True)
+    name        = Column(String, nullable=False)
+    description = Column(String, default="")
+
+
+class ClassTeacher(Base):
+    __tablename__ = "class_teachers"
+    id         = Column(Integer, primary_key=True, index=True)
+    class_id   = Column(Integer, ForeignKey("classes.id", ondelete="CASCADE"))
+    teacher_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+
+
+class ClassStudent(Base):
+    __tablename__ = "class_students"
+    id         = Column(Integer, primary_key=True, index=True)
+    class_id   = Column(Integer, ForeignKey("classes.id", ondelete="CASCADE"))
+    student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
 
 class LearningStats(Base):
     __tablename__ = "learning_stats"

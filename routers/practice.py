@@ -241,8 +241,18 @@ class ScoreResult(BaseModel):
     ai_advice: str  
 
 # 初始化 Gemini 客戶端 (請記得在環境變數或程式中設定你的 API 金鑰)
-from google import genai
-ai_client = genai.Client()
+try:
+    from google import genai as _genai
+    _gemini_key = os.getenv("GEMINI_API_KEY", "")
+    if _gemini_key:
+        ai_client = _genai.Client(api_key=_gemini_key)
+    else:
+        ai_client = None
+        print("[Gemini] GEMINI_API_KEY 未設定，語音評分將使用 fallback")
+except ImportError:
+    _genai = None
+    ai_client = None
+    print("[Gemini] google-genai 未安裝，語音評分將使用 fallback")
 
 @router.post("/score", response_model=ScoreResult)
 async def score_recording(
@@ -351,6 +361,8 @@ async def score_recording(
         message = "差距明顯，建議先多聽幾次標準發音喔。"
         
     try:
+        if not ai_client:
+            raise ValueError("Gemini client not available")
         prompt = f"""
         你是一位極具親和力且溫柔的台灣客家話家教老師。
         有一位學生剛剛練習了這個客語詞彙：『{word}』。

@@ -42,16 +42,29 @@ GEMINI_REVIEW_CLASSES = {
     for item in os.getenv("GEMINI_REVIEW_CLASSES", "wine glass").split(",")
     if item.strip()
 }
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
-gemini_client = (
-    genai.Client(api_key=GEMINI_API_KEY)
-    if genai is not None and GEMINI_API_KEY
-    else None
-)
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 UPLOAD_DIR = "static/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# ── Gemini client（lazy init，確保容器環境變數已注入）────────────────────
+_gemini_client = None
+
+def _get_gemini_client():
+    global _gemini_client
+    if _gemini_client is not None:
+        return _gemini_client
+    if genai is None:
+        return None
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        return None
+    try:
+        _gemini_client = genai.Client(api_key=api_key)
+        print(f"[Gemini] client 初始化成功，model={os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')}")
+    except Exception as e:
+        print(f"[Gemini] client 初始化失敗：{e}")
+    return _gemini_client
 
 COCO_ZH = {
     "person": "人", "bicycle": "腳踏車", "car": "汽車", "motorcycle": "摩托車",
@@ -167,6 +180,7 @@ def _recognize_with_gemini_sync(
     image_path: str,
     yolo_candidates: list[dict] | None = None
 ) -> list[dict]:
+    gemini_client = _get_gemini_client()
     if gemini_client is None or genai_types is None:
         return []
 
@@ -389,7 +403,7 @@ async def recognize_image(
             detected_objects = yolo_candidates
 
         if not detected_objects:
-            if gemini_client is None:
+            if _get_gemini_client() is None:
                 raise HTTPException(
                     status_code=422,
                     detail="未偵測到任何物件，且尚未設定 GEMINI_API_KEY"

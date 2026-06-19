@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理後台 - 客語隨拍隨學</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    body { background:#f5f7f5; }
+    .admin-wrap { max-width:960px; margin:0 auto; padding:16px 16px 100px; }
+    .page-title { font-size:22px; font-weight:800; color:#2E7D32; margin:0 0 4px; }
+    .page-sub   { font-size:13px; color:#888; margin-bottom:20px; }
+
+    /* 頁籤 */
+    .tabs { display:flex; gap:8px; margin-bottom:20px; border-bottom:2px solid #e0e0e0; padding-bottom:0; }
+    .tab  { padding:9px 20px; border:none; background:none; font-size:14px; font-weight:600;
+            color:#888; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; }
+    .tab.active { color:#2E7D32; border-bottom-color:#2E7D32; }
+
+    /* 卡片 */
+    .card { background:white; border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,0.07); margin-bottom:16px; overflow:hidden; }
+    .card-head { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #f0f0f0; }
+    .card-title { font-size:15px; font-weight:700; color:#333; }
+    .card-body  { padding:0; }
+
+    /* 表格 */
+    table { width:100%; border-collapse:collapse; }
+    th { background:#E8F5E9; color:#2E7D32; font-size:12px; font-weight:700; padding:9px 14px; text-align:left; }
+    td { font-size:13px; color:#444; padding:9px 14px; border-top:1px solid #f5f5f5; vertical-align:middle; }
+    tr:hover td { background:#fafffe; }
+
+    /* Badge */
+    .badge { border-radius:8px; padding:2px 8px; font-size:11px; font-weight:700; }
+    .badge-admin   { background:#FFF3E0; color:#E65100; }
+    .badge-teacher { background:#E8F5E9; color:#2E7D32; }
+    .badge-student { background:#F3F3F3; color:#666; }
+
+    /* 按鈕 */
+    .btn { padding:6px 14px; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; }
+    .btn-green  { background:#4CAF50; color:white; }
+    .btn-green:hover  { background:#388E3C; }
+    .btn-red    { background:#FFEBEE; color:#D32F2F; }
+    .btn-red:hover    { background:#FFCDD2; }
+    .btn-blue   { background:#E3F2FD; color:#1565C0; }
+    .btn-blue:hover   { background:#BBDEFB; }
+    .btn-gray   { background:#f0f0f0; color:#555; }
+    .btn-row    { display:flex; gap:6px; flex-wrap:wrap; }
+
+    /* 搜尋 */
+    .search-row { display:flex; gap:8px; margin-bottom:12px; }
+    .search-row input { flex:1; padding:8px 12px; border:1px solid #ddd; border-radius:10px; font-size:13px; outline:none; }
+    .search-row input:focus { border-color:#4CAF50; }
+
+    /* 班級卡片 */
+    .class-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; padding:16px; }
+    .class-card { border:1px solid #e0e0e0; border-radius:12px; padding:14px; background:#fafffe; }
+    .class-card-name { font-size:16px; font-weight:700; color:#2E7D32; margin-bottom:4px; }
+    .class-card-desc { font-size:12px; color:#888; margin-bottom:10px; }
+    .class-card-meta { font-size:12px; color:#555; margin-bottom:10px; }
+
+    /* 彈窗 */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:300; align-items:flex-end; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal-sheet { background:white; border-radius:20px 20px 0 0; width:100%; max-width:640px;
+                   max-height:85vh; overflow-y:auto; padding:24px 20px 40px; animation:slideUp 0.25s ease; }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .modal-handle { width:40px; height:4px; background:#ddd; border-radius:2px; margin:0 auto 20px; }
+    .modal-title  { font-size:18px; font-weight:800; color:#2E7D32; margin-bottom:4px; }
+    .modal-sub    { font-size:13px; color:#888; margin-bottom:16px; }
+    .tab-row { display:flex; gap:8px; margin-bottom:16px; }
+    .tab-btn { padding:6px 16px; border-radius:20px; border:none; font-size:13px; font-weight:600; cursor:pointer; background:#f0f0f0; color:#666; }
+    .tab-btn.active { background:#4CAF50; color:white; }
+
+    /* 單字格 */
+    .word-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+    .word-card { background:#f9f9f9; border-radius:12px; overflow:hidden; }
+    .word-card img { width:100%; aspect-ratio:4/3; object-fit:cover; display:block; background:#eee; }
+    .word-card-body { padding:8px 10px 10px; }
+    .word-card-hakka { font-size:16px; font-weight:800; color:#2E7D32; }
+    .word-card-pinyin { font-size:11px; color:#4CAF50; margin:1px 0 2px; }
+    .word-card-zh { font-size:12px; color:#888; }
+    .word-card-sentence { font-size:11px; color:#aaa; margin-top:4px; line-height:1.5; }
+    audio { width:100%; margin-top:6px; height:28px; }
+
+    .activity-item { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #f0f0f0; }
+    .activity-item:last-child { border-bottom:none; }
+    .act-score { margin-left:auto; font-size:15px; font-weight:800; color:#2E7D32; }
+
+    .empty-tip   { text-align:center; padding:30px; color:#bbb; font-size:13px; }
+    .loading-tip { text-align:center; padding:20px; color:#aaa; font-size:13px; }
+    .modal-close { display:block; width:100%; margin-top:16px; padding:12px; background:#f0f0f0;
+                   color:#555; border:none; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer; }
+
+    /* 新增表單 */
+    .form-row { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+    .form-row label { font-size:12px; color:#666; font-weight:600; }
+    .form-row input, .form-row select, .form-row textarea {
+      padding:9px 12px; border:1px solid #ddd; border-radius:10px; font-size:13px; outline:none; }
+    .form-row input:focus, .form-row select:focus { border-color:#4CAF50; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <a href="/profile" style="text-decoration:none;color:#2E7D32;font-size:22px;margin-right:8px;">‹</a>
+    <span style="font-size:22px;">🛡️</span>
+    <h1>管理後台</h1>
+  </div>
+
+  <div class="admin-wrap">
+    <div class="page-title" id="pageTitle">管理後台</div>
+    <div class="page-sub"  id="pageSub">載入中...</div>
+
+    <!-- 頁籤（admin 才有全部使用者和班級管理） -->
+    <div class="tabs" id="tabsBar">
+      <button class="tab active" onclick="showTab('classes')" id="tabClasses">🏫 我的班級</button>
+      <button class="tab" onclick="showTab('allUsers')" id="tabAllUsers" style="display:none;">👥 所有使用者</button>
+      <button class="tab" onclick="showTab('classAdmin')" id="tabClassAdmin" style="display:none;">⚙️ 班級管理</button>
+    </div>
+
+    <!-- 班級列表 -->
+    <div id="panelClasses">
+      <div id="classGrid" class="class-grid"><div class="loading-tip">載入中...</div></div>
+    </div>
+
+    <!-- 所有使用者（admin only） -->
+    <div id="panelAllUsers" style="display:none;">
+      <div class="search-row"><input type="text" id="searchInput" placeholder="搜尋姓名或 Email…" oninput="filterUsers()" /></div>
+      <div class="card">
+        <div class="card-body">
+          <table>
+            <thead><tr>
+              <th>ID</th><th>姓名</th><th>Email</th><th>角色</th>
+              <th>儲存單字</th><th>活動次數</th><th>平均分</th><th>操作</th>
+            </tr></thead>
+            <tbody id="userTableBody"><tr><td colspan="8" class="loading-tip">載入中...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 班級管理（admin only） -->
+    <div id="panelClassAdmin" style="display:none;">
+      <div class="card" style="padding:16px;">
+        <div class="card-title" style="margin-bottom:12px;">➕ 建立新班級</div>
+        <div class="form-row"><label>班級名稱</label><input type="text" id="newClassName" placeholder="例：三年甲班" /></div>
+        <div class="form-row"><label>說明（選填）</label><input type="text" id="newClassDesc" placeholder="例：108學年度客語班" /></div>
+        <button class="btn btn-green" onclick="createClass()">建立班級</button>
+      </div>
+      <div id="adminClassList"><div class="loading-tip">載入中...</div></div>
+    </div>
+  </div>
+
+  <!-- 班級學生彈窗 -->
+  <div class="modal-overlay" id="classModal" onclick="closeClassModal(event)">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="classModalTitle"></div>
+      <div class="modal-sub"   id="classModalSub"></div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <input type="text" id="addStudentEmail" placeholder="輸入學生 Email 加入班級" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;outline:none;" />
+        <button class="btn btn-green" onclick="addStudentByEmail()">加入</button>
+      </div>
+      <div id="classStudentList"><div class="loading-tip">載入中...</div></div>
+      <button class="modal-close" onclick="document.getElementById('classModal').classList.remove('open')">關閉</button>
+    </div>
+  </div>
+
+  <!-- 學生詳細彈窗 -->
+  <div class="modal-overlay" id="studentModal" onclick="closeStudentModal(event)">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="studentModalName"></div>
+      <div class="modal-sub"   id="studentModalEmail"></div>
+      <div class="tab-row">
+        <button class="tab-btn active" id="tabWords"      onclick="switchStudentTab('words')">📷 儲存單字</button>
+        <button class="tab-btn"        id="tabActivities" onclick="switchStudentTab('activities')">📊 學習記錄</button>
+      </div>
+      <div id="wordsPanel"></div>
+      <div id="activitiesPanel" style="display:none;"></div>
+      <button class="modal-close" onclick="document.getElementById('studentModal').classList.remove('open');document.body.style.overflow=''">關閉</button>
+    </div>
+  </div>
+
+  <!-- 指派老師彈窗（admin only） -->
+  <div class="modal-overlay" id="teacherModal" onclick="closeTeacherModal(event)">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="teacherModalTitle">指派老師</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <select id="teacherSelect" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;outline:none;"></select>
+        <button class="btn btn-green" onclick="addTeacher()">指派</button>
+      </div>
+      <div id="teacherList"><div class="loading-tip">載入中...</div></div>
+      <button class="modal-close" onclick="document.getElementById('teacherModal').classList.remove('open')">關閉</button>
+    </div>
+  </div>
+
+  <script src="/static/auth.js"></script>
+  <script>
+    requireLogin();
+    const user = getUser();
+    let myRole = 'student';
+    let allUsers = [];
+    let currentClassId = null;
+    let currentStudentId = null;
+
+    async function init() {
+      if (!user) return;
+      // 取得目前使用者角色
+      try {
+        const res = await fetch(`/api/admin/classes?admin_id=${user.id}`);
+        if (res.status === 403) {
+          document.querySelector('.admin-wrap').innerHTML = `
+            <div style="text-align:center;padding:60px 20px;color:#e53935;">
+              <div style="font-size:48px;margin-bottom:16px;">🚫</div>
+              <div style="font-size:18px;font-weight:700;">無管理權限</div>
+              <div style="font-size:13px;color:#888;margin-top:8px;">請聯絡管理員開通老師帳號</div>
+            </div>`;
+          return;
+        }
+      } catch(e) {}
+
+      // 從 localStorage 讀取 role（auth.js 存入）
+      myRole = user.role || 'student';
+      document.getElementById('pageTitle').textContent = myRole === 'admin' ? '超級管理者後台' : '老師後台';
+      document.getElementById('pageSub').textContent = `${user.name} 登入中`;
+
+      if (myRole === 'admin') {
+        document.getElementById('tabAllUsers').style.display = '';
+        document.getElementById('tabClassAdmin').style.display = '';
+      }
+      showTab('classes');
+    }
+
+    function showTab(tab) {
+      ['classes','allUsers','classAdmin'].forEach(t => {
+        document.getElementById('panel' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = 'none';
+        const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (btn) btn.classList.remove('active');
+      });
+      document.getElementById('panel' + tab.charAt(0).toUpperCase() + tab.slice(1)).style.display = '';
+      const activeBtn = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+      if (activeBtn) activeBtn.classList.add('active');
+
+      if (tab === 'classes') loadClasses();
+      if (tab === 'allUsers') loadAllUsers();
+      if (tab === 'classAdmin') loadAdminClasses();
+    }
+
+    // ── 班級列表 ──────────────────────────────────────────────────────
+    async function loadClasses() {
+      const grid = document.getElementById('classGrid');
+      grid.innerHTML = '<div class="loading-tip">載入中...</div>';
+      try {
+        const res = await fetch(`/api/admin/classes?admin_id=${user.id}`);
+        const classes = await res.json();
+        if (!classes.length) { grid.innerHTML = '<div class="empty-tip">尚無班級，請聯絡管理者建立班級</div>'; return; }
+        grid.innerHTML = classes.map(c => `
+          <div class="class-card">
+            <div class="class-card-name">🏫 ${c.name}</div>
+            <div class="class-card-desc">${c.description || ''}</div>
+            <div class="class-card-meta">學生人數：${c.student_count} 人</div>
+            <div class="class-card-meta">負責老師：${c.teachers.map(t=>t.name).join('、') || '尚未指派'}</div>
+            <div class="btn-row">
+              <button class="btn btn-green" onclick="openClassModal(${c.id},'${c.name.replace(/'/g,"\\'")}')">查看學生</button>
+            </div>
+          </div>`).join('');
+      } catch(e) { grid.innerHTML = '<div class="empty-tip">載入失敗</div>'; }
+    }
+
+    // ── 所有使用者（admin only）──────────────────────────────────────
+    async function loadAllUsers() {
+      try {
+        const res = await fetch(`/api/admin/users?admin_id=${user.id}`);
+        allUsers = await res.json();
+        renderUserTable(allUsers);
+      } catch(e) { document.getElementById('userTableBody').innerHTML = '<tr><td colspan="8" class="empty-tip">載入失敗</td></tr>'; }
+    }
+
+    function renderUserTable(users) {
+      const tbody = document.getElementById('userTableBody');
+      if (!users.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-tip">無資料</td></tr>'; return; }
+      tbody.innerHTML = users.map(u => `
+        <tr>
+          <td>${u.id}</td>
+          <td><strong>${u.name}</strong></td>
+          <td style="color:#888;">${u.email}</td>
+          <td><span class="badge badge-${u.role}">${{admin:'管理者',teacher:'老師',student:'學生'}[u.role]||u.role}</span></td>
+          <td>${u.vocab_count}</td>
+          <td>${u.activity_count}</td>
+          <td>${u.avg_score > 0 ? u.avg_score : '—'}</td>
+          <td>
+            <select onchange="changeRole(${u.id},this.value)" style="padding:4px 8px;border-radius:8px;border:1px solid #ddd;font-size:12px;">
+              <option value="student" ${u.role==='student'?'selected':''}>學生</option>
+              <option value="teacher" ${u.role==='teacher'?'selected':''}>老師</option>
+              <option value="admin"   ${u.role==='admin'  ?'selected':''}>管理者</option>
+            </select>
+          </td>
+        </tr>`).join('');
+    }
+
+    function filterUsers() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      renderUserTable(q ? allUsers.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) : allUsers);
+    }
+
+    async function changeRole(userId, role) {
+      await fetch(`/api/admin/users/${userId}/set-role?admin_id=${user.id}&role=${role}`, { method:'POST' });
+    }
+
+    // ── 班級管理（admin only）──────────────────────────────────────────
+    async function loadAdminClasses() {
+      const el = document.getElementById('adminClassList');
+      el.innerHTML = '<div class="loading-tip">載入中...</div>';
+      try {
+        const res = await fetch(`/api/admin/classes?admin_id=${user.id}`);
+        const classes = await res.json();
+        if (!classes.length) { el.innerHTML = '<div class="empty-tip">尚無班級</div>'; return; }
+        el.innerHTML = classes.map(c => `
+          <div class="card" style="margin-bottom:12px;">
+            <div class="card-head">
+              <span class="card-title">🏫 ${c.name}</span>
+              <div class="btn-row">
+                <button class="btn btn-blue" onclick="openTeacherModal(${c.id},'${c.name.replace(/'/g,"\\'")}')">指派老師</button>
+                <button class="btn btn-red"  onclick="deleteClass(${c.id},'${c.name.replace(/'/g,"\\'")}')">刪除</button>
+              </div>
+            </div>
+            <div style="padding:10px 16px;font-size:13px;color:#666;">
+              老師：${c.teachers.map(t=>t.name).join('、') || '尚未指派'} ｜ 學生：${c.student_count} 人
+            </div>
+          </div>`).join('');
+      } catch(e) { el.innerHTML = '<div class="empty-tip">載入失敗</div>'; }
+    }
+
+    async function createClass() {
+      const name = document.getElementById('newClassName').value.trim();
+      if (!name) { alert('請輸入班級名稱'); return; }
+      const desc = document.getElementById('newClassDesc').value.trim();
+      await fetch(`/api/admin/classes?admin_id=${user.id}`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ name, description: desc })
+      });
+      document.getElementById('newClassName').value = '';
+      document.getElementById('newClassDesc').value = '';
+      loadAdminClasses();
+    }
+
+    async function deleteClass(classId, name) {
+      if (!confirm(`確定刪除班級「${name}」？`)) return;
+      await fetch(`/api/admin/classes/${classId}?admin_id=${user.id}`, { method:'DELETE' });
+      loadAdminClasses();
+    }
+
+    // ── 班級學生彈窗 ────────────────────────────────────────────────
+    async function openClassModal(classId, name) {
+      currentClassId = classId;
+      document.getElementById('classModalTitle').textContent = `🏫 ${name}`;
+      document.getElementById('classModalSub').textContent = '班級學生名單';
+      document.getElementById('addStudentEmail').value = '';
+      document.getElementById('classStudentList').innerHTML = '<div class="loading-tip">載入中...</div>';
+      document.getElementById('classModal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      await loadClassStudents(classId);
+    }
+
+    async function loadClassStudents(classId) {
+      try {
+        const res = await fetch(`/api/admin/classes/${classId}/students?admin_id=${user.id}`);
+        const students = await res.json();
+        const el = document.getElementById('classStudentList');
+        if (!students.length) { el.innerHTML = '<div class="empty-tip">尚無學生，請加入學生</div>'; return; }
+        el.innerHTML = `<table><thead><tr><th>姓名</th><th>Email</th><th>單字</th><th>活動</th><th>平均分</th><th>操作</th></tr></thead><tbody>
+          ${students.map(s => `<tr>
+            <td><strong>${s.name}</strong></td>
+            <td style="color:#888;">${s.email}</td>
+            <td>${s.vocab_count}</td>
+            <td>${s.activity_count}</td>
+            <td>${s.avg_score > 0 ? s.avg_score : '—'}</td>
+            <td class="btn-row">
+              <button class="btn btn-blue" data-sid="${s.id}" data-name="${s.name.replace(/"/g,'&quot;')}" data-email="${s.email.replace(/"/g,'&quot;')}" onclick="openStudentFromBtn(this)">詳細</button>
+              <button class="btn btn-red"  onclick="removeStudent(${classId},${s.id})">移除</button>
+            </td>
+          </tr>`).join('')}
+        </tbody></table>`;
+      } catch(e) { document.getElementById('classStudentList').innerHTML = '<div class="empty-tip">載入失敗</div>'; }
+    }
+
+    async function addStudentByEmail() {
+      const email = document.getElementById('addStudentEmail').value.trim();
+      if (!email) return;
+      const allRes = await fetch(`/api/admin/users?admin_id=${user.id}`);
+      if (!allRes.ok) { alert('無法取得使用者清單'); return; }
+      const users = await allRes.json();
+      const target = users.find(u => u.email === email);
+      if (!target) { alert('找不到此 Email 的使用者'); return; }
+      await fetch(`/api/admin/classes/${currentClassId}/students/${target.id}?admin_id=${user.id}`, { method:'POST' });
+      document.getElementById('addStudentEmail').value = '';
+      loadClassStudents(currentClassId);
+    }
+
+    async function removeStudent(classId, studentId) {
+      await fetch(`/api/admin/classes/${classId}/students/${studentId}?admin_id=${user.id}`, { method:'DELETE' });
+      loadClassStudents(classId);
+    }
+
+    function closeClassModal(e) {
+      if (e.target === document.getElementById('classModal')) {
+        document.getElementById('classModal').classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    }
+
+    // ── 指派老師彈窗 ────────────────────────────────────────────────
+    async function openTeacherModal(classId, name) {
+      currentClassId = classId;
+      document.getElementById('teacherModalTitle').textContent = `指派老師 — ${name}`;
+      document.getElementById('teacherModal').classList.add('open');
+      // 載入所有老師
+      const res = await fetch(`/api/admin/users?admin_id=${user.id}`);
+      const users = await res.json();
+      const teachers = users.filter(u => u.role === 'teacher' || u.role === 'admin');
+      const sel = document.getElementById('teacherSelect');
+      sel.innerHTML = teachers.map(t => `<option value="${t.id}">${t.name} (${t.email})</option>`).join('');
+      // 載入現有老師
+      const cRes = await fetch(`/api/admin/classes?admin_id=${user.id}`);
+      const classes = await cRes.json();
+      const cls = classes.find(c => c.id === classId);
+      document.getElementById('teacherList').innerHTML = cls ? cls.teachers.map(t => `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+          <span>${t.name}</span>
+          <button class="btn btn-red" onclick="removeTeacher(${classId},${t.id},this)">移除</button>
+        </div>`).join('') || '<div class="empty-tip">尚未指派老師</div>' : '';
+    }
+
+    async function addTeacher() {
+      const teacherId = parseInt(document.getElementById('teacherSelect').value);
+      if (!teacherId) return;
+      await fetch(`/api/admin/classes/${currentClassId}/teachers/${teacherId}?admin_id=${user.id}`, { method:'POST' });
+      openTeacherModal(currentClassId, document.getElementById('teacherModalTitle').textContent.replace('指派老師 — ',''));
+    }
+
+    async function removeTeacher(classId, teacherId, btn) {
+      await fetch(`/api/admin/classes/${classId}/teachers/${teacherId}?admin_id=${user.id}`, { method:'DELETE' });
+      btn.closest('div').remove();
+    }
+
+    function closeTeacherModal(e) {
+      if (e.target === document.getElementById('teacherModal')) document.getElementById('teacherModal').classList.remove('open');
+    }
+
+    // ── 學生詳細彈窗 ────────────────────────────────────────────────
+    function openStudentFromBtn(btn) {
+      openStudentModal(parseInt(btn.dataset.sid), btn.dataset.name, btn.dataset.email);
+    }
+
+    async function openStudentModal(studentId, name, email) {
+      currentStudentId = studentId;
+      document.getElementById('studentModalName').textContent = name;
+      document.getElementById('studentModalEmail').textContent = email;
+      document.getElementById('wordsPanel').innerHTML = '<div class="loading-tip">載入中...</div>';
+      document.getElementById('activitiesPanel').innerHTML = '';
+      switchStudentTab('words');
+      document.getElementById('studentModal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      await loadStudentWords(studentId);
+    }
+
+    async function switchStudentTab(tab) {
+      document.getElementById('tabWords').classList.toggle('active', tab === 'words');
+      document.getElementById('tabActivities').classList.toggle('active', tab === 'activities');
+      document.getElementById('wordsPanel').style.display = tab === 'words' ? '' : 'none';
+      document.getElementById('activitiesPanel').style.display = tab === 'activities' ? '' : 'none';
+      if (tab === 'activities' && currentStudentId && !document.getElementById('activitiesPanel').innerHTML)
+        await loadStudentActivities(currentStudentId);
+    }
+
+    async function loadStudentWords(studentId) {
+      try {
+        const res = await fetch(`/api/admin/users/${studentId}/words?admin_id=${user.id}`);
+        const words = await res.json();
+        const panel = document.getElementById('wordsPanel');
+        if (!words.length) { panel.innerHTML = '<div class="empty-tip">尚未儲存任何單字</div>'; return; }
+        panel.innerHTML = `<div class="word-grid">${words.map(w => `
+          <div class="word-card">
+            ${w.image_path ? `<img src="${w.image_path}" alt="${w.label_zh}" onerror="this.style.display='none'" />` : ''}
+            <div class="word-card-body">
+              <div class="word-card-hakka">${w.label_hakka||'—'}</div>
+              ${w.label_pinyin?`<div class="word-card-pinyin">${w.label_pinyin}</div>`:''}
+              <div class="word-card-zh">${w.label_zh}</div>
+              ${w.sentence_zh?`<div class="word-card-sentence">${w.sentence_zh}</div>`:''}
+              ${w.audio_path?`<audio controls src="${w.audio_path}"></audio>`:''}
+            </div>
+          </div>`).join('')}</div>`;
+      } catch(e) { document.getElementById('wordsPanel').innerHTML = '<div class="empty-tip">載入失敗</div>'; }
+    }
+
+    async function loadStudentActivities(studentId) {
+      try {
+        const res = await fetch(`/api/admin/users/${studentId}/activities?admin_id=${user.id}`);
+        const acts = await res.json();
+        const panel = document.getElementById('activitiesPanel');
+        if (!acts.length) { panel.innerHTML = '<div class="empty-tip">尚無學習記錄</div>'; return; }
+        panel.innerHTML = acts.map(a => `
+          <div class="activity-item">
+            <div style="font-size:22px;">${a.icon}</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;">${a.title}</div>
+              <div style="font-size:11px;color:#aaa;">${a.created_at}</div>
+            </div>
+            ${a.score > 0 ? `<div class="act-score">${a.score}分</div>` : ''}
+          </div>`).join('');
+      } catch(e) { document.getElementById('activitiesPanel').innerHTML = '<div class="empty-tip">載入失敗</div>'; }
+    }
+
+    function closeStudentModal(e) {
+      if (e.target === document.getElementById('studentModal')) {
+        document.getElementById('studentModal').classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

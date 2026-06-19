@@ -33,6 +33,7 @@ class AuthResponse(BaseModel):
     user_id: int
     name: str
     email: str
+    role: str = "student"
     message: str
 
 # ── 註冊 ──
@@ -58,6 +59,7 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
         user_id=user.id,
         name=user.name,
         email=user.email,
+        role=getattr(user, "role", "student") or "student",
         message="註冊成功",
     )
 
@@ -78,6 +80,7 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
         user_id=user.id,
         name=user.name,
         email=user.email,
+        role=getattr(user, "role", "student") or "student",
         message="登入成功",
     )
 

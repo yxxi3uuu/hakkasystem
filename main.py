@@ -25,6 +25,7 @@ from routers.saved_words import router as saved_words_router
 from routers.hakka_api import router as hakka_router
 from routers.ocr import router as ocr_router
 from routers.dataset import router as dataset_router
+from routers.admin import router as admin_router
 
 
 @asynccontextmanager
@@ -99,6 +100,7 @@ app.include_router(saved_words_router)
 app.include_router(hakka_router)
 app.include_router(ocr_router)
 app.include_router(dataset_router)
+app.include_router(admin_router)
 
 
 # Serve pages
@@ -140,6 +142,11 @@ async def game_page():
 @app.get("/record")
 async def record_page():
     return FileResponse("static/record.html")
+
+
+@app.get("/admin")
+async def admin_page():
+    return FileResponse("static/admin.html")
 
 
 # Existing endpoints
