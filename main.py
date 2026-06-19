@@ -27,6 +27,16 @@ from routers.ocr import router as ocr_router
 from routers.dataset import router as dataset_router
 from routers.admin import router as admin_router
 
+# ── 預設帳號設定 ──────────────────────────────────────────────────────
+_SUPER_ADMIN   = {"name": "吳怡臻", "email": "s0903057896@gmail.com", "role": "admin"}
+_DEFAULT_TEACHERS = [
+    {"name": "黃璿羽", "email": "112707530@cc.ncu.edu.tw", "role": "teacher"},
+    {"name": "林守毅", "email": "roylin915@gmail.com",      "role": "teacher"},
+    {"name": "梁易軒", "email": "lys20050214@gmail.com",    "role": "teacher"},
+    {"name": "張育倫", "email": "justin0516@g.ncu.edu.tw",  "role": "teacher"},
+]
+_DEFAULT_PASSWORD = "Hakka2026"
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -36,6 +46,34 @@ async def lifespan(app: FastAPI):
         print("DB tables ready")
     except Exception as e:
         print(f"DB init warning: {e}")
+
+    # 確保預設帳號存在且 role 正確
+    try:
+        from routers.auth import hash_password
+        from database import AsyncSessionLocal
+        async with AsyncSessionLocal() as db:
+            for account in [_SUPER_ADMIN] + _DEFAULT_TEACHERS:
+                existing = (await db.execute(
+                    select(User).where(User.email == account["email"])
+                )).scalar_one_or_none()
+                if existing:
+                    if existing.role != account["role"]:
+                        existing.role = account["role"]
+                        existing.is_admin = (account["role"] == "admin")
+                        await db.commit()
+                        print(f"[Init] 已更新角色 {account['email']} → {account['role']}")
+                else:
+                    db.add(User(
+                        name=account["name"],
+                        email=account["email"],
+                        password=hash_password(_DEFAULT_PASSWORD),
+                        role=account["role"],
+                        is_admin=(account["role"] == "admin"),
+                    ))
+                    await db.commit()
+                    print(f"[Init] 已建立帳號 {account['email']}（role={account['role']}，密碼：{_DEFAULT_PASSWORD}）")
+    except Exception as e:
+        print(f"[Init] 初始化帳號失敗：{e}")
 
     # 在 .env 確定載入後初始化 LLM
     try:
