@@ -31,6 +31,20 @@ class WordsRequest(BaseModel):
 llm = None
 
 
+def _candidate_model_paths(raw_path: str) -> list[Path]:
+    """Return possible model paths, ordered from most explicit to most portable."""
+    candidates: list[Path] = []
+    path = Path(raw_path).expanduser()
+
+    candidates.append(path)
+
+    if not path.is_absolute():
+        candidates.append(Path(__file__).resolve().parent.parent / path)
+
+    candidates.append(Path(__file__).resolve().parent.parent / "data" / path.name)
+    return candidates
+
+
 def init_llm() -> None:
     """由 main.py lifespan 在 .env 確定載入後呼叫，初始化全域 llm 物件。"""
     global llm
@@ -41,23 +55,29 @@ def init_llm() -> None:
         print("[LLM] LLM_MODEL_PATH 未設定，將使用 fallback 例句庫")
         return
 
-    if not os.path.exists(_model_path):
-        print(f"[LLM] 模型路徑不存在：{_model_path}（將使用 fallback）")
+    resolved_path = None
+    for candidate in _candidate_model_paths(_model_path):
+        if candidate.exists():
+            resolved_path = candidate
+            break
+
+    if resolved_path is None:
+        print(f"[LLM] 找不到模型檔：{_model_path}（已嘗試相對路徑與 repo data/，將使用 fallback）")
         return
 
     try:
         from llama_cpp import Llama
         llm = Llama(
-            model_path=_model_path,
+            model_path=str(resolved_path),
             n_gpu_layers=20,
             n_ctx=2048,
             n_batch=256,
             flash_attn=True,
             verbose=False,
         )
-        print(f"[LLM] 模型載入成功：{_model_path}")
+        print(f"[LLM] 模型載入成功：{resolved_path}")
     except Exception as e:
-        print(f"[LLM] 載入失敗（將使用 fallback）: {e}")
+        print(f"[LLM] 載入失敗（將使用 fallback）: {resolved_path} / {e}")
 
 
 def _clean_json_text(text: str) -> str:
