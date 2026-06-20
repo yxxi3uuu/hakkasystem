@@ -216,7 +216,7 @@
 
   <!-- 選單 -->
   <div class="section" style="margin-top: 32px;">
-    <div class="menu-item">
+    <div class="menu-item" onclick="openSheet('settings')">
       <div class="menu-icon green">⚙️</div>
       <span class="menu-text">設定</span>
       <span class="menu-arrow">›</span>
@@ -226,7 +226,7 @@
       <span class="menu-text">通知設定</span>
       <span class="menu-arrow">›</span>
     </div>
-    <div class="menu-item">
+    <div class="menu-item" onclick="openSheet('guide')">
       <div class="menu-icon orange">📖</div>
       <span class="menu-text">使用說明</span>
       <span class="menu-arrow">›</span>
@@ -276,8 +276,10 @@
   </nav>
 
   <script src="/static/auth.js"></script>
+  <script src="/static/notif.js"></script>
   <script>
     const user = requireLogin();
+    initNotif();
     if (user) {
       const USER_ID = user.id;
 
@@ -331,6 +333,178 @@
 
       document.getElementById('logoutBtn').addEventListener('click', () => logout());
       loadProfile();
+    }
+  </script>
+
+  <!-- ── 彈窗 ─────────────────────────────────────────── -->
+  <div id="sheetOverlay" onclick="closeSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:flex-end;justify-content:center;">
+    <div id="sheetContent" onclick="event.stopPropagation()" style="background:white;border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:24px 20px 48px;animation:slideUp .25s ease;">
+      <div style="width:40px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 20px;"></div>
+      <div id="sheetBody"></div>
+      <button onclick="closeSheet()" style="display:block;width:100%;margin-top:20px;padding:12px;background:#f0f0f0;color:#555;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;">關閉</button>
+    </div>
+  </div>
+
+  <style>
+    @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    #sheetOverlay.open{display:flex!important}
+    .sheet-title{font-size:18px;font-weight:800;color:#2E7D32;margin-bottom:4px}
+    .sheet-sub{font-size:13px;color:#888;margin-bottom:20px}
+    .setting-section{margin-bottom:20px}
+    .setting-label{font-size:12px;color:#888;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+    .setting-row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+    .setting-row label{font-size:13px;color:#555;font-weight:600}
+    .setting-row input{padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;outline:none}
+    .setting-row input:focus{border-color:#4CAF50}
+    .setting-btn{width:100%;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#4CAF50,#2E7D32);color:white;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px}
+    .setting-btn:hover{opacity:.9}
+    .info-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f5f5f5;font-size:13px}
+    .info-row:last-child{border-bottom:none}
+    .info-label{color:#888}
+    .info-value{color:#333;font-weight:600}
+    .guide-step{display:flex;gap:12px;margin-bottom:16px;align-items:flex-start}
+    .guide-step .step-num{min-width:28px;height:28px;background:#E8F5E9;color:#2E7D32;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+    .guide-step .step-text{font-size:14px;color:#444;line-height:1.6}
+    .guide-section-title{font-size:15px;font-weight:700;color:#333;margin:16px 0 10px;padding-bottom:6px;border-bottom:2px solid #E8F5E9}
+  </style>
+
+  <script>
+    function openSheet(type) {
+      const role = (getUser() || {}).role || 'student';
+      const body = document.getElementById('sheetBody');
+      if (type === 'settings') body.innerHTML = buildSettings(role);
+      if (type === 'guide')    body.innerHTML = buildGuide(role);
+      document.getElementById('sheetOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeSheet() {
+      document.getElementById('sheetOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    // ── 設定內容 ──────────────────────────────────────────
+    function buildSettings(role) {
+      const roleLabel = {admin:'超級管理者',teacher:'老師',student:'學生'}[role] || role;
+      const user = getUser();
+      let html = `
+        <div class="sheet-title">⚙️ 設定</div>
+        <div class="sheet-sub">目前身份：${roleLabel}</div>
+        <div class="setting-section">
+          <div class="setting-label">帳號資訊</div>
+          <div class="info-row"><span class="info-label">姓名</span><span class="info-value" id="infoName">${user?.name||'—'}</span></div>
+          <div class="info-row"><span class="info-label">Email</span><span class="info-value">${user?.email||'—'}</span></div>
+          <div class="info-row"><span class="info-label">角色</span><span class="info-value">${roleLabel}</span></div>
+        </div>
+        <div class="setting-section">
+          <div class="setting-label">修改個人資料</div>
+          <div class="setting-row"><label>新名稱</label><input type="text" id="newName" placeholder="輸入新名稱" /></div>
+          <div class="setting-row"><label>新密碼</label><input type="password" id="newPw" placeholder="輸入新密碼（至少 6 位）" /></div>
+          <div class="setting-row"><label>確認新密碼</label><input type="password" id="newPw2" placeholder="再次輸入新密碼" /></div>
+          <button class="setting-btn" onclick="saveSettings()">儲存變更</button>
+          <div id="settingMsg" style="text-align:center;margin-top:10px;font-size:13px;color:#4CAF50;display:none;"></div>
+        </div>`;
+
+      if (role === 'admin' || role === 'teacher') {
+        html += `
+        <div class="setting-section">
+          <div class="setting-label">系統資訊（唯讀）</div>
+          <div class="info-row"><span class="info-label">資料庫</span><span class="info-value">PostgreSQL 15</span></div>
+          <div class="info-row"><span class="info-label">後端框架</span><span class="info-value">FastAPI + SQLAlchemy</span></div>
+          <div class="info-row"><span class="info-label">圖像辨識</span><span class="info-value">YOLOv11 + Gemini</span></div>
+          <div class="info-row"><span class="info-label">語音合成</span><span class="info-value">客語 TTS API</span></div>
+        </div>`;
+      }
+      if (role === 'admin') {
+        html += `
+        <div class="setting-section">
+          <div class="setting-label">管理者專屬資訊</div>
+          <div class="info-row"><span class="info-label">管理後台</span><span class="info-value"><a href="/admin" style="color:#4CAF50">前往後台</a></span></div>
+          <div class="info-row"><span class="info-label">預設密碼</span><span class="info-value">Hakka2026</span></div>
+          <div class="info-row"><span class="info-label">角色說明</span><span class="info-value">admin / teacher / student</span></div>
+        </div>`;
+      }
+      html += '</div>';
+      return html;
+    }
+
+    async function saveSettings() {
+      const user = getUser();
+      if (!user) return;
+      const newName = document.getElementById('newName').value.trim();
+      const newPw   = document.getElementById('newPw').value;
+      const newPw2  = document.getElementById('newPw2').value;
+      const msg = document.getElementById('settingMsg');
+      msg.style.display = 'none';
+
+      if (newPw && newPw !== newPw2) {
+        msg.textContent = '兩次密碼不一致'; msg.style.color = '#e53935'; msg.style.display = 'block'; return;
+      }
+      if (newPw && newPw.length < 6) {
+        msg.textContent = '密碼至少需要 6 位'; msg.style.color = '#e53935'; msg.style.display = 'block'; return;
+      }
+      try {
+        if (newPw) {
+          const r = await fetch('/api/auth/reset-password', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ email: user.email, new_password: newPw })
+          });
+          if (!r.ok) { const d = await r.json(); msg.textContent = d.detail||'密碼更新失敗'; msg.style.color='#e53935'; msg.style.display='block'; return; }
+        }
+        if (newName) {
+          localStorage.setItem('user_name', newName);
+          document.getElementById('userName').textContent = newName;
+          document.getElementById('infoName').textContent = newName;
+        }
+        msg.textContent = '已儲存！'; msg.style.color = '#4CAF50'; msg.style.display = 'block';
+        document.getElementById('newName').value = '';
+        document.getElementById('newPw').value = '';
+        document.getElementById('newPw2').value = '';
+      } catch(e) { msg.textContent = '網路錯誤'; msg.style.color='#e53935'; msg.style.display='block'; }
+    }
+
+    // ── 使用說明內容 ──────────────────────────────────────
+    function buildGuide(role) {
+      const guides = {
+        admin: `
+          <div class="sheet-title">📖 管理者使用說明</div>
+          <div class="sheet-sub">超級管理者功能總覽</div>
+          <div class="guide-section-title">🛡️ 管理後台</div>
+          <div class="guide-step"><div class="step-num">1</div><div class="step-text">從個人中心點擊「管理後台」進入後台介面。</div></div>
+          <div class="guide-step"><div class="step-num">2</div><div class="step-text">在「所有使用者」頁籤可查看所有帳號，並透過下拉選單切換角色（學生 / 老師 / 管理者）。</div></div>
+          <div class="guide-step"><div class="step-num">3</div><div class="step-text">在「班級管理」建立班級，填入班級名稱與說明後點擊建立。</div></div>
+          <div class="guide-step"><div class="step-num">4</div><div class="step-text">點「指派老師」為班級分配老師；老師登入後只會看到自己的班級。</div></div>
+          <div class="guide-section-title">👥 學生管理</div>
+          <div class="guide-step"><div class="step-num">5</div><div class="step-text">在班級頁面輸入學生 Email 將學生加入班級，也可點「詳細」查看學生的儲存單字與學習記錄。</div></div>
+          <div class="guide-section-title">🔑 帳號管理</div>
+          <div class="guide-step"><div class="step-num">6</div><div class="step-text">新老師帳號預設密碼為 Hakka2026，請通知老師登入後自行到設定修改密碼。</div></div>`,
+
+        teacher: `
+          <div class="sheet-title">📖 老師使用說明</div>
+          <div class="sheet-sub">班級管理與學生追蹤</div>
+          <div class="guide-section-title">🏫 查看班級</div>
+          <div class="guide-step"><div class="step-num">1</div><div class="step-text">從個人中心點擊「管理後台」，進入後會看到你被分配的班級。</div></div>
+          <div class="guide-step"><div class="step-num">2</div><div class="step-text">點「查看學生」進入班級學生名單，可查看每位學生的單字數、活動次數、平均分數。</div></div>
+          <div class="guide-step"><div class="step-num">3</div><div class="step-text">點學生旁的「詳細」可查看該學生儲存的單字（含圖片與音檔）及完整學習記錄。</div></div>
+          <div class="guide-section-title">➕ 新增學生</div>
+          <div class="guide-step"><div class="step-num">4</div><div class="step-text">在班級頁面輸入學生的 Email 點「加入」，即可將學生加入班級（學生須先完成註冊）。</div></div>
+          <div class="guide-section-title">💡 注意事項</div>
+          <div class="guide-step"><div class="step-num">5</div><div class="step-text">老師只能查看自己班級的學生，無法看到其他班級的資料。</div></div>`,
+
+        student: `
+          <div class="sheet-title">📖 學生使用說明</div>
+          <div class="sheet-sub">客語隨拍隨學功能導覽</div>
+          <div class="guide-section-title">📷 拍照學習</div>
+          <div class="guide-step"><div class="step-num">1</div><div class="step-text">點選底部導覽列的「拍照學習」，上傳或拍攝一張圖片。</div></div>
+          <div class="guide-step"><div class="step-num">2</div><div class="step-text">系統自動辨識圖片中的物品，並翻譯成客語、生成例句與發音。</div></div>
+          <div class="guide-step"><div class="step-num">3</div><div class="step-text">點「儲存單字」可將學習結果存入「我的學習」，方便複習。</div></div>
+          <div class="guide-section-title">🎤 語音練習</div>
+          <div class="guide-step"><div class="step-num">4</div><div class="step-text">前往「語音練習」，跟著系統發音，完成後系統會給出評分與建議。</div></div>
+          <div class="guide-section-title">🎮 配對遊戲</div>
+          <div class="guide-step"><div class="step-num">5</div><div class="step-text">在「配對遊戲」中用已學單字進行圖文配對，用遊戲方式加強記憶。</div></div>
+          <div class="guide-section-title">📊 學習記錄</div>
+          <div class="guide-step"><div class="step-num">6</div><div class="step-text">「學習記錄」頁面可查看你的練習分數走勢與最近活動記錄。</div></div>`
+      };
+      return (guides[role] || guides.student) + '</div>';
     }
   </script>
 </body>

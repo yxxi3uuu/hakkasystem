@@ -125,6 +125,18 @@
 
     <!-- 所有使用者（admin only） -->
     <div id="panelAllUsers" style="display:none;">
+      <!-- admin 廣播通知 -->
+      <div class="card" style="padding:14px;margin-bottom:12px;">
+        <div class="card-title" style="margin-bottom:10px;">📢 廣播通知（發給所有使用者）</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <input type="text" id="broadcastTitle" placeholder="通知標題（必填）" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;outline:none;" />
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="broadcastBody" placeholder="通知內容（選填）" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;outline:none;" />
+          <button class="btn btn-green" onclick="sendBroadcast()">廣播</button>
+        </div>
+        <div id="broadcastMsg" style="font-size:12px;margin-top:6px;display:none;"></div>
+      </div>
       <div class="search-row"><input type="text" id="searchInput" placeholder="搜尋姓名或 Email…" oninput="filterUsers()" /></div>
       <div class="card">
         <div class="card-body">
@@ -160,6 +172,30 @@
       <div style="display:flex;gap:8px;margin-bottom:14px;">
         <input type="text" id="addStudentEmail" placeholder="輸入學生 Email 加入班級" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;outline:none;" />
         <button class="btn btn-green" onclick="addStudentByEmail()">加入</button>
+      </div>
+      <!-- 發送班級通知 -->
+      <div style="background:#F1F8E9;border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:#2E7D32;margin-bottom:8px;">📣 發送通知給全班</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <input type="text" id="classNotifTitle" placeholder="通知標題（必填）" style="flex:1;padding:8px 10px;border:1px solid #c8e6c9;border-radius:8px;font-size:13px;outline:none;" />
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="classNotifBody" placeholder="通知內容（選填）" style="flex:1;padding:8px 10px;border:1px solid #c8e6c9;border-radius:8px;font-size:13px;outline:none;" />
+          <button class="btn btn-green" onclick="sendClassNotif()" style="white-space:nowrap;">發送</button>
+        </div>
+        <div id="classNotifMsg" style="font-size:12px;margin-top:6px;display:none;"></div>
+      </div>
+      <!-- 發送班級通知 -->
+      <div style="background:#F1F8E9;border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:#2E7D32;margin-bottom:8px;">📣 發送通知給全班</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <input type="text" id="classNotifTitle" placeholder="通知標題（必填）" style="flex:1;padding:8px 10px;border:1px solid #c8e6c9;border-radius:8px;font-size:13px;outline:none;" />
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="classNotifBody" placeholder="通知內容（選填）" style="flex:1;padding:8px 10px;border:1px solid #c8e6c9;border-radius:8px;font-size:13px;outline:none;" />
+          <button class="btn btn-green" onclick="sendClassNotif()" style="white-space:nowrap;">發送</button>
+        </div>
+        <div id="classNotifMsg" style="font-size:12px;margin-top:6px;display:none;"></div>
       </div>
       <div id="classStudentList"><div class="loading-tip">載入中...</div></div>
       <button class="modal-close" onclick="document.getElementById('classModal').classList.remove('open')">關閉</button>
@@ -402,6 +438,48 @@
     async function removeStudent(classId, studentId) {
       await fetch(`/api/admin/classes/${classId}/students/${studentId}?admin_id=${user.id}`, { method:'DELETE' });
       loadClassStudents(classId);
+    }
+
+    async function sendClassNotif() {
+      const title = document.getElementById('classNotifTitle').value.trim();
+      const body  = document.getElementById('classNotifBody').value.trim();
+      const msg   = document.getElementById('classNotifMsg');
+      if (!title) { msg.textContent = '請填寫通知標題'; msg.style.color = '#e53935'; msg.style.display = 'block'; return; }
+      try {
+        const res = await fetch('/api/notifications/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sender_id: user.id, title, body, target: 'class', class_id: currentClassId })
+        });
+        const data = await res.json();
+        if (!res.ok) { msg.textContent = data.detail || '發送失敗'; msg.style.color = '#e53935'; msg.style.display = 'block'; return; }
+        msg.textContent = `✅ 已發送給 ${data.sent_to} 位學生`;
+        msg.style.color = '#2E7D32'; msg.style.display = 'block';
+        document.getElementById('classNotifTitle').value = '';
+        document.getElementById('classNotifBody').value = '';
+        setTimeout(() => { msg.style.display = 'none'; }, 3000);
+      } catch(e) { msg.textContent = '網路錯誤'; msg.style.color = '#e53935'; msg.style.display = 'block'; }
+    }
+
+    async function sendBroadcast() {
+      const title = document.getElementById('broadcastTitle').value.trim();
+      const body  = document.getElementById('broadcastBody').value.trim();
+      const msg   = document.getElementById('broadcastMsg');
+      if (!title) { msg.textContent = '請填寫通知標題'; msg.style.color = '#e53935'; msg.style.display = 'block'; return; }
+      try {
+        const res = await fetch('/api/notifications/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sender_id: user.id, title, body, target: 'all' })
+        });
+        const data = await res.json();
+        if (!res.ok) { msg.textContent = data.detail || '發送失敗'; msg.style.color = '#e53935'; msg.style.display = 'block'; return; }
+        msg.textContent = `✅ 已廣播給 ${data.sent_to} 位使用者`;
+        msg.style.color = '#2E7D32'; msg.style.display = 'block';
+        document.getElementById('broadcastTitle').value = '';
+        document.getElementById('broadcastBody').value = '';
+        setTimeout(() => { msg.style.display = 'none'; }, 3000);
+      } catch(e) { msg.textContent = '網路錯誤'; msg.style.color = '#e53935'; msg.style.display = 'block'; }
     }
 
     function closeClassModal(e) {

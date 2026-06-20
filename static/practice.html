@@ -289,8 +289,10 @@
   </nav>
 
   <script src="/static/auth.js"></script>
+  <script src="/static/notif.js"></script>
   <script>
     requireLogin();
+    initNotif();
 
     let currentTask  = null;   // { word, image_path, audio_url }
     let mediaRecorder = null;

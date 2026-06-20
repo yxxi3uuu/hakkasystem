@@ -26,6 +26,7 @@ from routers.hakka_api import router as hakka_router
 from routers.ocr import router as ocr_router
 from routers.dataset import router as dataset_router
 from routers.admin import router as admin_router
+from routers.notification import router as notification_router
 
 # ── 預設帳號設定 ──────────────────────────────────────────────────────
 _SUPER_ADMIN   = {"name": "吳怡臻", "email": "s0903057896@gmail.com", "role": "admin"}
@@ -46,6 +47,46 @@ async def lifespan(app: FastAPI):
         print("DB tables ready")
     except Exception as e:
         print(f"DB init warning: {e}")
+
+    # ── 自動 migration（補齊新欄位和新表格）──────────────────────────
+    try:
+        from database import AsyncSessionLocal
+        from sqlalchemy import text
+        async with AsyncSessionLocal() as db:
+            migrations = [
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR DEFAULT 'student'",
+                "UPDATE users SET role='admin' WHERE is_admin=TRUE AND role='student'",
+                "ALTER TABLE saved_words ADD COLUMN IF NOT EXISTS source VARCHAR DEFAULT 'yolo'",
+                "ALTER TABLE saved_words ADD COLUMN IF NOT EXISTS label_pinyin VARCHAR DEFAULT ''",
+                "ALTER TABLE saved_words ADD COLUMN IF NOT EXISTS sentence_audio_path VARCHAR DEFAULT ''",
+                "ALTER TABLE saved_words ADD COLUMN IF NOT EXISTS labels_json VARCHAR DEFAULT ''",
+                """CREATE TABLE IF NOT EXISTS classes (
+                    id SERIAL PRIMARY KEY, name VARCHAR NOT NULL, description VARCHAR DEFAULT '')""",
+                """CREATE TABLE IF NOT EXISTS class_teachers (
+                    id SERIAL PRIMARY KEY,
+                    class_id INTEGER REFERENCES classes(id) ON DELETE CASCADE,
+                    teacher_id INTEGER REFERENCES users(id) ON DELETE CASCADE)""",
+                """CREATE TABLE IF NOT EXISTS class_students (
+                    id SERIAL PRIMARY KEY,
+                    class_id INTEGER REFERENCES classes(id) ON DELETE CASCADE,
+                    student_id INTEGER REFERENCES users(id) ON DELETE CASCADE)""",
+                """CREATE TABLE IF NOT EXISTS notifications (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                    sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    title VARCHAR NOT NULL, body VARCHAR DEFAULT '',
+                    is_read BOOLEAN DEFAULT FALSE, created_at VARCHAR)""",
+            ]
+            for sql in migrations:
+                try:
+                    await db.execute(text(sql))
+                except Exception:
+                    pass
+            await db.commit()
+            print("DB migration done")
+    except Exception as e:
+        print(f"DB migration warning: {e}")
 
     # 確保預設帳號存在且 role 正確
     try:
@@ -139,6 +180,7 @@ app.include_router(hakka_router)
 app.include_router(ocr_router)
 app.include_router(dataset_router)
 app.include_router(admin_router)
+app.include_router(notification_router)
 
 
 # Serve pages

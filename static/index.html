@@ -129,8 +129,10 @@
   </nav>
 
   <script src="/static/auth.js"></script>
+  <script src="/static/notif.js"></script>
   <script>
     const user = requireLogin();
+    initNotif();
     if (user) {
       const USER_ID = user.id;
     fetch(`/api/profile/${USER_ID}`)

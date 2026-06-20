@@ -144,8 +144,10 @@
   </nav>
 
   <script src="/static/auth.js"></script>
+  <script src="/static/notif.js"></script>
   <script>
     const user = requireLogin();
+    initNotif();
     if (user) {
       const USER_ID = user.id;
       const DAYS = ['週一','週二','週三','週四','週五','週六','週日'];

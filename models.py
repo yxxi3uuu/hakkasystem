@@ -31,6 +31,17 @@ class ClassStudent(Base):
     class_id   = Column(Integer, ForeignKey("classes.id", ondelete="CASCADE"))
     student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
 
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    id         = Column(Integer, primary_key=True, index=True)
+    user_id    = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))  # 收件人
+    sender_id  = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    title      = Column(String, nullable=False)
+    body       = Column(String, default="")
+    is_read    = Column(Boolean, default=False)
+    created_at = Column(String)  # YYYY-MM-DD HH:MM
+
 class LearningStats(Base):
     __tablename__ = "learning_stats"
     id            = Column(Integer, primary_key=True)
