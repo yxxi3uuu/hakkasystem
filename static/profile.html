@@ -221,7 +221,7 @@
       <span class="menu-text">設定</span>
       <span class="menu-arrow">›</span>
     </div>
-    <div class="menu-item">
+    <div class="menu-item" onclick="openSheet('notif')">
       <div class="menu-icon blue">🔔</div>
       <span class="menu-text">通知設定</span>
       <span class="menu-arrow">›</span>
@@ -374,6 +374,7 @@
       const body = document.getElementById('sheetBody');
       if (type === 'settings') body.innerHTML = buildSettings(role);
       if (type === 'guide')    body.innerHTML = buildGuide(role);
+      if (type === 'notif')    body.innerHTML = buildNotif(role);
       document.getElementById('sheetOverlay').classList.add('open');
       document.body.style.overflow = 'hidden';
     }
@@ -506,6 +507,169 @@
       };
       return (guides[role] || guides.student) + '</div>';
     }
+
+    // ── 通知設定內容 ──────────────────────────────────────
+    function buildNotif(role) {
+      const roleLabel = {admin:'超級管理者',teacher:'老師',student:'學生'}[role] || role;
+      const notifEnabled = localStorage.getItem('notif_enabled') !== 'false';
+      const notifSound   = localStorage.getItem('notif_sound')   !== 'false';
+
+      // 共用：開關切換樣式
+      const toggle = (id, checked, onchange) =>
+        `<label style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f5f5f5;cursor:pointer;">
+          <span style="font-size:14px;color:#333;">${id === 'toggleNotif' ? '接收通知' : id === 'toggleSound' ? '通知音效' : id}</span>
+          <input type="checkbox" id="${id}" ${checked?'checked':''} onchange="${onchange}" style="width:18px;height:18px;accent-color:#4CAF50;cursor:pointer;" />
+        </label>`;
+
+      let html = `
+        <div class="sheet-title">🔔 通知設定</div>
+        <div class="sheet-sub">身份：${roleLabel}</div>
+        <div class="setting-section">
+          <div class="setting-label">一般設定</div>
+          ${toggle('toggleNotif', notifEnabled, "saveNotifPref('notif_enabled', this.checked)")}
+          ${toggle('toggleSound',  notifSound,   "saveNotifPref('notif_sound',   this.checked)")}
+        </div>
+        <div class="setting-section">
+          <div class="setting-label">通知紀錄</div>
+          <div id="notifPreviewList"><div class="loading-tip" style="padding:16px 0;">載入中...</div></div>
+          <button onclick="clearAllNotif()" style="width:100%;margin-top:12px;padding:10px;border:none;border-radius:10px;background:#FFEBEE;color:#D32F2F;font-size:13px;font-weight:600;cursor:pointer;">🗑️ 清除所有通知</button>
+        </div>`;
+
+      // teacher 專屬：快速發通知給班級
+      if (role === 'teacher' || role === 'admin') {
+        html += `
+        <div class="setting-section">
+          <div class="setting-label">${role === 'admin' ? '管理者' : '老師'}專屬 — 快速發通知</div>
+          <div id="quickNotifClasses"><div class="loading-tip" style="padding:8px 0;">載入班級中...</div></div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
+            <input type="text" id="quickNotifTitle" placeholder="通知標題（必填）" style="padding:9px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;outline:none;" />
+            <input type="text" id="quickNotifBody"  placeholder="通知內容（選填）" style="padding:9px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;outline:none;" />
+            <button onclick="sendQuickNotif()" style="padding:10px;border:none;border-radius:10px;background:#4CAF50;color:white;font-size:13px;font-weight:600;cursor:pointer;">📣 發送給所選班級</button>
+            <div id="quickNotifMsg" style="font-size:12px;text-align:center;display:none;"></div>
+          </div>
+        </div>`;
+      }
+
+      // admin 專屬：廣播
+      if (role === 'admin') {
+        html += `
+        <div class="setting-section">
+          <div class="setting-label">管理者專屬 — 全系統廣播</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <input type="text" id="broadcastTitle2" placeholder="廣播標題（必填）" style="padding:9px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;outline:none;" />
+            <input type="text" id="broadcastBody2"  placeholder="廣播內容（選填）" style="padding:9px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;outline:none;" />
+            <button onclick="sendBroadcast2()" style="padding:10px;border:none;border-radius:10px;background:#E65100;color:white;font-size:13px;font-weight:600;cursor:pointer;">📢 廣播給所有人</button>
+            <div id="broadcastMsg2" style="font-size:12px;text-align:center;display:none;"></div>
+          </div>
+        </div>`;
+      }
+
+      html += '</div>';
+      // 載入通知紀錄和班級清單（在 DOM 渲染後執行）
+      setTimeout(() => {
+        loadNotifPreview();
+        if (role === 'teacher' || role === 'admin') loadQuickNotifClasses();
+      }, 50);
+      return html;
+    }
+
+    function saveNotifPref(key, val) {
+      localStorage.setItem(key, val);
+      // 同步更新鈴鐺行為
+      if (key === 'notif_enabled' && typeof refreshUnreadCount === 'function') {
+        if (!val) {
+          const badge = document.getElementById('notifBadge');
+          if (badge) badge.classList.remove('show');
+        } else {
+          refreshUnreadCount();
+        }
+      }
+    }
+
+    async function loadNotifPreview() {
+      const user = getUser();
+      const el = document.getElementById('notifPreviewList');
+      if (!el || !user) return;
+      try {
+        const notifs = await fetch(`/api/notifications?user_id=${user.id}`).then(r => r.json());
+        if (!notifs.length) { el.innerHTML = '<div style="font-size:13px;color:#bbb;padding:8px 0;">目前沒有通知</div>'; return; }
+        el.innerHTML = notifs.slice(0, 5).map(n => `
+          <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5;align-items:flex-start;">
+            <div style="min-width:8px;height:8px;background:${n.is_read?'#ddd':'#4CAF50'};border-radius:50%;margin-top:5px;"></div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:600;color:#333;">${n.title}</div>
+              ${n.body?`<div style="font-size:12px;color:#888;">${n.body}</div>`:''}
+              <div style="font-size:11px;color:#bbb;">${n.created_at}</div>
+            </div>
+          </div>`).join('') +
+          (notifs.length > 5 ? `<div style="font-size:12px;color:#888;text-align:center;margin-top:8px;">還有 ${notifs.length-5} 則通知，點鈴鐺查看全部</div>` : '');
+      } catch(e) { el.innerHTML = '<div style="font-size:13px;color:#bbb;">載入失敗</div>'; }
+    }
+
+    async function clearAllNotif() {
+      const user = getUser();
+      if (!user || !confirm('確定清除所有通知？')) return;
+      const notifs = await fetch(`/api/notifications?user_id=${user.id}`).then(r => r.json());
+      await Promise.all(notifs.map(n => fetch(`/api/notifications/${n.id}?user_id=${user.id}`, {method:'DELETE'})));
+      loadNotifPreview();
+      if (typeof refreshUnreadCount === 'function') refreshUnreadCount();
+    }
+
+    async function loadQuickNotifClasses() {
+      const user = getUser();
+      const el = document.getElementById('quickNotifClasses');
+      if (!el || !user) return;
+      try {
+        const classes = await fetch(`/api/admin/classes?admin_id=${user.id}`).then(r => r.json());
+        if (!classes.length) { el.innerHTML = '<div style="font-size:13px;color:#bbb;">尚未分配班級</div>'; return; }
+        el.innerHTML = `<select id="quickNotifClassId" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;outline:none;">
+          ${classes.map(c => `<option value="${c.id}">${c.name}（${c.student_count} 人）</option>`).join('')}
+        </select>`;
+      } catch(e) { el.innerHTML = '<div style="font-size:13px;color:#bbb;">載入失敗</div>'; }
+    }
+
+    async function sendQuickNotif() {
+      const user = getUser();
+      const title = document.getElementById('quickNotifTitle')?.value.trim();
+      const body  = document.getElementById('quickNotifBody')?.value.trim();
+      const classId = parseInt(document.getElementById('quickNotifClassId')?.value || '0');
+      const msg = document.getElementById('quickNotifMsg');
+      if (!title) { msg.textContent = '請填寫通知標題'; msg.style.color='#e53935'; msg.style.display='block'; return; }
+      try {
+        const res = await fetch('/api/notifications/send', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({sender_id:user.id, title, body:body||'', target:'class', class_id:classId})
+        });
+        const data = await res.json();
+        if (!res.ok) { msg.textContent = data.detail||'發送失敗'; msg.style.color='#e53935'; msg.style.display='block'; return; }
+        msg.textContent = `✅ 已發送給 ${data.sent_to} 位學生`;
+        msg.style.color='#2E7D32'; msg.style.display='block';
+        document.getElementById('quickNotifTitle').value='';
+        document.getElementById('quickNotifBody').value='';
+      } catch(e) { msg.textContent='網路錯誤'; msg.style.color='#e53935'; msg.style.display='block'; }
+    }
+
+    async function sendBroadcast2() {
+      const user = getUser();
+      const title = document.getElementById('broadcastTitle2')?.value.trim();
+      const body  = document.getElementById('broadcastBody2')?.value.trim();
+      const msg   = document.getElementById('broadcastMsg2');
+      if (!title) { msg.textContent='請填寫廣播標題'; msg.style.color='#e53935'; msg.style.display='block'; return; }
+      try {
+        const res = await fetch('/api/notifications/send', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({sender_id:user.id, title, body:body||'', target:'all'})
+        });
+        const data = await res.json();
+        if (!res.ok) { msg.textContent=data.detail||'發送失敗'; msg.style.color='#e53935'; msg.style.display='block'; return; }
+        msg.textContent=`✅ 已廣播給 ${data.sent_to} 位使用者`;
+        msg.style.color='#2E7D32'; msg.style.display='block';
+        document.getElementById('broadcastTitle2').value='';
+        document.getElementById('broadcastBody2').value='';
+      } catch(e) { msg.textContent='網路錯誤'; msg.style.color='#e53935'; msg.style.display='block'; }
+    }
   </script>
+</body>
+</html>
 </body>
 </html>
