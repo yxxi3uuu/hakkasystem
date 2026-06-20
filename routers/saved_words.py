@@ -169,7 +169,8 @@ async def get_saved_words(
 
             "sentence_zh": w.sentence_zh,
             "sentence_hakka": w.sentence_hakka,
-            "sentence_audio_path": getattr(w, "sentence_audio_path", "")
+            "sentence_audio_path": getattr(w, "sentence_audio_path", ""),
+            "source": getattr(w, "source", "yolo") or "yolo",
         }
         for w in words
     ]

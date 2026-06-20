@@ -151,16 +151,7 @@
     if (user) {
       const USER_ID = user.id;
       const DAYS = ['週一','週二','週三','週四','週五','週六','週日'];
-      const CATEGORIES = [
-        { name: '食物類',   pct: 72 },
-        { name: '動物類',   pct: 85 },
-        { name: '日常用語', pct: 78 },
-      ];
-      const ACHIEVEMENTS = [
-        '連續學習 7 天',
-        '完成 20 次語音練習',
-        '學習了 15 個新詞彙',
-      ];
+
       // 圖表與活動列表
       async function loadRecords() {
         try {
@@ -169,11 +160,10 @@
           document.getElementById('avgScore').textContent   = profile.avg_score + '分';
           document.getElementById('streak').textContent     = profile.study_days + '天';
           document.getElementById('vocabCount').textContent = profile.vocab_learned + '個';
-          document.getElementById('completion').textContent = '100%'; // 簡單假資料保留
 
           // 紀錄與活動
           const records = await fetch(`/api/profile/${USER_ID}/records`).then(r => r.json());
-          
+
           const scores = records.weekly_scores || [0,0,0,0,0,0,0];
           const max = Math.max(...scores, 100);
           document.getElementById('chartBars').innerHTML = scores.map((s, i) => `
@@ -184,43 +174,77 @@
           `).join('');
 
           const activities = records.recent_activities || [];
-          if (activities.length > 0) {
-            document.getElementById('activityList').innerHTML = activities.map(a => `
-              <div class="activity-item">
-                <div class="activity-icon" style="background:#E8F5E9">${a.icon}</div>
-                <div>
-                  <div class="activity-title">${a.title}</div>
-                  <div class="activity-date">${a.date}</div>
-                </div>
-                <div class="activity-score">${a.score}分</div>
-              </div>
-            `).join('');
+          document.getElementById('activityList').innerHTML = activities.length > 0
+            ? activities.map(a => `
+                <div class="activity-item">
+                  <div class="activity-icon" style="background:#E8F5E9">${a.icon}</div>
+                  <div>
+                    <div class="activity-title">${a.title}</div>
+                    <div class="activity-date">${a.date}</div>
+                  </div>
+                  <div class="activity-score">${a.score > 0 ? a.score + '分' : ''}</div>
+                </div>`).join('')
+            : '<div style="padding:16px;color:#888;text-align:center;">尚無活動紀錄</div>';
+
+          // ── 詞彙來源分佈（動態）──────────────────────────────
+          const words = await fetch(`/api/saved_words?user_id=${USER_ID}`).then(r => r.json());
+          const total = words.length;
+          const yoloCount = words.filter(w => !w.source || w.source === 'yolo').length;
+          const ocrCount  = words.filter(w => w.source === 'ocr').length;
+
+          if (total === 0) {
+            document.getElementById('categoryList').innerHTML =
+              '<div style="padding:16px;color:#888;text-align:center;">尚未儲存任何單字</div>';
           } else {
-            document.getElementById('activityList').innerHTML = '<div style="padding: 16px; color: #888; text-align: center;">尚無活動紀錄</div>';
+            const cats = [
+              { name: '📷 拍照學習（YOLO）', count: yoloCount,  pct: Math.round(yoloCount/total*100) },
+              { name: '🔤 文字辨識（OCR）',  count: ocrCount,   pct: Math.round(ocrCount/total*100)  },
+              { name: '📚 總計',             count: total,      pct: 100 },
+            ];
+            document.getElementById('categoryList').innerHTML = cats.map(c => `
+              <div class="cat-item">
+                <div class="cat-header">
+                  <span class="cat-name">${c.name}</span>
+                  <span class="cat-pct">${c.count} 個 ${c.pct < 100 ? '（' + c.pct + '%）' : ''}</span>
+                </div>
+                ${c.pct < 100 ? `<div class="cat-bar"><div class="cat-fill" style="width:${c.pct}%"></div></div>` : ''}
+              </div>`).join('');
           }
+
+          // ── 本週目標完成率（動態）────────────────────────────
+          const goals = await fetch(`/api/profile/${USER_ID}/weekly-goals`).then(r => r.json());
+          const totalGoals     = goals.length;
+          const completedGoals = goals.filter(g => g.current >= g.target).length;
+          const overallPct     = totalGoals > 0 ? Math.round(completedGoals / totalGoals * 100) : 0;
+
+          // 完成率卡片
+          document.getElementById('completion').textContent = overallPct + '%';
+
+          document.getElementById('achieveList').innerHTML = goals.length === 0
+            ? '<div style="padding:16px;color:#888;text-align:center;">尚無目標資料</div>'
+            : goals.map(g => {
+                const pct  = Math.min(100, Math.round(g.current / g.target * 100));
+                const done = g.current >= g.target;
+                return `
+                  <div style="padding:10px 16px;border-bottom:1px solid #f5f5f5;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                      <span style="font-size:14px;color:#333;">${done ? '✅' : '🔲'} ${g.title}</span>
+                      <span style="font-size:13px;font-weight:700;color:${done?'#4CAF50':'#888'};">${g.current}／${g.target}（${pct}%）</span>
+                    </div>
+                    <div class="cat-bar"><div class="cat-fill" style="width:${pct}%;background:${done?'#4CAF50':'#aed581'};"></div></div>
+                  </div>`;
+              }).join('') + `
+              <div style="padding:12px 16px;text-align:center;font-size:13px;color:#555;">
+                本週整體完成率：<strong style="color:#2E7D32;font-size:16px;">${overallPct}%</strong>
+                （${completedGoals}／${totalGoals} 項目標達成）
+              </div>`;
 
         } catch(e) {
           console.error("載入紀錄失敗", e);
         }
       }
 
-    // 類別
-    document.getElementById('categoryList').innerHTML = CATEGORIES.map(c => `
-      <div class="cat-item">
-        <div class="cat-header">
-          <span class="cat-name">${c.name}</span>
-          <span class="cat-pct">${c.pct}%</span>
-        </div>
-        <div class="cat-bar"><div class="cat-fill" style="width:${c.pct}%"></div></div>
-      </div>
-    `).join('');
-
-    // 成就
-    document.getElementById('achieveList').innerHTML = ACHIEVEMENTS.map(a => `
-      <div class="achieve-item">✅ ${a}</div>
-    `).join('');
-    
-    loadRecords();
+      loadRecords();
     }
   </script>
 </body>
