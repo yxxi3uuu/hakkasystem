@@ -55,18 +55,26 @@ def init_llm() -> None:
         print("[LLM] LLM_MODEL_PATH 未設定，將使用 fallback 例句庫")
         return
 
+    candidates = _candidate_model_paths(_model_path)
+    print(f"[LLM] 嘗試模型路徑：{_model_path}，候選路徑：{[str(p) for p in candidates]}")
+
     resolved_path = None
-    for candidate in _candidate_model_paths(_model_path):
+    for candidate in candidates:
         if candidate.exists():
             resolved_path = candidate
             break
 
     if resolved_path is None:
-        print(f"[LLM] 找不到模型檔：{_model_path}（已嘗試相對路徑與 repo data/，將使用 fallback）")
+        print(f"[LLM] 找不到模型檔：{_model_path}（候選路徑：{[str(p) for p in candidates]}，將使用 fallback）")
         return
 
     try:
         from llama_cpp import Llama
+    except ImportError as e:
+        print(f"[LLM] llama_cpp 未安裝，無法載入模型：{e}（將使用 fallback）")
+        return
+
+    try:
         llm = Llama(
             model_path=str(resolved_path),
             n_gpu_layers=20,
