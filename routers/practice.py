@@ -12,6 +12,9 @@ import io
 import platform
 import random
 from pydub import AudioSegment
+from google import genai
+
+ai_client = genai.Client()
 
 from database import get_db
 from models import SavedWord
@@ -241,18 +244,8 @@ class ScoreResult(BaseModel):
     ai_advice: str  
 
 # 初始化 Gemini 客戶端 (請記得在環境變數或程式中設定你的 API 金鑰)
-try:
-    from google import genai as _genai
-    _gemini_key = os.getenv("GEMINI_API_KEY", "")
-    if _gemini_key:
-        ai_client = _genai.Client(api_key=_gemini_key)
-    else:
-        ai_client = None
-        print("[Gemini] GEMINI_API_KEY 未設定，語音評分將使用 fallback")
-except ImportError:
-    _genai = None
-    ai_client = None
-    print("[Gemini] google-genai 未安裝，語音評分將使用 fallback")
+from google import genai
+ai_client = genai.Client()
 
 @router.post("/score", response_model=ScoreResult)
 async def score_recording(
@@ -350,38 +343,43 @@ async def score_recording(
     if len(y_user) == 0: 
         return ScoreResult(score=0, message="偵測不到有效發音。", ai_advice="請靠近麥克風再試一次。")
 
-    # 執行我們升級後的 DTW 演算法，拿到分數與數據報告
+    # 執行升級後的 DTW 演算法，拿到分數與數據報告
     final_score, diagnostic_report = dtw_score_ssl(y_user, y_ref, sr)
 
-    if final_score > 80:
+    if final_score >= 80:
         message = "太棒了！你的發音非常標準。"
-    elif final_score > 50:
+        tone_instruction = "學生表現非常完美，請給予熱烈的讚美與肯定，並點出咬字很好。"
+    elif final_score >= 50:
         message = "表現不錯，請嘗試注意發音細節後再挑戰！"
+        tone_instruction = "學生表現中等，請用鼓勵的口吻肯定他的努力，但要溫柔地提醒他注意細節、繼續加油。"
     else:
         message = "差距明顯，建議先多聽幾次標準發音喔。"
+        tone_instruction = "學生分數很低，代表發音有明顯進步空間。嚴格禁止說「很棒」、「完美」、「優秀」等誇獎詞！請用溫柔、有耐心但客觀的家教口吻，直接點出問題並給予具體建議，語氣要委婉但實事求是。"
         
     try:
-        if not ai_client:
-            raise ValueError("Gemini client not available")
         prompt = f"""
-        你是一位極具親和力且溫柔的台灣客家話家教老師。
+        你是一位極具親和力、溫柔且專業的台灣客家話家教老師。
         有一位學生剛剛練習了這個客語詞彙：『{word}』。
-        
+    
         後端聲學演算法給出的客觀評分與數據報告如下：
         - 學生得分：{final_score} 分
         - 演算法診斷結果：{diagnostic_report}
-        
-        請根據以上數據，用 30 個字以內、親切多變的口吻，給予學生一句具體的發音優化建議或鼓勵。
-        嚴格限制：不要重複演算法專有名詞，直接告訴他哪裡好、哪裡需要微調即可。
+    
+        老師今晚的教學語氣與嚴格度指標：
+        {tone_instruction}
+    
+        請根據以上數據與指標，用 30 個字以內、親切的口吻，給予學生一句最切合他當前分數的發音優化建議或評語。
+        嚴格限制：不要重複演算法專有名詞，直接切入正題。
         """
         
         response = ai_client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-2.5-flash',
             contents=prompt,
         )
         ai_advice = response.text.strip()
     except Exception as e:
         # 保底機制：如果 API 網路有問題，就使用原本的診斷報告
+        print(f"[Gemini Error] 呼叫失敗，原因為: {e}")
         ai_advice = f"{diagnostic_report}"
 
     return ScoreResult(score=final_score, message=message, ai_advice=ai_advice)
