@@ -52,18 +52,23 @@ _gemini_client = None
 
 def _get_gemini_client():
     global _gemini_client
-    if _gemini_client is not None:
-        return _gemini_client
+    # 每次都重新檢查，避免舊的失敗 client 被快取
     if genai is None:
         return None
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
         return None
+    if _gemini_client is not None:
+        return _gemini_client
     try:
-        _gemini_client = genai.Client(api_key=api_key)
+        _gemini_client = genai.Client(
+            vertexai=False,
+            api_key=api_key
+        )
         print(f"[Gemini] client 初始化成功，model={os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')}")
     except Exception as e:
         print(f"[Gemini] client 初始化失敗：{e}")
+        _gemini_client = None
     return _gemini_client
 
 COCO_ZH = {
@@ -221,21 +226,24 @@ def _recognize_with_gemini_sync(
 }}
 """
 
-    response = gemini_client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=[
-            genai_types.Part.from_bytes(
-                data=image_bytes,
-                mime_type="image/jpeg",
-            ),
-            prompt,
-        ],
-        config=genai_types.GenerateContentConfig(
-            response_mime_type="application/json"
-        ),
-    )
+    try:
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=[
+                genai_types.Part.from_bytes(
+                    data=image_bytes,
+                    mime_type="image/jpeg",
+                ),
+                prompt,
+            ],
+        )
+        raw_text = response.text or ""
+        print(f"[Gemini] 原始回傳：{raw_text[:200]}")
+    except Exception as e:
+        print(f"[Gemini] API 呼叫失敗：{e}")
+        return []
 
-    data = _extract_json_object(response.text or "{}")
+    data = _extract_json_object(raw_text) if raw_text else {}
     items = data.get("items", [])
     if not isinstance(items, list):
         return []
