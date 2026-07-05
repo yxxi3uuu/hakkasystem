@@ -547,14 +547,18 @@
                       <span style="font-size:12px;color:#888;">點選此單字以加入儲存</span>
                     </div>
 
-                    <div style="margin-bottom:10px;">
+                    <div style="width:100%;border-radius:12px;overflow:hidden;background:#f3f3f3;margin-bottom:12px;">
+                      <img id="recCropImg${idx}" alt="${item.label_zh || ''}" style="width:100%;height:auto;max-height:260px;object-fit:contain;display:block;background:#f3f3f3;" />
+                    </div>
+
+                    <div style="margin-bottom:10px;text-align:center;">
                       <div style="display:inline-block;margin-bottom:6px;padding:3px 9px;border-radius:999px;background:${sourceBg};color:${sourceColor};font-size:11px;font-weight:700;">
                         ${sourceLabel}
                       </div>
                       <div style="font-size:28px;font-weight:800;color:#2E7D32;line-height:1.2;">
                         ${item.keyword_hakka || '（未取得客語翻譯）'}
                       </div>
-                      ${item.pinyin ? `<div style="font-size:14px;color:#4CAF50;font-weight:500;margin:3px 0 4px;">${item.pinyin}</div>` : ''}
+                      ${item.pinyin ? `<div style="font-size:18px;color:#4CAF50;font-weight:700;margin:5px 0 5px;line-height:1.25;">${item.pinyin}</div>` : ''}
                       <div style="font-size:13px;color:#888;margin-top:2px;">中文：${item.label_zh}</div>
                     </div>
 
@@ -655,6 +659,7 @@
                 if (card) {
                   card.addEventListener('click', () => toggleRecognitionItem(idx));
                 }
+                renderRecognitionCropPreview(idx, item);
               });
 
               // 更新儲存按鈕
@@ -731,7 +736,113 @@
       }
     }
 
+    function loadImageFromBlob(blob) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          resolve(img);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('image load failed'));
+        };
+        img.src = url;
+      });
+    }
+
+    function canvasToJpegBlob(targetCanvas, quality = 0.9) {
+      return new Promise(resolve => targetCanvas.toBlob(resolve, 'image/jpeg', quality));
+    }
+
+    async function blobFromUrl(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('crop fetch failed');
+      return await res.blob();
+    }
+
+    async function makeZoomedPhotoBlob(item) {
+      if (item && item.crop_path) {
+        return await blobFromUrl(item.crop_path);
+      }
+
+      if (!currentPhotoBlob || !item || !Array.isArray(item.bbox) || item.bbox.length !== 4) {
+        return currentPhotoBlob;
+      }
+
+      const img = await loadImageFromBlob(currentPhotoBlob);
+      const [x1Raw, y1Raw, x2Raw, y2Raw] = item.bbox.map(Number);
+      if (![x1Raw, y1Raw, x2Raw, y2Raw].every(Number.isFinite)) {
+        return currentPhotoBlob;
+      }
+
+      const sourceW = img.naturalWidth || img.width;
+      const sourceH = img.naturalHeight || img.height;
+      const maxCoord = Math.max(x1Raw, y1Raw, x2Raw, y2Raw);
+      const coordScale = maxCoord <= 1000 ? Math.max(sourceW, sourceH) / 1000 : 1;
+      const scaleX = maxCoord <= 1000 ? sourceW / 1000 : coordScale;
+      const scaleY = maxCoord <= 1000 ? sourceH / 1000 : coordScale;
+
+      let x1 = x1Raw * scaleX;
+      let y1 = y1Raw * scaleY;
+      let x2 = x2Raw * scaleX;
+      let y2 = y2Raw * scaleY;
+
+      x1 = Math.max(0, Math.min(x1, sourceW));
+      x2 = Math.max(0, Math.min(x2, sourceW));
+      y1 = Math.max(0, Math.min(y1, sourceH));
+      y2 = Math.max(0, Math.min(y2, sourceH));
+
+      if (x2 <= x1 || y2 <= y1) {
+        return currentPhotoBlob;
+      }
+
+      const boxW = Math.max(1, x2 - x1);
+      const boxH = Math.max(1, y2 - y1);
+      const centerX = x1 + boxW / 2;
+      const centerY = y1 + boxH / 2;
+
+      const objectAreaRatio = (boxW * boxH) / (sourceW * sourceH);
+      const paddingFactor = objectAreaRatio < 0.03 ? 1.2 : 1.08;
+
+      let cropW = boxW * paddingFactor;
+      let cropH = boxH * paddingFactor;
+
+      cropW = Math.min(cropW, sourceW);
+      cropH = Math.min(cropH, sourceH);
+
+      let sx = centerX - cropW / 2;
+      let sy = centerY - cropH / 2;
+      sx = Math.max(0, Math.min(sx, sourceW - cropW));
+      sy = Math.max(0, Math.min(sy, sourceH - cropH));
+
+      const out = document.createElement('canvas');
+      out.width = Math.max(1, Math.round(cropW));
+      out.height = Math.max(1, Math.round(cropH));
+      const ctx = out.getContext('2d');
+      ctx.drawImage(img, sx, sy, cropW, cropH, 0, 0, out.width, out.height);
+
+      return await canvasToJpegBlob(out);
+    }
+
     // ── 儲存至後端 PostgreSQL（物件辨識模式）──
+    async function renderRecognitionCropPreview(idx, item) {
+      const imgEl = document.getElementById(`recCropImg${idx}`);
+      if (!imgEl || !currentPhotoBlob) return;
+
+      try {
+        if (item && item.crop_path) {
+          imgEl.src = item.crop_path;
+        } else {
+          const blob = await makeZoomedPhotoBlob(item);
+          imgEl.src = URL.createObjectURL(blob);
+        }
+      } catch (e) {
+        imgEl.src = URL.createObjectURL(currentPhotoBlob);
+      }
+    }
+
     async function saveWordPhoto() {
       const user = getUser();
       if (!user) { alert('請先登入系統'); return; }
@@ -751,9 +862,10 @@
 
       for (const item of toSave) {
         try {
+          const photoBlob = await makeZoomedPhotoBlob(item);
           const formData = new FormData();
           formData.append('user_id',              user.id);
-          formData.append('file',                 currentPhotoBlob, 'photo.jpg');
+          formData.append('file',                 photoBlob, 'photo.jpg');
           formData.append('label_zh',             item.label_zh);
           formData.append('label_hakka',          item.keyword_hakka || item.label_zh);
           formData.append('label_pinyin',         item.pinyin || '');

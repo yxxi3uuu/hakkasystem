@@ -188,13 +188,37 @@ async def generate_hakka_tts(text: str, folder: str = "words") -> str:
     return "/" + str(filepath).replace("\\", "/")
 
 
-_SUPERSCRIPT = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+_HAKKA_TONE_MARKS = {
+    "24": "ˊ",
+    "35": "ˊ",
+    "11": "ˇ",
+    "113": "ˇ",
+    "31": "ˋ",
+    "21": "ˋ",
+    "53": "ˋ",
+    "54": "ˋ",
+    "2": "ˋ",
+    "55": "",
+    "5": "",
+    "33": "",
+}
+
+
+def to_bopomofo_tone(pinyin: str) -> str:
+    """把客語拼音數字調號轉成注音式聲調符號，例如 ngien24 → ngienˊ。"""
+    import re
+
+    def replace_tone(match):
+        tone = match.group()
+        return _HAKKA_TONE_MARKS.get(tone, tone)
+
+    # Longer tone values must match first, so 113 is not treated as 11 + 3.
+    return re.sub(r"113|24|35|11|31|21|53|54|55|33|[25]", replace_tone, pinyin)
 
 
 def to_superscript_tone(pinyin: str) -> str:
-    """把客語拼音的數字調號轉成上標數字，例如 gieu31 e31 → gieu³¹ e³¹"""
-    import re
-    return re.sub(r"\d+", lambda m: m.group().translate(_SUPERSCRIPT), pinyin)
+    """相容舊名稱：現在輸出注音式聲調符號，而不是上標數字。"""
+    return to_bopomofo_tone(pinyin)
 
 
 @router.post("/zh-to-hakka")

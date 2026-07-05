@@ -7,10 +7,12 @@ venv/
 *.egg-info/
 dist/
 .DS_Store
+.matplotlib_cache/
 *.pt
 *.gguf
 ffmpeg.exe
 ffprobe.exe
+backend/ffmpeg-8.1.1/
 
 static/uploads/
 static/audios/

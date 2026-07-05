@@ -35,14 +35,14 @@ _VP_BASE = "voice_practice/data"
 PRESET_WORDS = [
     {
         "word": "蘋果",
-        "hakka": "頻果",
+        "hakka": "蘋果",
         "image_path": "/voice_practice/images/images.jpg",
         "audio_file": os.path.join(_VP_BASE, "audios", "apple.wav"),
         "audio_url":  "/voice_practice/audios/apple.wav",
     },
     {
         "word": "椅子",
-        "hakka": "椅仔",
+        "hakka": "凳仔",
         "image_path": "/voice_practice/images/800x.jpg",
         "audio_file": os.path.join(_VP_BASE, "audios", "chair.wav"),
         "audio_url":  "/voice_practice/audios/chair.wav",
@@ -244,21 +244,8 @@ class ScoreResult(BaseModel):
     ai_advice: str  
 
 # 初始化 Gemini 客戶端 (請記得在環境變數或程式中設定你的 API 金鑰)
-try:
-    from google import genai as _genai
-    from google.genai import types as _genai_types
-    _gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
-    if _gemini_key:
-        ai_client = _genai.Client(
-            vertexai=False,
-            api_key=_gemini_key
-        )
-    else:
-        ai_client = None
-        print("[Gemini] GEMINI_API_KEY 未設定，語音評分將使用 fallback")
-except Exception as e:
-    ai_client = None
-    print(f"[Gemini] client 初始化失敗：{e}")
+from google import genai
+ai_client = genai.Client()
 
 @router.post("/score", response_model=ScoreResult)
 async def score_recording(
