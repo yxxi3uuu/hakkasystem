@@ -159,3 +159,42 @@ async def collect_dataset(
             "review_status":     "pending",
         },
     }
+
+
+@router.post("/report", summary="簡易回報辨識錯誤（不需要音檔）")
+async def report_recognition_error(
+    wrong_text:   str = Form(..., description="辨識錯誤的客語字"),
+    correct_text: str = Form(..., description="使用者認為正確的客語字"),
+    scenario:     str = Form("other", description="誤判情境"),
+):
+    """
+    不需要音檔的簡化版回報，直接存入 metadata.jsonl，
+    供管理者在後台審核。
+    """
+    _ensure_dirs()
+
+    ai_suggested_text = await _ai_review(wrong_text, correct_text)
+
+    record = {
+        "id":                uuid.uuid4().hex,
+        "audio_path":        "",
+        "wrong_text":        wrong_text,
+        "correct_text":      correct_text,
+        "ai_suggested_text": ai_suggested_text,
+        "review_status":     "pending",
+        "scenario":          scenario,
+        "original_filename": "",
+        "created_at":        datetime.now(timezone.utc).isoformat(),
+    }
+
+    try:
+        with METADATA_FILE.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"儲存失敗：{e}") from e
+
+    return {
+        "success": True,
+        "message": "回報成功，感謝您的回饋！",
+        "ai_suggested_text": ai_suggested_text,
+    }

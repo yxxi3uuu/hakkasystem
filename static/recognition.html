@@ -525,18 +525,27 @@
               currentRecognitionSource = items[0].source || 'yolo';
               
               let html = '';
-              items.forEach(item => {
+              items.forEach((item, idx) => {
                 const sourceLabel = item.source === 'gemini' ? 'Gemini 輔助辨識' : 'YOLO 辨識';
                 const sourceColor = item.source === 'gemini' ? '#1565C0' : '#2E7D32';
                 const sourceBg = item.source === 'gemini' ? '#E3F2FD' : '#E8F5E9';
 
                 // 💡 【核心修改】：標題直接放大顯示客語漢字，下方搭配 LLM 的華語造句
                 html += `
-                  <div style="
+                  <div id="recCard${idx}" style="
                       margin-bottom:20px;
                       border-bottom:1px solid #eee;
                       padding-bottom:15px;
+                      border-radius:12px;
+                      border:2px solid transparent;
+                      padding:12px;
+                      cursor:pointer;
+                      transition:border-color 0.15s,background 0.15s;
                   ">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                      <div class="rec-check-box" id="recCheck${idx}" style="width:22px;height:22px;border:2px solid #ccc;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;"></div>
+                      <span style="font-size:12px;color:#888;">點選此單字以加入儲存</span>
+                    </div>
 
                     <div style="margin-bottom:10px;">
                       <div style="display:inline-block;margin-bottom:6px;padding:3px 9px;border-radius:999px;background:${sourceBg};color:${sourceColor};font-size:11px;font-weight:700;">
@@ -636,10 +645,22 @@
 
               document.getElementById('resultItemsContainer').innerHTML = html;
 
-              // 更新儲存按鈕狀態
+              // ── 物件辨識：選擇性儲存 ──
+              _recognitionItems = items;
+              _selectedRecognitionItems = new Set();
+
+              // 為每個物件卡片加點擊事件
+              items.forEach((item, idx) => {
+                const card = document.getElementById(`recCard${idx}`);
+                if (card) {
+                  card.addEventListener('click', () => toggleRecognitionItem(idx));
+                }
+              });
+
+              // 更新儲存按鈕
               const saveBtn = document.getElementById('saveBtn');
               saveBtn.disabled = false;
-              saveBtn.textContent = `💾 儲存照片與客語單字 (${items[0].keyword_hakka})`;
+              saveBtn.textContent = `💾 點選單字後儲存（共 ${items.length} 個）`;
             } else {
               document.getElementById('resultItemsContainer').innerHTML = '<div class="result-example">未偵測到任何物品</div>';
             }
@@ -678,16 +699,46 @@
       }
     }
 
+    // ── 物件辨識：選擇性儲存 ──────────────────────────────
+    let _recognitionItems = [];
+    let _selectedRecognitionItems = new Set();
+
+    function toggleRecognitionItem(idx) {
+      const card  = document.getElementById(`recCard${idx}`);
+      const check = document.getElementById(`recCheck${idx}`);
+      if (_selectedRecognitionItems.has(idx)) {
+        _selectedRecognitionItems.delete(idx);
+        card.style.borderColor  = 'transparent';
+        card.style.background   = '';
+        check.textContent       = '';
+        check.style.borderColor = '#ccc';
+        check.style.background  = '';
+      } else {
+        _selectedRecognitionItems.add(idx);
+        card.style.borderColor  = '#4CAF50';
+        card.style.background   = '#F1F8E9';
+        check.textContent       = '✓';
+        check.style.borderColor = '#4CAF50';
+        check.style.background  = '#4CAF50';
+        check.style.color       = 'white';
+      }
+      const count   = _selectedRecognitionItems.size;
+      const saveBtn = document.getElementById('saveBtn');
+      if (count === 0) {
+        saveBtn.textContent = `💾 點選單字後儲存（共 ${_recognitionItems.length} 個）`;
+      } else {
+        saveBtn.textContent = `💾 儲存已選單字（${count} 個）`;
+      }
+    }
+
     // ── 儲存至後端 PostgreSQL（物件辨識模式）──
     async function saveWordPhoto() {
-      if (!currentPhotoBlob || !currentLabelZh || !currentLabelHakka) {
-        alert('無有效資料可儲存');
-        return;
-      }
-      
       const user = getUser();
-      if (!user) {
-        alert('請先登入系統');
+      if (!user) { alert('請先登入系統'); return; }
+
+      // 沒有選擇時提示
+      if (_selectedRecognitionItems.size === 0) {
+        alert('請先點選要儲存的單字');
         return;
       }
 
@@ -695,46 +746,35 @@
       btn.disabled = true;
       btn.textContent = '正在寫入資料庫...';
 
-      const formData = new FormData();
-      formData.append('user_id', user.id);
-      formData.append('file', currentPhotoBlob, 'photo.jpg');
-      formData.append('label_zh', currentLabelZh);
+      const toSave = [..._selectedRecognitionItems].map(i => _recognitionItems[i]).filter(Boolean);
+      let successCount = 0;
 
-      formData.append('label_hakka', currentLabelHakka);
+      for (const item of toSave) {
+        try {
+          const formData = new FormData();
+          formData.append('user_id',              user.id);
+          formData.append('file',                 currentPhotoBlob, 'photo.jpg');
+          formData.append('label_zh',             item.label_zh);
+          formData.append('label_hakka',          item.keyword_hakka || item.label_zh);
+          formData.append('label_pinyin',         item.pinyin || '');
+          formData.append('audio_path',           item.audio_path || '');
+          formData.append('labels_json',          JSON.stringify([item]));
+          formData.append('sentence_zh',          item.sentence_zh || '');
+          formData.append('sentence_hakka',       item.sentence_hakka || '');
+          formData.append('sentence_audio_path',  item.sentence_audio_path || '');
+          formData.append('source',               item.source || 'yolo');
 
-      formData.append('label_pinyin', '');
-      
-      formData.append('audio_path', currentAudioPath);
-
-      formData.append('labels_json', currentLabelsJson);
-
-      formData.append('sentence_zh', currentSentenceZh);
-
-      formData.append('sentence_hakka', currentSentenceHakka);
-
-      formData.append(
-        'sentence_audio_path',
-        currentSentenceAudioPath
-      );
-      formData.append('source', currentRecognitionSource);
-
-      try {
-        const res = await fetch('/api/saved_words', {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (res.ok) {
-          btn.textContent = '✅ 已成功存入歷史紀錄';
-        } else {
-          const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
-          console.error('儲存失敗:', err);
-          btn.textContent = `❌ 儲存失敗：${err.detail || res.status}`;
-          btn.disabled = false;
+          const res = await fetch('/api/saved_words', { method: 'POST', body: formData });
+          if (res.ok) successCount++;
+        } catch(e) {
+          console.error('儲存失敗:', e);
         }
-      } catch (err) {
-        console.error('儲存失敗:', err);
-        btn.textContent = '❌ 連線失敗';
+      }
+
+      if (successCount > 0) {
+        btn.textContent = `✅ 已成功儲存 ${successCount} 個單字`;
+      } else {
+        btn.textContent = '❌ 儲存失敗，請重試';
         btn.disabled = false;
       }
     }
@@ -975,22 +1015,21 @@
       submitBtn.textContent = '送出中...';
 
       try {
-        // recognition 頁沒有語音錄製，送一個空 blob（後端 audio 欄位仍為必填）
-        const emptyBlob = new Blob([], { type: 'audio/webm' });
-
         const formData = new FormData();
-        formData.append('audio',        emptyBlob, 'no_audio.webm');
         formData.append('wrong_text',   wrongText);
         formData.append('correct_text', correctText);
         formData.append('scenario',     scenario);
 
-        const res = await fetch('/api/v1/dataset/collect', {
+        const res = await fetch('/api/v1/dataset/report', {
           method: 'POST',
           body: formData
         });
 
         if (res.ok) {
-          alert('✅ 感謝您的回報！資料已成功收集，將用於改善客語辨識模型。');
+          const data = await res.json();
+          const aiMsg = data.ai_suggested_text && data.ai_suggested_text !== correctText
+            ? `\nAI 建議修正為：「${data.ai_suggested_text}」` : '';
+          alert(`✅ 回報成功！感謝您的回饋，將由管理者審核。${aiMsg}`);
           panel.style.display = 'none';
         } else {
           const err = await res.json().catch(() => ({}));

@@ -367,3 +367,90 @@ async def get_user_activities(
         {"id": a.id, "icon": a.icon, "title": a.title, "score": a.score, "created_at": a.created_at}
         for a in activities
     ]
+
+
+# ════════════════════════════════════════════════════════════════════════
+# 回報修正審核（admin only）
+# ════════════════════════════════════════════════════════════════════════
+import json as _json
+from pathlib import Path as _Path
+
+_METADATA_FILE = _Path("dataset_storage/metadata.jsonl")
+
+
+def _read_reports() -> list[dict]:
+    if not _METADATA_FILE.exists():
+        return []
+    records = []
+    with _METADATA_FILE.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    records.append(_json.loads(line))
+                except Exception:
+                    pass
+    return records
+
+
+def _write_reports(records: list[dict]) -> None:
+    _METADATA_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with _METADATA_FILE.open("w", encoding="utf-8") as f:
+        for r in records:
+            f.write(_json.dumps(r, ensure_ascii=False) + "\n")
+
+
+@router.get("/reports")
+async def list_reports(
+    status: str = Query("pending"),
+    caller: User = Depends(require_admin_only)
+):
+    """取得回報修正列表，預設只顯示 pending"""
+    records = _read_reports()
+    if status != "all":
+        records = [r for r in records if r.get("review_status") == status]
+    return sorted(records, key=lambda r: r.get("created_at", ""), reverse=True)
+
+
+class ReviewAction(BaseModel):
+    report_id: str
+    action: str          # "approve" | "reject" | "edit"
+    final_text: str = "" # action=edit 時填入修正後的文字
+
+
+@router.post("/reports/review")
+async def review_report(
+    body: ReviewAction,
+    caller: User = Depends(require_admin_only)
+):
+    """管理者審核回報：接受 / 拒絕 / 手動修正"""
+    records = _read_reports()
+    updated = False
+    for r in records:
+        if r.get("id") == body.report_id:
+            if body.action == "approve":
+                r["review_status"] = "approved"
+                r["final_text"] = r.get("ai_suggested_text") or r.get("correct_text", "")
+            elif body.action == "reject":
+                r["review_status"] = "rejected"
+            elif body.action == "edit":
+                r["review_status"] = "approved"
+                r["final_text"] = body.final_text.strip()
+            r["reviewed_by"] = caller.id
+            updated = True
+            break
+    if not updated:
+        raise HTTPException(status_code=404, detail="找不到此回報")
+    _write_reports(records)
+    return {"status": "success"}
+
+
+@router.get("/reports/stats")
+async def report_stats(caller: User = Depends(require_admin_only)):
+    records = _read_reports()
+    return {
+        "total":    len(records),
+        "pending":  sum(1 for r in records if r.get("review_status") == "pending"),
+        "approved": sum(1 for r in records if r.get("review_status") == "approved"),
+        "rejected": sum(1 for r in records if r.get("review_status") == "rejected"),
+    }
