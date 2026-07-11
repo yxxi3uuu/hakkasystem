@@ -243,10 +243,6 @@ class ScoreResult(BaseModel):
     message: str 
     ai_advice: str  
 
-# 初始化 Gemini 客戶端 (請記得在環境變數或程式中設定你的 API 金鑰)
-from google import genai
-ai_client = genai.Client()
-
 @router.post("/score", response_model=ScoreResult)
 async def score_recording(
     audio: UploadFile = File(...),
@@ -383,3 +379,22 @@ async def score_recording(
         ai_advice = f"{diagnostic_report}"
 
     return ScoreResult(score=final_score, message=message, ai_advice=ai_advice)
+
+import threading
+
+def _warmup_librosa():
+    try:
+        import librosa
+        import numpy as np
+        fake_y = np.zeros(16000 * 2, dtype=np.float32)
+        fake_ref = np.zeros(16000 * 2, dtype=np.float32)
+        
+        mfcc_1 = librosa.feature.mfcc(y=fake_y, sr=16000, n_mfcc=13)
+        mfcc_2 = librosa.feature.mfcc(y=fake_ref, sr=16000, n_mfcc=13)
+        _ = librosa.sequence.dtw(X=mfcc_1, Y=mfcc_2, metric="euclidean")
+        
+        print("[Practice] ✅ Librosa 預熱編譯完成，後續錄音將不會卡頓！")
+    except Exception as e:
+        print(f"[Practice] 預熱失敗: {e}")
+
+threading.Thread(target=_warmup_librosa, daemon=True).start()
