@@ -100,6 +100,31 @@ def _clean_json_text(text: str) -> str:
     return match.group(1).strip() if match else cleaned
 
 
+def _coerce_sentence_result(parsed: object, word: str) -> dict:
+    if isinstance(parsed, dict):
+        sentence = (
+            parsed.get("sentence_zh")
+            or parsed.get("sentence")
+            or parsed.get("chinese_translation")
+            or ""
+        )
+        if isinstance(sentence, str) and sentence.strip():
+            return {
+                "word": parsed.get("word") or word,
+                "sentence_zh": sentence.strip(),
+                "sentence": sentence.strip(),
+                "chinese_translation": sentence.strip(),
+            }
+
+    fallback_sentence = f"這是一個關於{word}的生活句子。"
+    return {
+        "word": word,
+        "sentence_zh": fallback_sentence,
+        "sentence": fallback_sentence,
+        "chinese_translation": fallback_sentence,
+    }
+
+
 def _ask_llm_json(system_prompt: str, user_prompt: str, max_tokens: int, temperature: float):
     response = llm.create_chat_completion(
         messages=[
@@ -110,7 +135,11 @@ def _ask_llm_json(system_prompt: str, user_prompt: str, max_tokens: int, tempera
         temperature=temperature,
     )
     result_text = response["choices"][0]["message"]["content"].strip()
-    return json.loads(_clean_json_text(result_text))
+    cleaned_text = _clean_json_text(result_text)
+    try:
+        return json.loads(cleaned_text)
+    except json.JSONDecodeError:
+        return {"sentence_zh": cleaned_text or result_text, "sentence": cleaned_text or result_text, "word": ""}
 
 
 def _normalize_words(words: list[str] | str, max_words: int = 5) -> list[str]:
@@ -167,29 +196,39 @@ async def generate_hakka_sentence(request: WordRequest):
         raise HTTPException(status_code=400, detail="單字不可為空")
 
     if llm:
-        system_prompt = """你是一個專業的台灣客語教師。
-請根據輸入的中文單字，生成一句適合國小生學習的生活化客語例句，長度在 10 個字以內。
-請務必只輸出合法 JSON，包含 "hakka_sentence" 與 "chinese_translation" 兩個鍵值，絕對不要輸出任何其他說明文字。"""
+        system_prompt = """你是一個專業的中文句子生成助手。
+請根據輸入的中文單字，生成一句生活化、適合國小生的中文句子。
+要求：
+1. 只輸出一個中文句子，不要任何英文或客語。
+2. 長度約 10 到 20 個中文字。
+3. 內容要自然、生活化、容易理解。
+4. 不要輸入任何額外說明文字。"""
         user_prompt = f"""範例：
 輸入：椅子
-{{"hakka_sentence": "這張椅子當好坐。", "chinese_translation": "這張椅子很好坐。"}}
+這張椅子坐起來很舒服。
 
 輸入：吃飯
-{{"hakka_sentence": "大家來食飯囉。", "chinese_translation": "大家來吃飯囉。"}}
+大家一起吃飯，氣氛很溫暖。
 
 輸入：{word}"""
         try:
-            return _ask_llm_json(system_prompt, user_prompt, max_tokens=150, temperature=0.2)
+            parsed = _ask_llm_json(system_prompt, user_prompt, max_tokens=120, temperature=0.2)
+            if isinstance(parsed, dict):
+                return _coerce_sentence_result(parsed, word)
+            return _coerce_sentence_result({}, word)
         except json.JSONDecodeError:
             raise HTTPException(status_code=500, detail="模型未輸出正確的 JSON 格式")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"推論錯誤: {e}")
 
     # fallback
-    return FALLBACK.get(word, {
-        "hakka_sentence":      f"這個{word}當靚。",
-        "chinese_translation": f"這個{word}很漂亮。",
-    })
+    fallback_sentence = f"這是一個關於{word}的生活句子。"
+    return {
+        "word": word,
+        "sentence_zh": fallback_sentence,
+        "sentence": fallback_sentence,
+        "chinese_translation": fallback_sentence,
+    }
 
 
 # ── 生成多單字故事 ────────────────────────────────────────────────────────
@@ -202,25 +241,32 @@ async def generate_hakka_story(request: WordsRequest):
     words_str = "、".join(words)
 
     if llm:
-        system_prompt = """你是一個專業的中文寫作助手。請根據我提供的 1 到 5 個中文單字，為每個單字造一個中文句子。
+        system_prompt = """你是一個專業的中文句子生成助手。請根據我提供的 1 到 5 個中文單字，為每個單字各造一個中文生活句子。
 要求：
-1. 這些句子必須構成一個有關聯的連續情境或故事。
-2. 每個句子的長度必須控制在大約 20 個字左右。
-3. 請務必只輸出合法的 JSON 陣列 (Array) 格式，包含 "word" 與 "sentence" 兩個鍵值，絕對不要輸出任何其他說明文字。"""
+1. 每個句子都要是中文，長度約 10 到 20 個中文字。
+2. 內容要自然、生活化、適合國小生。
+3. 只輸出合法的 JSON 陣列，陣列中每一項只包含兩個鍵：\"word\" 與 \"sentence_zh\"。
+4. 不要輸入任何額外說明文字。"""
         user_prompt = f"""範例：
 輸入單字：蘋果、公園、下雨
 [
-  {{"word": "蘋果", "sentence": "他手裡拿著一顆紅透的蘋果，心情看起來非常愉快。"}},
-  {{"word": "公園", "sentence": "我們原本約好要在這座寬敞的公園裡一起野餐吃水果。"}},
-  {{"word": "下雨", "sentence": "沒想到天空突然下雨，打亂了所有原本規劃好的行程。"}}
+  {{"word": "蘋果", "sentence_zh": "這顆蘋果看起來又紅又香。"}},
+  {{"word": "公園", "sentence_zh": "我們在公園裡一起散步。"}},
+  {{"word": "下雨", "sentence_zh": "突然下雨了，大家趕快回家。"}}
 ]
 
 輸入單字：{words_str}"""
         try:
-            parsed = _ask_llm_json(system_prompt, user_prompt, max_tokens=400, temperature=0.3)
+            parsed = _ask_llm_json(system_prompt, user_prompt, max_tokens=400, temperature=0.2)
             if not isinstance(parsed, list):
-                raise json.JSONDecodeError("Expected JSON array", str(parsed), 0)
-            return _with_compatible_sentence_fields(parsed, words)
+                return [
+                    _coerce_sentence_result({}, w) for w in words
+                ]
+            results = []
+            for idx, word in enumerate(words):
+                item = parsed[idx] if idx < len(parsed) and isinstance(parsed[idx], dict) else {}
+                results.append(_coerce_sentence_result(item, word))
+            return results
         except json.JSONDecodeError:
             raise HTTPException(status_code=500, detail="模型未輸出正確的 JSON 格式")
         except Exception as e:
