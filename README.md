@@ -116,3 +116,6 @@ docker-compose up --build -d
 2. New Web Service → 連 GitHub repo
 3. 加 PostgreSQL database
 4. 設環境變數
+
+
+uvicorn main:app --host 0.0.0.0 --port $PORT

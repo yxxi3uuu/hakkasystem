@@ -24,5 +24,8 @@ RUN pip install --default-timeout=1000 --no-cache-dir -r requirements.txt --retr
 # 5. 複製所有程式碼到容器
 COPY . .
 
-# 6. 啟動 FastAPI (使用 uvicorn)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# 6. 對外開放 Port（Railway 會自動注入 $PORT，預設 8000）
+EXPOSE 8000
+
+# 7. 啟動 FastAPI (使用 uvicorn)，優先讀取環境變數 PORT，預設 8000
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
