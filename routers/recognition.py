@@ -1,6 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from pydantic import BaseModel
-from ultralytics import YOLO
 from sqlalchemy.ext.asyncio import AsyncSession
 from dotenv import load_dotenv
 from pathlib import Path
@@ -34,7 +33,19 @@ load_dotenv(dotenv_path=env_path, override=True)
 
 router = APIRouter(prefix="/api")
 
-model = YOLO("yolo11n.pt")
+# ── YOLO 延遲載入：只在 Gemini 無法使用或辨識失敗時才初始化 ──────────────
+_yolo_model = None
+
+def _get_yolo_model():
+    global _yolo_model
+    if _yolo_model is not None:
+        return _yolo_model
+    print("[YOLO] 初次載入模型 yolo11n.pt ...")
+    from ultralytics import YOLO as _YOLO
+    _yolo_model = _YOLO("yolo11n.pt")
+    print("[YOLO] 模型載入完成")
+    return _yolo_model
+
 YOLO_CONF_THRESHOLD = float(os.getenv("YOLO_CONF_THRESHOLD", "0.8"))
 GEMINI_MODE = os.getenv("GEMINI_MODE", "fallback").strip().lower()
 GEMINI_REVIEW_CLASSES = {
@@ -550,81 +561,69 @@ async def recognize_image(
     try:
         shutil.copy(tmp_path, saved_path)
 
-        results = model(tmp_path, verbose=False)
-        boxes = results[0].boxes
-
-        yolo_candidates = []
-        if boxes is not None and len(boxes) > 0:
-            sorted_indices = boxes.conf.argsort(descending=True)
-
-            for idx in sorted_indices:
-                i = int(idx)
-                label_en = model.names[int(boxes.cls[i])]
-                confidence = float(boxes.conf[i])
-
-                if label_en not in [obj["label_en"] for obj in yolo_candidates]:
-                    raw_bbox = [float(v) for v in boxes.xyxy[i].tolist()]
-                    label_zh = COCO_ZH.get(label_en, label_en)
-                    bbox, crop_path = _save_object_crop(tmp_path, raw_bbox, label_zh)
-                    yolo_candidates.append({
-                        "label_en": label_en,
-                        "label_zh": label_zh,
-                        "confidence": confidence,
-                        "source": "yolo",
-                        "bbox": bbox,
-                        "crop_path": crop_path,
-                    })
-
-                if len(yolo_candidates) >= 5:
-                    break
-
         detected_objects = []
-        gemini_reason = ""
-        should_use_gemini = GEMINI_MODE in {"always", "force", "gemini"}
+        yolo_candidates = []
 
-        if should_use_gemini:
-            gemini_reason = f"GEMINI_MODE={GEMINI_MODE}"
+        # ── 決策：優先用 Gemini，YOLO 只在 Gemini 不可用或無結果時才載入 ──
+        gemini_client_available = _get_gemini_client() is not None
+        force_yolo = GEMINI_MODE in {"yolo", "disabled"}
 
-        if not should_use_gemini and (boxes is None or len(boxes) == 0):
-            should_use_gemini = True
-            gemini_reason = "YOLO 未偵測到物件"
-
-        if not should_use_gemini:
-            max_confidence = yolo_candidates[0]["confidence"]
-            should_use_gemini = max_confidence < YOLO_CONF_THRESHOLD
-            if should_use_gemini:
-                gemini_reason = (
-                    f"YOLO 最高信心度 {max_confidence:.2f} "
-                    f"低於門檻 {YOLO_CONF_THRESHOLD:.2f}"
-                )
-
-        if not should_use_gemini and GEMINI_REVIEW_CLASSES:
-            top_label_en = yolo_candidates[0]["label_en"]
-            if top_label_en in GEMINI_REVIEW_CLASSES:
-                should_use_gemini = True
-                gemini_reason = f"YOLO 類別 {top_label_en} 設定為需要 Gemini 複查"
-
-        if should_use_gemini:
-            print(f"[Recognition] 使用 Gemini 輔助辨識：{gemini_reason}")
-            detected_objects = await recognize_with_gemini(
-                tmp_path,
-                yolo_candidates
-            )
-            detected_objects = attach_yolo_bboxes(
-                detected_objects,
-                yolo_candidates
-            )
+        if not force_yolo and gemini_client_available:
+            # 第一軌：直接讓 Gemini 辨識，不預先跑 YOLO
+            print("[Recognition] 使用 Gemini 辨識（跳過 YOLO 初始載入）")
+            detected_objects = await recognize_with_gemini(tmp_path, yolo_candidates=None)
             if not detected_objects:
-                print("[Recognition] Gemini 未回傳物品單詞")
+                print("[Recognition] Gemini 未回傳物品，fallback 到 YOLO")
 
-        if (
-            not detected_objects
-            and boxes is not None
-            and len(boxes) > 0
-        ):
-            if should_use_gemini:
-                print("[Recognition] Gemini 無結果，暫時回退使用 YOLO 候選")
-            detected_objects = yolo_candidates
+        if not detected_objects:
+            # 第二軌（fallback）：Gemini 無結果 或 未設定 Gemini → 載入 YOLO
+            yolo_model = _get_yolo_model()
+            results = yolo_model(tmp_path, verbose=False)
+            boxes = results[0].boxes
+
+            if boxes is not None and len(boxes) > 0:
+                sorted_indices = boxes.conf.argsort(descending=True)
+
+                for idx in sorted_indices:
+                    i = int(idx)
+                    label_en = yolo_model.names[int(boxes.cls[i])]
+                    confidence = float(boxes.conf[i])
+
+                    if label_en not in [obj["label_en"] for obj in yolo_candidates]:
+                        raw_bbox = [float(v) for v in boxes.xyxy[i].tolist()]
+                        label_zh = COCO_ZH.get(label_en, label_en)
+                        bbox, crop_path = _save_object_crop(tmp_path, raw_bbox, label_zh)
+                        yolo_candidates.append({
+                            "label_en": label_en,
+                            "label_zh": label_zh,
+                            "confidence": confidence,
+                            "source": "yolo",
+                            "bbox": bbox,
+                            "crop_path": crop_path,
+                        })
+
+                    if len(yolo_candidates) >= 5:
+                        break
+
+            # YOLO 有結果但信心度低 → 再試一次 Gemini（帶 YOLO hints）
+            if yolo_candidates and gemini_client_available and not force_yolo:
+                max_confidence = yolo_candidates[0]["confidence"]
+                top_label_en = yolo_candidates[0]["label_en"]
+                needs_gemini_review = (
+                    max_confidence < YOLO_CONF_THRESHOLD
+                    or top_label_en in GEMINI_REVIEW_CLASSES
+                )
+                if needs_gemini_review:
+                    print(f"[Recognition] YOLO 信心度 {max_confidence:.2f}，帶 hints 再問 Gemini")
+                    gemini_result = await recognize_with_gemini(tmp_path, yolo_candidates)
+                    if gemini_result:
+                        detected_objects = attach_yolo_bboxes(gemini_result, yolo_candidates)
+                    else:
+                        detected_objects = yolo_candidates
+                else:
+                    detected_objects = yolo_candidates
+            elif yolo_candidates:
+                detected_objects = yolo_candidates
 
         if not detected_objects:
             if _get_gemini_client() is None:
@@ -752,4 +751,5 @@ async def recognize_image(
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
+
 
