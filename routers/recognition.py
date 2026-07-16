@@ -649,81 +649,80 @@ async def recognize_image(
         # 取得翻譯 token（手動呼叫，不透過 FastAPI Depends）
         trans_token = await get_trans_token()
 
-        # 1. 中文單字 → 客語：分開翻譯，比較不會變成句子用法
-        hakka_words = []
+        # ── 全部翻譯 / 造句 / TTS 同步並行，大幅縮短等待時間 ──────────────
 
-        for word_zh in words_zh:
-            hakka_result = await call_hakka_translate_api(
+        # 1. 中文單字 → 客語（並行）
+        hakka_word_results = await asyncio.gather(*[
+            call_hakka_translate_api(
                 endpoint="/MT/translate/hakka_zh_hk",
                 text=word_zh,
                 token=trans_token
             )
+            for word_zh in words_zh
+        ])
+        hakka_words = [
+            r.get("output", "") or words_zh[i]
+            for i, r in enumerate(hakka_word_results)
+        ]
 
-            keyword_hakka = hakka_result.get("output", "") or word_zh
-            hakka_words.append(keyword_hakka)
-
-        # 2. 客語單字 → 拼音：逐筆處理，避免 API 將多筆拼音合併到第一筆
-        pinyin_words = []
-        for keyword_hakka in hakka_words:
+        # 2. 客語單字 → 拼音（並行）
+        async def _safe_pinyin(hakka: str) -> str:
             try:
-                pinyin_result = await call_hakka_translate_api(
+                result = await call_hakka_translate_api(
                     endpoint="/MT/translate/hakka_hk_py",
-                    text=keyword_hakka,
+                    text=hakka,
                     token=trans_token
                 )
-                pinyin_words.append(
-                    to_superscript_tone(pinyin_result.get("output", "").strip())
-                )
+                return to_superscript_tone(result.get("output", "").strip())
             except Exception as e:
-                print(f"[Recognition] 拼音轉換失敗：{keyword_hakka} / {e}")
-                pinyin_words.append("")
+                print(f"[Recognition] 拼音轉換失敗：{hakka} / {e}")
+                return ""
 
-        # 3. LLM 批次造句：每個詞各自一句
-        sentences_zh = await generate_sentences_for_words(words_zh)
+        # 3. LLM 批次造句（與拼音並行）
+        pinyin_task = asyncio.gather(*[_safe_pinyin(h) for h in hakka_words])
+        sentences_task = generate_sentences_for_words(words_zh)
 
-        # 4. 中文句子 → 客語句子：批次翻譯
+        pinyin_words, sentences_zh = await asyncio.gather(pinyin_task, sentences_task)
+        pinyin_words = list(pinyin_words)
+
+        # 4. 中文句子 → 客語句子（批次翻譯，一次 API）
         sentences_numbered = make_numbered_text(sentences_zh)
-
         batch_sentence_hakka_result = await call_hakka_translate_api(
             endpoint="/MT/translate/hakka_zh_hk",
             text=sentences_numbered,
             token=trans_token
         )
-
         sentences_hakka = split_numbered_text(
             batch_sentence_hakka_result.get("output", ""),
             expected_count=len(words_zh)
         )
 
-        items = []
+        # 5. 所有 TTS 全部並行（單字 TTS + 句子 TTS 同時送出）
+        async def _safe_tts(text: str, folder: str) -> str:
+            try:
+                return await generate_hakka_tts(text, folder=folder)
+            except Exception as e:
+                print(f"[Recognition] TTS 失敗：{text[:20]} / {e}")
+                return ""
 
-        # 5. TTS 分開產生，因為每個單字與句子都要獨立 wav
+        tts_tasks = []
+        for i in range(len(detected_objects)):
+            keyword_hakka = hakka_words[i] if i < len(hakka_words) else words_zh[i]
+            sentence_hakka = sentences_hakka[i] if i < len(sentences_hakka) else ""
+            tts_tasks.append(_safe_tts(keyword_hakka, "words"))
+            tts_tasks.append(_safe_tts(sentence_hakka, "sentences"))
+
+        tts_results = await asyncio.gather(*tts_tasks)
+
+        items = []
         for i, obj in enumerate(detected_objects):
             word_zh = words_zh[i]
             keyword_hakka = hakka_words[i] if i < len(hakka_words) else word_zh
             pinyin = pinyin_words[i] if i < len(pinyin_words) else ""
-
-            sentence_zh = (
-                sentences_zh[i]
-                if i < len(sentences_zh)
-                else f"這是一個{word_zh}。"
-            )
-
-            sentence_hakka = (
-                sentences_hakka[i]
-                if i < len(sentences_hakka)
-                else ""
-            )
-
-            audio_path = await generate_hakka_tts(
-                keyword_hakka,
-                folder="words"
-            )
-
-            sentence_audio_path = await generate_hakka_tts(
-                sentence_hakka,
-                folder="sentences"
-            )
+            sentence_zh = sentences_zh[i] if i < len(sentences_zh) else f"這是一個{word_zh}。"
+            sentence_hakka = sentences_hakka[i] if i < len(sentences_hakka) else ""
+            audio_path = tts_results[i * 2]
+            sentence_audio_path = tts_results[i * 2 + 1]
 
             items.append(
                 RecognizedItem(
