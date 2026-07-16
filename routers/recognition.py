@@ -697,13 +697,16 @@ async def recognize_image(
             expected_count=len(words_zh)
         )
 
-        # 5. 所有 TTS 全部並行（單字 TTS + 句子 TTS 同時送出）
+        # 5. TTS 分批並行（Semaphore 限制同時最多 3 個，避免 rate limit）
+        _tts_semaphore = asyncio.Semaphore(3)
+
         async def _safe_tts(text: str, folder: str) -> str:
-            try:
-                return await generate_hakka_tts(text, folder=folder)
-            except Exception as e:
-                print(f"[Recognition] TTS 失敗：{text[:20]} / {e}")
-                return ""
+            async with _tts_semaphore:
+                try:
+                    return await generate_hakka_tts(text, folder=folder)
+                except Exception as e:
+                    print(f"[Recognition] TTS 失敗：{text[:20]} / {e}")
+                    return ""
 
         tts_tasks = []
         for i in range(len(detected_objects)):
@@ -749,3 +752,4 @@ async def recognize_image(
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
+
