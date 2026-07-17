@@ -402,7 +402,8 @@ Important:
             prompt,
         ],
         config=genai_types.GenerateContentConfig(
-            response_mime_type="application/json"
+            response_mime_type="application/json",
+            timeout=15,          # 超過 15 秒直接放棄，改用 YOLO
         ),
     )
 
@@ -459,15 +460,30 @@ async def recognize_with_gemini(
     image_path: str,
     yolo_candidates: list[dict] | None = None
 ) -> list[dict]:
-    try:
-        return await asyncio.to_thread(
-            _recognize_with_gemini_sync,
-            image_path,
-            yolo_candidates
-        )
-    except Exception as e:
-        print(f"[Gemini] 圖片辨識失敗：{e}")
-        return []
+    """呼叫 Gemini 辨識，失敗時最多 retry 2 次（503/429 才重試，間隔 1 秒）"""
+    last_err = None
+    for attempt in range(3):
+        try:
+            return await asyncio.to_thread(
+                _recognize_with_gemini_sync,
+                image_path,
+                yolo_candidates
+            )
+        except Exception as e:
+            last_err = e
+            err_str = str(e)
+            # 只有 rate limit(429) 或 服務暫時不可用(503) 才 retry
+            if any(code in err_str for code in ("503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED")):
+                if attempt < 2:
+                    wait = 1.5 * (attempt + 1)
+                    print(f"[Gemini] 第 {attempt + 1} 次失敗（{err_str[:60]}），{wait:.1f}s 後重試...")
+                    await asyncio.sleep(wait)
+                    continue
+            # 其他錯誤直接放棄
+            print(f"[Gemini] 圖片辨識失敗：{e}")
+            return []
+    print(f"[Gemini] 重試 3 次仍失敗：{last_err}")
+    return []
 
 
 def attach_yolo_bboxes(
@@ -549,6 +565,11 @@ async def recognize_image(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db)
 ):
+    import time
+    _t0 = time.monotonic()
+    def _log(label: str):
+        print(f"[Timing] {label}: {time.monotonic() - _t0:.2f}s")
+
     suffix = os.path.splitext(file.filename or "")[1] or ".jpg"
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
@@ -560,6 +581,7 @@ async def recognize_image(
 
     try:
         shutil.copy(tmp_path, saved_path)
+        _log("檔案儲存完成")
 
         detected_objects = []
         yolo_candidates = []
@@ -572,6 +594,7 @@ async def recognize_image(
             # 第一軌：直接讓 Gemini 辨識，不預先跑 YOLO
             print("[Recognition] 使用 Gemini 辨識（跳過 YOLO 初始載入）")
             detected_objects = await recognize_with_gemini(tmp_path, yolo_candidates=None)
+            _log("Gemini 辨識完成")
             if not detected_objects:
                 print("[Recognition] Gemini 未回傳物品，fallback 到 YOLO")
 
@@ -580,6 +603,7 @@ async def recognize_image(
             yolo_model = _get_yolo_model()
             results = yolo_model(tmp_path, verbose=False)
             boxes = results[0].boxes
+            _log("YOLO 辨識完成")
 
             if boxes is not None and len(boxes) > 0:
                 sorted_indices = boxes.conf.argsort(descending=True)
@@ -616,6 +640,7 @@ async def recognize_image(
                 if needs_gemini_review:
                     print(f"[Recognition] YOLO 信心度 {max_confidence:.2f}，帶 hints 再問 Gemini")
                     gemini_result = await recognize_with_gemini(tmp_path, yolo_candidates)
+                    _log("YOLO+Gemini 複查完成")
                     if gemini_result:
                         detected_objects = attach_yolo_bboxes(gemini_result, yolo_candidates)
                     else:
@@ -663,6 +688,7 @@ async def recognize_image(
             r.get("output", "") or words_zh[i]
             for i, r in enumerate(hakka_word_results)
         ]
+        _log("客語翻譯完成")
 
         # 2. 客語單字 → 拼音（並行）
         async def _safe_pinyin(hakka: str) -> str:
@@ -683,6 +709,7 @@ async def recognize_image(
 
         pinyin_words, sentences_zh = await asyncio.gather(pinyin_task, sentences_task)
         pinyin_words = list(pinyin_words)
+        _log("拼音 + LLM 造句完成")
 
         # 4. 中文句子 → 客語句子（批次翻譯，一次 API）
         sentences_numbered = make_numbered_text(sentences_zh)
@@ -695,6 +722,7 @@ async def recognize_image(
             batch_sentence_hakka_result.get("output", ""),
             expected_count=len(words_zh)
         )
+        _log("句子客語翻譯完成")
 
         # 5. TTS 分批並行（Semaphore 限制同時最多 3 個，避免 rate limit）
         _tts_semaphore = asyncio.Semaphore(3)
@@ -715,6 +743,7 @@ async def recognize_image(
             tts_tasks.append(_safe_tts(sentence_hakka, "sentences"))
 
         tts_results = await asyncio.gather(*tts_tasks)
+        _log("TTS 全部完成")
 
         items = []
         for i, obj in enumerate(detected_objects):
@@ -743,6 +772,7 @@ async def recognize_image(
                 )
             )
 
+        _log("全部完成，準備回傳")
         return RecognitionResponse(
             items=items,
             image_path="/" + saved_path.replace("\\", "/")
@@ -751,5 +781,6 @@ async def recognize_image(
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
+
 
 
