@@ -129,6 +129,18 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[Practice] 預設音檔初始化失敗（不影響啟動）: {e}")
 
+    # YOLO 模型背景預載：在伺服器啟動時就載入，避免第一次 request 卡住
+    import asyncio as _asyncio
+
+    async def _preload_yolo():
+        try:
+            await _asyncio.to_thread(
+                lambda: __import__('routers.recognition', fromlist=['_get_yolo_model'])._get_yolo_model()
+            )
+        except Exception as e:
+            print(f"[YOLO] 背景預載失敗（不影響啟動）: {e}")
+
+    _asyncio.ensure_future(_preload_yolo())
     print("App started")
     yield
     print("App stopped")
@@ -248,3 +260,4 @@ async def create_user(name: str, email: str, db: AsyncSession = Depends(get_db))
 @app.get("/test-db")
 async def test_db():
     return {"status": "ok"}
+
