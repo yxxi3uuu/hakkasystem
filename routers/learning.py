@@ -26,22 +26,24 @@ class WordsRequest(BaseModel):
     words: list[str] | str
 
 
-# ── Gemini API 設定 ───────────────────────────────────────────────────────
-_GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-# 造句用 gemini-2.0-flash（穩定、不易 503）
+# ── LLM 造句設定（優先 Groq，備選 Gemini）─────────────────────────────────
+_GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
+_GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_2", "").strip() or os.getenv("GEMINI_API_KEY", "").strip()
 _GEMINI_MODEL = "gemini-2.0-flash"
 
 
 def init_llm() -> None:
-    """保留介面相容性，由 main.py lifespan 呼叫。現在改用 Gemini API，不需載入本地模型。"""
-    global _GEMINI_API_KEY
-    # 重新讀取，確保 load_dotenv 已執行完畢
-    _GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+    """保留介面相容性，由 main.py lifespan 呼叫。"""
+    global _GROQ_API_KEY, _GEMINI_API_KEY
+    _GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
+    _GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_2", "").strip() or os.getenv("GEMINI_API_KEY", "").strip()
 
-    if _GEMINI_API_KEY:
+    if _GROQ_API_KEY:
+        print(f"[LLM] 使用 Groq API 造句（key={_GROQ_API_KEY[:8]}...）")
+    elif _GEMINI_API_KEY:
         print(f"[LLM] 使用 Gemini API 造句（model={_GEMINI_MODEL}，key={_GEMINI_API_KEY[:8]}...）")
     else:
-        print("[LLM] GEMINI_API_KEY 未設定，造句將使用 fallback 罐頭句")
+        print("[LLM] 未設定任何 LLM API Key，造句將使用 fallback 罐頭句")
 
 
 def _clean_json_text(text: str) -> str:
@@ -92,55 +94,72 @@ def _normalize_words(words: list[str] | str, max_words: int = 5) -> list[str]:
     return [word.strip() for word in raw_words if word.strip()][:max_words]
 
 
-async def _ask_gemini(prompt: str, max_tokens: int = 300) -> str:
-    """呼叫 Gemini API，回傳生成的文字內容。503/429 時最多 retry 2 次。"""
-    if not _GEMINI_API_KEY:
-        return ""
-
+async def _ask_llm(prompt: str, max_tokens: int = 300) -> str:
+    """呼叫 LLM API 造句。優先 Groq，備選 Gemini，都失敗回傳空字串。"""
     import asyncio
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{_GEMINI_MODEL}:generateContent"
 
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0.3,
-            "maxOutputTokens": max_tokens,
-        },
-    }
-
-    last_err = None
-    for attempt in range(3):
+    # ── 優先用 Groq（免費、穩定）──
+    if _GROQ_API_KEY:
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
                 resp = await client.post(
-                    url,
-                    params={"key": _GEMINI_API_KEY},
-                    json=payload,
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {_GROQ_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": "llama-3.1-8b-instant",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": 0.3,
+                        "max_tokens": max_tokens,
+                    },
                 )
                 resp.raise_for_status()
                 data = resp.json()
-
-            # 解析 Gemini 回應
-            candidates = data.get("candidates", [])
-            if not candidates:
-                return ""
-            parts = candidates[0].get("content", {}).get("parts", [])
-            if not parts:
-                return ""
-            return parts[0].get("text", "").strip()
+                return data["choices"][0]["message"]["content"].strip()
         except Exception as e:
-            last_err = e
-            err_str = str(e)
-            if any(code in err_str for code in ("503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED")):
-                if attempt < 2:
-                    wait = 1.5 * (attempt + 1)
-                    print(f"[LLM] Gemini 造句第 {attempt + 1} 次失敗，{wait:.1f}s 後重試...")
-                    await asyncio.sleep(wait)
-                    continue
-            print(f"[LLM] Gemini 造句失敗：{e}")
-            return ""
+            print(f"[LLM] Groq 造句失敗：{e}")
+            # Groq 失敗 fallthrough 到 Gemini
 
-    print(f"[LLM] Gemini 造句重試 3 次仍失敗：{last_err}")
+    # ── 備選 Gemini ──
+    if _GEMINI_API_KEY:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{_GEMINI_MODEL}:generateContent"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "temperature": 0.3,
+                "maxOutputTokens": max_tokens,
+            },
+        }
+
+        last_err = None
+        for attempt in range(3):
+            try:
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    resp = await client.post(url, params={"key": _GEMINI_API_KEY}, json=payload)
+                    resp.raise_for_status()
+                    data = resp.json()
+
+                candidates = data.get("candidates", [])
+                if not candidates:
+                    return ""
+                parts = candidates[0].get("content", {}).get("parts", [])
+                if not parts:
+                    return ""
+                return parts[0].get("text", "").strip()
+            except Exception as e:
+                last_err = e
+                err_str = str(e)
+                if any(code in err_str for code in ("503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED")):
+                    if attempt < 2:
+                        await asyncio.sleep(1.5 * (attempt + 1))
+                        continue
+                print(f"[LLM] Gemini 造句失敗：{e}")
+                return ""
+
+        print(f"[LLM] Gemini 造句重試 3 次仍失敗：{last_err}")
+
     return ""
 
 
@@ -164,7 +183,7 @@ async def generate_hakka_sentence(request: WordRequest):
     if not word:
         raise HTTPException(status_code=400, detail="單字不可為空")
 
-    if _GEMINI_API_KEY:
+    if _GROQ_API_KEY or _GEMINI_API_KEY:
         prompt = f"""你是一個專業的中文句子生成助手。
 請根據輸入的中文單字，生成一句生活化、適合國小生的中文句子。
 要求：
@@ -182,7 +201,7 @@ async def generate_hakka_sentence(request: WordRequest):
 
 輸入：{word}"""
         try:
-            result = await _ask_gemini(prompt, max_tokens=100)
+            result = await _ask_llm(prompt, max_tokens=100)
             if result:
                 # Gemini 直接回傳句子，不是 JSON
                 sentence = result.strip().split("\n")[0].strip()
@@ -214,7 +233,7 @@ async def generate_hakka_story(request: WordsRequest):
 
     words_str = "、".join(words)
 
-    if _GEMINI_API_KEY:
+    if _GROQ_API_KEY or _GEMINI_API_KEY:
         prompt = f"""你是一個專業的中文句子生成助手。請根據我提供的中文單字，為每個單字各造一個中文生活句子。
 要求：
 1. 每個句子都要是中文，長度約 10 到 20 個中文字。
@@ -228,7 +247,7 @@ async def generate_hakka_story(request: WordsRequest):
 
 輸入單字：{words_str}"""
         try:
-            result = await _ask_gemini(prompt, max_tokens=400)
+            result = await _ask_llm(prompt, max_tokens=400)
             if result:
                 cleaned = _clean_json_text(result)
                 parsed = json.loads(cleaned)
