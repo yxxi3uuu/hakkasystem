@@ -21,25 +21,25 @@
       font-weight: 600;
       margin-bottom: 16px;
     }
-    .easy   { background: #E8F5E9; color: #2E7D32; }
+    .easy   { background: #E8F2F7; color: #24465D; }
     .medium { background: #FFF3E0; color: #E65100; }
     .hard   { background: #FFEBEE; color: #C62828; }
 
     .word-display { font-size: 36px; font-weight: 800; color: #333; margin-bottom: 6px; }
-    .word-roman   { font-size: 18px; color: #4CAF50; margin-bottom: 24px; }
+    .word-roman   { font-size: 18px; color: #315B78; margin-bottom: 24px; }
 
     #taskImage { display: block; }
 
     .mic-btn {
       width: 80px; height: 80px;
       border-radius: 50%;
-      background: #4CAF50;
+      background: #315B78;
       border: none;
       font-size: 36px;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       margin: 0 auto 12px;
-      box-shadow: 0 4px 16px rgba(76,175,80,0.4);
+      box-shadow: 0 4px 16px rgba(49,91,120,0.4);
       transition: transform 0.15s, background 0.15s;
     }
     .mic-btn.recording { background: #f44336; animation: pulse 1s infinite; }
@@ -51,10 +51,10 @@
     .mic-hint { font-size: 13px; color: #888; }
 
     .score-bar {
-      height: 10px; background: #E8F5E9; border-radius: 5px;
+      height: 10px; background: #E8F2F7; border-radius: 5px;
       margin: 16px 0 6px; overflow: hidden;
     }
-    .score-fill { height: 100%; background: #4CAF50; border-radius: 5px; transition: width 0.6s; }
+    .score-fill { height: 100%; background: #315B78; border-radius: 5px; transition: width 0.6s; }
     .score-text { font-size: 13px; color: #666; text-align: right; }
 
     /* vocab list */
@@ -68,7 +68,7 @@
     .vocab-item:last-child { border-bottom: none; }
     .vocab-item:hover { background: #f9f9f9; }
     .vocab-zh   { font-size: 16px; font-weight: 600; color: #333; flex: 1; }
-    .vocab-rom  { font-size: 13px; color: #4CAF50; flex: 1; }
+    .vocab-rom  { font-size: 13px; color: #315B78; flex: 1; }
     .vocab-diff { margin-left: auto; }
 
     /* 單字詳細 modal */
@@ -109,7 +109,7 @@
       display: block;
     }
     .word-modal-zh    { font-size: 28px; font-weight: 800; color: #333; }
-    .word-modal-hakka { font-size: 18px; color: #4CAF50; font-weight: 600; margin: 4px 0 12px; }
+    .word-modal-hakka { font-size: 18px; color: #315B78; font-weight: 600; margin: 4px 0 12px; }
     .word-modal-audio { width: 100%; margin-bottom: 16px; }
     .word-modal-sentence-box {
       background: #FFF8E1;
@@ -120,10 +120,10 @@
     }
     .word-modal-sentence-label { font-size: 11px; color: #999; margin-bottom: 4px; }
     .word-modal-sentence-zh    { font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 6px; }
-    .word-modal-sentence-hakka { font-size: 14px; color: #2E7D32; line-height: 1.6; margin-bottom: 10px; }
+    .word-modal-sentence-hakka { font-size: 14px; color: #24465D; line-height: 1.6; margin-bottom: 10px; }
     .word-modal-actions { display: flex; gap: 10px; margin-top: 4px; }
     .word-modal-actions button { flex: 1; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; }
-    .btn-practice-word { background: #4CAF50; color: white; }
+    .btn-practice-word { background: #315B78; color: white; }
     .btn-close-word    { background: #f0f0f0; color: #555; }
 
     /* ── 回報錯誤面板 ── */
@@ -194,8 +194,8 @@
       <div class="score-bar"><div class="score-fill" id="scoreFill" style="width:0%"></div></div>
       <div class="score-text" id="scoreText">0 分</div>
       <p id="scoreMsg" style="font-size:13px;color:#555;margin-top:8px;"></p>
-      <div id="aiAdviceWrap" style="background: #E8F5E9; border-left: 4px solid #4CAF50; border-radius: 8px; padding: 12px; margin-top: 12px; text-align: left;">
-        <div style="font-size: 11px; color: #2E7D32; font-weight: bold; margin-bottom: 4px;">🤖 客家 AI 老師的悄悄話</div>
+      <div id="aiAdviceWrap" style="background: #E8F2F7; border-left: 4px solid #315B78; border-radius: 8px; padding: 12px; margin-top: 12px; text-align: left;">
+        <div style="font-size: 11px; color: #24465D; font-weight: bold; margin-bottom: 4px;">🤖 客家 AI 老師的悄悄話</div>
         <p id="aiAdviceText" style="font-size: 13px; color: #333; margin: 0; line-height: 1.5;">正在思考發音建議...</p>
       </div>
       <button
@@ -540,7 +540,7 @@
         document.getElementById('vocabList').innerHTML = presets.map(p => `
           <div class="vocab-item" onclick="loadTask('${p.word.replace(/'/g, "\\'")}')">
             <div style="flex:1;">
-              <div class="vocab-rom" style="font-size:16px;font-weight:700;color:#2E7D32;">${p.hakka}</div>
+              <div class="vocab-rom" style="font-size:16px;font-weight:700;color:#24465D;">${p.hakka}</div>
               <div class="vocab-zh" style="font-size:12px;color:#888;margin-top:1px;">${p.word}</div>
             </div>
             <span class="vocab-diff"><span class="difficulty-badge easy">預設</span></span>
@@ -582,7 +582,7 @@
         if (words.length === 0) {
           container.innerHTML = `
             <div style="padding:16px;color:#aaa;font-size:13px;text-align:center;">
-              還沒有儲存任何單字，去<a href="/recognition" style="color:#4CAF50;">拍照學習</a>頁面儲存吧！
+              還沒有儲存任何單字，去<a href="/recognition" style="color:#315B78;">拍照學習</a>頁面儲存吧！
             </div>
           `;
           return;
@@ -591,12 +591,12 @@
         container.innerHTML = words.map((w, i) => {
           const badge = w.source === 'ocr'
             ? `<span style="background:#F3E5F5;color:#6A1B9A;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;margin-left:6px;">🔤</span>`
-            : (w.count > 1 ? `<span style="background:#E8F5E9;color:#2E7D32;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;margin-left:6px;">×${w.count}</span>` : '');
+            : (w.count > 1 ? `<span style="background:#E8F2F7;color:#24465D;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;margin-left:6px;">×${w.count}</span>` : '');
           return `
           <div class="vocab-item" onclick="openWordModal(${i})">
             <div style="flex:1;">
-              <div style="font-size:16px;font-weight:700;color:#2E7D32;">${w.label_hakka}${badge}</div>
-              ${w.label_pinyin ? `<div style="font-size:11px;color:#4CAF50;margin:1px 0;">${w.label_pinyin}</div>` : ''}
+              <div class="my-word-hakka" style="font-size:16px;font-weight:700;">${w.label_hakka}${badge}</div>
+              ${w.label_pinyin ? `<div class="my-word-pinyin" style="font-size:11px;margin:1px 0;">${w.label_pinyin}</div>` : ''}
               <div style="font-size:12px;color:#888;">${w.label_zh}</div>
             </div>
             <span style="margin-left:auto;font-size:18px;color:#ccc;">›</span>
@@ -632,7 +632,7 @@
       if (!pinyinEl) {
         pinyinEl = document.createElement('div');
         pinyinEl.id = 'wordModalPinyin';
-        pinyinEl.style.cssText = 'font-size:14px;color:#4CAF50;margin:-6px 0 6px;';
+        pinyinEl.style.cssText = 'font-size:14px;color:#315B78;margin:-6px 0 6px;';
         document.getElementById('wordModalHakka').insertAdjacentElement('afterend', pinyinEl);
       }
       pinyinEl.textContent = w.label_pinyin || '';

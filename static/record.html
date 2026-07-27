@@ -24,14 +24,14 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 22px; flex-shrink: 0;
     }
-    .record-stat-val { font-size: 20px; font-weight: 800; color: #2E7D32; }
+    .record-stat-val { font-size: 20px; font-weight: 800; color: #24465D; }
     .record-stat-lbl { font-size: 11px; color: #888; }
 
     /* chart */
     .chart-wrap { padding: 8px 16px 16px; }
     .chart-bars { display: flex; align-items: flex-end; gap: 6px; height: 80px; }
     .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .bar { width: 100%; background: #4CAF50; border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.4s; }
+    .bar { width: 100%; background: #315B78; border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.4s; }
     .bar-lbl { font-size: 10px; color: #888; }
 
     /* activity list */
@@ -48,16 +48,16 @@
     }
     .activity-title { font-size: 14px; color: #333; font-weight: 600; }
     .activity-date  { font-size: 12px; color: #aaa; }
-    .activity-score { margin-left: auto; font-size: 14px; font-weight: 700; color: #4CAF50; }
+    .activity-score { margin-left: auto; font-size: 14px; font-weight: 700; color: #315B78; }
 
     /* category */
     .cat-item { padding: 10px 16px; border-bottom: 1px solid #f5f5f5; }
     .cat-item:last-child { border-bottom: none; padding-bottom: 16px; }
     .cat-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
     .cat-name { font-size: 14px; color: #333; }
-    .cat-pct  { font-size: 13px; font-weight: 600; color: #4CAF50; }
-    .cat-bar  { height: 8px; background: #E8F5E9; border-radius: 4px; overflow: hidden; }
-    .cat-fill { height: 100%; background: #4CAF50; border-radius: 4px; }
+    .cat-pct  { font-size: 13px; font-weight: 600; color: #315B78; }
+    .cat-bar  { height: 8px; background: #E8F2F7; border-radius: 4px; overflow: hidden; }
+    .cat-fill { height: 100%; background: #315B78; border-radius: 4px; }
 
     /* weekly achievements */
     .achieve-item {
@@ -77,10 +77,19 @@
     <h1>學習記錄</h1>
   </div>
 
+  <a href="/learning" class="section" style="display:flex;align-items:center;gap:14px;padding:18px 20px;text-decoration:none;color:inherit;">
+    <span style="width:48px;height:48px;border-radius:14px;background:#E8F2F7;color:#315B78;display:grid;place-items:center;font-size:22px;">🖼️</span>
+    <span style="flex:1;min-width:0;">
+      <strong style="display:block;font-size:17px;color:#29343A;">我的照片與詞彙</strong>
+      <span style="display:block;margin-top:3px;font-size:13px;color:#6F7A80;">查看之前拍攝並收藏的學習內容</span>
+    </span>
+    <span aria-hidden="true" style="font-size:22px;color:#9AA3A7;">›</span>
+  </a>
+
   <!-- 統計卡片 -->
   <div class="record-stats">
     <div class="record-stat-card">
-      <div class="record-stat-icon" style="background:#E8F5E9;">📈</div>
+      <div class="record-stat-icon" style="background:#E8F2F7;">📈</div>
       <div>
         <div class="record-stat-val" id="avgScore">--</div>
         <div class="record-stat-lbl">本週平均</div>
@@ -179,7 +188,7 @@
           document.getElementById('activityList').innerHTML = activities.length > 0
             ? activities.map(a => `
                 <div class="activity-item">
-                  <div class="activity-icon" style="background:#E8F5E9">${a.icon}</div>
+                  <div class="activity-icon" style="background:#E8F2F7">${a.icon}</div>
                   <div>
                     <div class="activity-title">${a.title}</div>
                     <div class="activity-date">${a.date}</div>
@@ -231,13 +240,13 @@
                   <div style="padding:10px 16px;border-bottom:1px solid #f5f5f5;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                       <span style="font-size:14px;color:#333;">${done ? '✅' : '🔲'} ${g.title}</span>
-                      <span style="font-size:13px;font-weight:700;color:${done?'#4CAF50':'#888'};">${g.current}／${g.target}（${pct}%）</span>
+                      <span style="font-size:13px;font-weight:700;color:${done?'#315B78':'#888'};">${g.current}／${g.target}（${pct}%）</span>
                     </div>
-                    <div class="cat-bar"><div class="cat-fill" style="width:${pct}%;background:${done?'#4CAF50':'#aed581'};"></div></div>
+                    <div class="cat-bar"><div class="cat-fill" style="width:${pct}%;background:${done?'#315B78':'#91B1C3'};"></div></div>
                   </div>`;
               }).join('') + `
               <div style="padding:12px 16px;text-align:center;font-size:13px;color:#555;">
-                本週整體完成率：<strong style="color:#2E7D32;font-size:16px;">${overallPct}%</strong>
+                本週整體完成率：<strong style="color:#24465D;font-size:16px;">${overallPct}%</strong>
                 （${completedGoals}／${totalGoals} 項目標達成）
               </div>`;
 

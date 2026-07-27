@@ -25,9 +25,9 @@
       transition: all 0.2s;
     }
     .mode-tab.active {
-      border-color: #4CAF50;
-      background: #E8F5E9;
-      color: #2E7D32;
+      border-color: #315B78;
+      background: #E8F2F7;
+      color: #24465D;
     }
 
     /* 相機區 */
@@ -61,7 +61,7 @@
       width: 64px; height: 64px;
       border-radius: 50%;
       background: white;
-      border: 4px solid #4CAF50;
+      border: 4px solid #315B78;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: transform 0.15s;
@@ -71,7 +71,7 @@
     .shutter-inner {
       width: 48px; height: 48px;
       border-radius: 50%;
-      background: #4CAF50;
+      background: #315B78;
     }
     .cam-action-btn {
       width: 44px; height: 44px;
@@ -88,19 +88,19 @@
     /* 上傳區 */
     .upload-zone {
       margin: 16px;
-      border: 2px dashed #4CAF50;
+      border: 2px dashed #315B78;
       border-radius: 16px;
       padding: 48px 20px;
       text-align: center;
-      background: #F1F8E9;
+      background: #F2F7FA;
       cursor: pointer;
       transition: background 0.15s;
       display: none;
     }
-    .upload-zone:hover { background: #E8F5E9; }
+    .upload-zone:hover { background: #E8F2F7; }
     .upload-zone input { display: none; }
     .upload-icon { font-size: 48px; margin-bottom: 12px; }
-    .upload-zone h3 { font-size: 16px; color: #2E7D32; margin-bottom: 6px; }
+    .upload-zone h3 { font-size: 16px; color: #24465D; margin-bottom: 6px; }
     .upload-zone p  { font-size: 13px; color: #888; }
 
     #uploadPreview { margin: 0 16px 16px; display: none; }
@@ -114,7 +114,7 @@
       padding: 20px;
       display: none;
     }
-    .result-word  { font-size: 28px; font-weight: 800; color: #2E7D32; margin-bottom: 4px; }
+    .result-word  { font-size: 28px; font-weight: 800; color: #24465D; margin-bottom: 4px; }
     .result-roman { font-size: 16px; color: #666; margin-bottom: 12px; }
     .result-example { font-size: 13px; color: #888; background: #f5f5f5; border-radius: 8px; padding: 10px; }
 
@@ -150,12 +150,12 @@
       word-break: break-all;
     }
     .ocr-hakka-box {
-      background: #E8F5E9;
-      border-left: 4px solid #4CAF50;
+      background: #E8F2F7;
+      border-left: 4px solid #315B78;
       border-radius: 8px;
       padding: 12px 14px;
       font-size: 15px;
-      color: #2E7D32;
+      color: #24465D;
       font-weight: 600;
       margin-bottom: 14px;
     }
@@ -205,8 +205,8 @@
       margin-bottom: 14px;
     }
     .kw-card {
-      background: #F1F8E9;
-      border: 2px solid #C8E6C9;
+      background: #F2F7FA;
+      border: 2px solid #CFE1EA;
       border-radius: 14px;
       padding: 12px 10px 10px;
       cursor: pointer;
@@ -214,36 +214,36 @@
       position: relative;
       text-align: center;
     }
-    .kw-card:hover  { border-color: #4CAF50; background: #E8F5E9; }
+    .kw-card:hover  { border-color: #315B78; background: #E8F2F7; }
     .kw-card.selected {
-      border-color: #4CAF50;
-      background: #E8F5E9;
-      box-shadow: 0 0 0 3px rgba(76,175,80,0.25);
+      border-color: #315B78;
+      background: #E8F2F7;
+      box-shadow: 0 0 0 3px rgba(49,91,120,0.25);
     }
     .kw-card.selected::after {
       content: "✓";
       position: absolute; top: 6px; right: 8px;
-      font-size: 13px; font-weight: 800; color: #2E7D32;
+      font-size: 13px; font-weight: 800; color: #24465D;
     }
     .kw-zh    { font-size: 11px; color: #888; margin-bottom: 6px; }
-    .kw-hakka { font-size: 20px; font-weight: 800; color: #2E7D32; margin-bottom: 2px; }
-    .kw-pinyin { font-size: 12px; color: #4CAF50; font-weight: 500; margin-bottom: 3px; letter-spacing: 0.3px; min-height: 16px; }
+    .kw-hakka { font-size: 20px; font-weight: 800; color: #24465D; margin-bottom: 2px; }
+    .kw-pinyin { font-size: 12px; color: #315B78; font-weight: 500; margin-bottom: 3px; letter-spacing: 0.3px; min-height: 16px; }
     .kw-divider { font-size: 10px; color: #ddd; margin-bottom: 3px; }
     .kw-play  {
-      background: none; border: 1.5px solid #4CAF50;
+      background: none; border: 1.5px solid #315B78;
       border-radius: 20px; padding: 3px 10px;
-      font-size: 11px; color: #2E7D32; cursor: pointer;
+      font-size: 11px; color: #24465D; cursor: pointer;
       transition: background 0.1s;
     }
-    .kw-play:hover { background: #C8E6C9; }
+    .kw-play:hover { background: #CFE1EA; }
     .kw-save-bar {
       display: none;
       position: sticky; bottom: 70px;
-      background: #4CAF50; color: white;
+      background: #315B78; color: white;
       border-radius: 14px; padding: 14px 16px;
       text-align: center; font-size: 15px; font-weight: 700;
       cursor: pointer; margin-top: 10px;
-      box-shadow: 0 4px 16px rgba(76,175,80,0.4);
+      box-shadow: 0 4px 16px rgba(49,91,120,0.4);
       transition: opacity 0.15s;
     }
     .kw-save-bar:active { opacity: 0.8; }
@@ -305,7 +305,7 @@
       <div class="result-roman" id="resultRoman">--</div>
       <div class="result-example" id="resultExample">--</div>
     </div>
-    <button class="btn btn-outline btn-block" style="margin-top:14px; border: 2px solid #4CAF50; color: #2E7D32;" onclick="handleSave()" id="saveBtn">💾 儲存照片與單字</button>
+    <button class="btn btn-outline btn-block" style="margin-top:14px; border: 2px solid #315B78; color: #24465D;" onclick="handleSave()" id="saveBtn">💾 儲存照片與單字</button>
     <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="resetAll()">再拍一張</button>
   </div>
 
@@ -530,8 +530,8 @@
               let html = '';
               items.forEach((item, idx) => {
                 const sourceLabel = item.source === 'gemini' ? 'Gemini 輔助辨識' : 'YOLO 辨識';
-                const sourceColor = item.source === 'gemini' ? '#1565C0' : '#2E7D32';
-                const sourceBg = item.source === 'gemini' ? '#E3F2FD' : '#E8F5E9';
+                const sourceColor = item.source === 'gemini' ? '#1565C0' : '#24465D';
+                const sourceBg = item.source === 'gemini' ? '#E3F2FD' : '#E8F2F7';
 
                 // 💡 【核心修改】：標題直接放大顯示客語漢字，下方搭配 LLM 的華語造句
                 html += `
@@ -558,10 +558,10 @@
                       <div style="display:inline-block;margin-bottom:6px;padding:3px 9px;border-radius:999px;background:${sourceBg};color:${sourceColor};font-size:11px;font-weight:700;">
                         ${sourceLabel}
                       </div>
-                      <div style="font-size:28px;font-weight:800;color:#2E7D32;line-height:1.2;">
+                      <div style="font-size:28px;font-weight:800;color:#24465D;line-height:1.2;">
                         ${item.keyword_hakka || '（未取得客語翻譯）'}
                       </div>
-                      ${item.pinyin ? `<div style="font-size:18px;color:#4CAF50;font-weight:700;margin:5px 0 5px;line-height:1.25;">${item.pinyin}</div>` : ''}
+                      ${item.pinyin ? `<div style="font-size:18px;color:#315B78;font-weight:700;margin:5px 0 5px;line-height:1.25;">${item.pinyin}</div>` : ''}
                       <div style="font-size:13px;color:#888;margin-top:2px;">中文：${item.label_zh}</div>
                     </div>
 
@@ -588,7 +588,7 @@
                         中文：${item.sentence_zh || ''}
                       </div>
 
-                      <div style="margin-top:6px;color:#2E7D32;">
+                      <div style="margin-top:6px;color:#24465D;">
                         客語：${item.sentence_hakka || ''}
                       </div>
 
@@ -723,11 +723,11 @@
         check.style.background  = '';
       } else {
         _selectedRecognitionItems.add(idx);
-        card.style.borderColor  = '#4CAF50';
-        card.style.background   = '#F1F8E9';
+        card.style.borderColor  = '#315B78';
+        card.style.background   = '#F2F7FA';
         check.textContent       = '✓';
-        check.style.borderColor = '#4CAF50';
-        check.style.background  = '#4CAF50';
+        check.style.borderColor = '#315B78';
+        check.style.background  = '#315B78';
         check.style.color       = 'white';
       }
       const count   = _selectedRecognitionItems.size;
@@ -1004,7 +1004,7 @@
             <div class="ocr-text-box" style="margin-bottom:10px;">${data.text}</div>
 
             ${data.full_hakka ? `
-              <div style="font-size:13px;font-weight:700;color:#2E7D32;margin-bottom:6px;">🗣️ 全文客語翻譯</div>
+              <div style="font-size:13px;font-weight:700;color:#24465D;margin-bottom:6px;">🗣️ 全文客語翻譯</div>
               <div class="ocr-hakka-box" style="margin-bottom:10px;">${data.full_hakka}</div>
               ${data.full_audio_path ? `
                 <div style="font-size:12px;color:#888;margin-bottom:4px;">🔊 全文客語朗讀</div>
@@ -1088,10 +1088,10 @@
       }
 
       saveBar.textContent = `✅ 已儲存 ${successCount} 個詞彙到我的單字！`;
-      saveBar.style.background = '#388E3C';
+      saveBar.style.background = '#1E3D52';
       setTimeout(() => {
         saveBar.textContent = `💾 儲存已選詞彙（${_selectedKeywords.size} 個）`;
-        saveBar.style.background = '#4CAF50';
+        saveBar.style.background = '#315B78';
       }, 2500);
     }
 

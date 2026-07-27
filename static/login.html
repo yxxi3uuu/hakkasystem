@@ -6,7 +6,7 @@
   <title>登入 - 客語隨拍隨學</title>
   <link rel="stylesheet" href="/static/style.css" />
   <style>
-    body { background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    body { background: linear-gradient(135deg, #315B78 0%, #24465D 100%); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
 
     .auth-card {
       background: white;
@@ -18,7 +18,7 @@
     }
     .auth-logo { text-align: center; margin-bottom: 24px; }
     .auth-logo .emoji { font-size: 48px; }
-    .auth-logo h1 { font-size: 22px; font-weight: 800; color: #2E7D32; margin-top: 8px; }
+    .auth-logo h1 { font-size: 22px; font-weight: 800; color: #24465D; margin-top: 8px; }
     .auth-logo p  { font-size: 13px; color: #888; margin-top: 4px; }
 
     .tabs {
@@ -39,7 +39,7 @@
       color: #888;
       transition: all 0.2s;
     }
-    .tab.active { background: white; color: #2E7D32; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .tab.active { background: white; color: #24465D; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
 
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; }
@@ -52,14 +52,14 @@
       outline: none;
       transition: border-color 0.2s;
     }
-    .form-group input:focus { border-color: #4CAF50; }
+    .form-group input:focus { border-color: #315B78; }
 
     .submit-btn {
       width: 100%;
       padding: 14px;
       border: none;
       border-radius: 12px;
-      background: linear-gradient(135deg, #4CAF50, #2E7D32);
+      background: linear-gradient(135deg, #315B78, #24465D);
       color: white;
       font-size: 16px;
       font-weight: 700;
@@ -80,8 +80,8 @@
       display: none;
     }
     .success-msg {
-      background: #E8F5E9;
-      color: #2E7D32;
+      background: #E8F2F7;
+      color: #24465D;
       padding: 10px 14px;
       border-radius: 10px;
       font-size: 13px;
@@ -120,8 +120,8 @@
       </div>
       <button type="submit" class="submit-btn" id="loginBtn">登入</button>
       <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:13px;">
-        <span onclick="switchTab('reset')" style="color:#4CAF50;cursor:pointer;">忘記密碼？</span>
-        <span onclick="switchTab('register')" style="color:#4CAF50;cursor:pointer;">還沒有帳號？立即註冊</span>
+        <span onclick="switchTab('reset')" style="color:#315B78;cursor:pointer;">忘記密碼？</span>
+        <span onclick="switchTab('register')" style="color:#315B78;cursor:pointer;">還沒有帳號？立即註冊</span>
       </div>
     </form>
 
@@ -145,7 +145,7 @@
       </div>
       <button type="submit" class="submit-btn" id="regBtn">註冊</button>
       <div style="text-align:center;margin-top:14px;font-size:13px;">
-        已有帳號？<span onclick="switchTab('login')" style="color:#4CAF50;cursor:pointer;">直接登入</span>
+        已有帳號？<span onclick="switchTab('login')" style="color:#315B78;cursor:pointer;">直接登入</span>
       </div>
     </form>
 
@@ -165,7 +165,7 @@
       </div>
       <button type="submit" class="submit-btn" id="resetBtn">重設密碼</button>
       <div style="text-align:center;margin-top:14px;font-size:13px;">
-        想起密碼了？<span onclick="switchTab('login')" style="color:#4CAF50;cursor:pointer;">返回登入</span>
+        想起密碼了？<span onclick="switchTab('login')" style="color:#315B78;cursor:pointer;">返回登入</span>
       </div>
     </form>
   </div>
