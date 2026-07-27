@@ -28,7 +28,7 @@
       display: block;
     }
     .word-card-body { padding: 10px 12px 12px; }
-    .word-card-hakka { font-size: 18px; font-weight: 800; color: #2E7D32; }
+    .word-card-hakka { font-size: 18px; font-weight: 800; color: #24465D; }
     .word-card-zh   { font-size: 12px; font-weight: 600; color: #888; margin: 2px 0 6px; }
     .word-card-sentence {
       font-size: 11px;
@@ -44,8 +44,8 @@
       width: 100%;
       margin-top: 8px;
       padding: 6px 0;
-      background: #E8F5E9;
-      color: #2E7D32;
+      background: #E8F2F7;
+      color: #24465D;
       border: none;
       border-radius: 8px;
       font-size: 12px;
@@ -53,7 +53,7 @@
       cursor: pointer;
       text-align: center;
     }
-    .practice-btn:hover { background: #C8E6C9; }
+    .practice-btn:hover { background: #CFE1EA; }
 
     /* 刪除按鈕（卡片右上角） */
     .word-card { position: relative; }
@@ -161,7 +161,7 @@
       max-height: 220px;
       object-fit: cover;
     }
-    .modal-hakka { font-size: 28px; color: #2E7D32; font-weight: 800; margin: 4px 0 4px; }
+    .modal-hakka { font-size: 28px; color: #24465D; font-weight: 800; margin: 4px 0 4px; }
     .modal-zh    { font-size: 14px; font-weight: 400; color: #888; margin: 0 0 16px; }
     .modal-sentence-box {
       background: #FFF8E1;
@@ -174,7 +174,7 @@
     .modal-sentence-text  { font-size: 14px; color: #555; line-height: 1.6; }
     .modal-actions { display: flex; gap: 10px; margin-top: 4px; }
     .modal-actions button { flex: 1; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; }
-    .btn-practice-modal { background: #4CAF50; color: white; }
+    .btn-practice-modal { background: #315B78; color: white; }
     .btn-close-modal    { background: #f0f0f0; color: #555; }
     .btn-delete-modal   { background: #FFEBEE; color: #D32F2F; }
   </style>
@@ -272,7 +272,7 @@
           const card = document.createElement('div');
           card.className = 'word-card';
           const countBadge = (w.count && w.count > 1)
-            ? `<div style="position:absolute;top:6px;left:6px;background:rgba(76,175,80,0.85);color:white;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;z-index:10;">×${w.count}</div>`
+            ? `<div class="word-count-badge">×${w.count}</div>`
             : '';
           const sourceBadge = (w.source === 'ocr')
             ? `<div style="position:absolute;top:6px;left:6px;background:rgba(106,27,154,0.85);color:white;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;z-index:10;">🔤 OCR</div>`
@@ -283,7 +283,7 @@
             <img src="${w.image_path}" alt="${w.label_zh}" onerror="this.src='';this.style.background='#f0f0f0';this.style.display='flex';this.insertAdjacentHTML('afterend','<div style=\'width:100%;aspect-ratio:4/3;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:32px;\'>🖼️</div>');this.remove();" />
             <div class="word-card-body">
               <div class="word-card-hakka">${w.label_hakka}</div>
-              ${w.label_pinyin ? `<div style="font-size:11px;color:#4CAF50;margin:1px 0 3px;">${w.label_pinyin}</div>` : ''}
+              ${w.label_pinyin ? `<div class="word-card-pinyin" style="font-size:11px;margin:1px 0 3px;">${w.label_pinyin}</div>` : ''}
               <div class="word-card-zh" style="font-size:12px;font-weight:600;color:#888;">${w.label_zh}</div>
               ${w.sentence_zh ? `<div class="word-card-sentence">${w.sentence_zh}</div>` : ''}
               <button class="practice-btn">🎤 練習發音</button>
@@ -322,7 +322,7 @@
       if (!pinyinEl) {
         pinyinEl = document.createElement('div');
         pinyinEl.id = 'modalPinyin';
-        pinyinEl.style.cssText = 'font-size:14px;color:#4CAF50;margin:-8px 0 12px;';
+        pinyinEl.style.cssText = 'font-size:14px;margin:-8px 0 12px;';
         document.getElementById('modalHakka').insertAdjacentElement('afterend', pinyinEl);
       }
       pinyinEl.textContent = word.label_pinyin || '';

@@ -11,7 +11,7 @@ body {
 
 /* ── Top bar ── */
 .top-bar {
-  background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+  background: linear-gradient(135deg, #315B78 0%, #24465D 100%);
   color: white;
   padding: 20px 16px 16px;
   display: flex;
@@ -61,8 +61,8 @@ body {
   color: #aaa;
   transition: color 0.15s;
 }
-.nav-item.active { color: #4CAF50; }
-.nav-item:hover  { color: #4CAF50; }
+.nav-item.active { color: #315B78; }
+.nav-item:hover  { color: #315B78; }
 .nav-icon  { font-size: 22px; }
 .nav-label { font-size: 10px; }
 
@@ -82,7 +82,7 @@ body {
   border-right: 1px solid #f0f0f0;
 }
 .stat-item:last-child { border-right: none; }
-.stat-value { font-size: 22px; font-weight: 700; color: #2E7D32; }
+.stat-value { font-size: 22px; font-weight: 700; color: #24465D; }
 .stat-label { font-size: 11px; color: #888; margin-top: 4px; }
 
 /* ── Button ── */
@@ -100,8 +100,8 @@ body {
   transition: opacity 0.15s;
 }
 .btn:hover { opacity: 0.85; }
-.btn-primary { background: #4CAF50; color: white; }
-.btn-outline { background: white; color: #4CAF50; border: 2px solid #4CAF50; }
+.btn-primary { background: #315B78; color: white; }
+.btn-outline { background: white; color: #315B78; border: 2px solid #315B78; }
 .btn-block { width: 100%; }
 
 /* ── 通知鈴鐺 ── */
@@ -172,7 +172,7 @@ body {
   background: white;
 }
 .notif-panel-title { font-size: 16px; font-weight: 700; color: #333; }
-.notif-read-all { font-size: 12px; color: #4CAF50; cursor: pointer; border: none; background: none; font-weight: 600; }
+.notif-read-all { font-size: 12px; color: #315B78; cursor: pointer; border: none; background: none; font-weight: 600; }
 .notif-item {
   display: flex;
   gap: 12px;
@@ -182,8 +182,8 @@ body {
   transition: background .15s;
 }
 .notif-item:hover { background: #fafffe; }
-.notif-item.unread { background: #F1F8E9; }
-.notif-dot { min-width: 8px; height: 8px; background: #4CAF50; border-radius: 50%; margin-top: 5px; }
+.notif-item.unread { background: #F2F7FA; }
+.notif-dot { min-width: 8px; height: 8px; background: #315B78; border-radius: 50%; margin-top: 5px; }
 .notif-dot.read { background: transparent; }
 .notif-item-title { font-size: 13px; font-weight: 600; color: #333; margin-bottom: 2px; }
 .notif-item-body  { font-size: 12px; color: #666; line-height: 1.5; }

@@ -485,6 +485,65 @@ async def recognize_with_gemini(
     return []
 
 
+async def review_yolo_candidates_with_gemini(
+    image_path: str,
+    yolo_candidates: list[dict]
+) -> list[dict]:
+    """
+    只複查低信心或易混淆的 YOLO 候選。
+
+    優先把 YOLO 已裁切的局部圖片交給 Gemini，避免整張照片中的其他物品
+    干擾判斷。高信心候選原樣保留；Gemini 失敗時也保留原 YOLO 結果。
+    """
+    review_indices = [
+        index
+        for index, candidate in enumerate(yolo_candidates)
+        if (
+            float(candidate.get("confidence", 0)) < YOLO_CONF_THRESHOLD
+            or candidate.get("label_en") in GEMINI_REVIEW_CLASSES
+        )
+    ]
+    if not review_indices:
+        return yolo_candidates
+
+    semaphore = asyncio.Semaphore(3)
+
+    async def _review(index: int) -> tuple[int, dict | None]:
+        candidate = yolo_candidates[index]
+        crop_url = str(candidate.get("crop_path", "")).strip()
+        crop_file = crop_url.lstrip("/").replace("/", os.sep) if crop_url else ""
+        review_image = crop_file if crop_file and os.path.exists(crop_file) else image_path
+
+        async with semaphore:
+            result = await recognize_with_gemini(review_image, [candidate])
+
+        if not result:
+            return index, None
+
+        # 裁切圖的第一個主要物品就是此次要修正的候選。位置仍使用 YOLO
+        # 在原始照片上的 bbox，避免 Gemini 回傳的是裁切圖相對座標。
+        corrected = result[0]
+        return index, {
+            **candidate,
+            "label_en": corrected.get("label_en") or candidate.get("label_en", ""),
+            "label_zh": corrected.get("label_zh") or candidate.get("label_zh", ""),
+            "confidence": corrected.get("confidence", candidate.get("confidence", 0)),
+            "source": "gemini",
+            "bbox": candidate.get("bbox"),
+            "crop_path": candidate.get("crop_path", ""),
+        }
+
+    print(
+        f"[Recognition] {len(review_indices)} 個低信心／易混淆裁切圖交給 Gemini 局部複查"
+    )
+    reviewed = list(yolo_candidates)
+    results = await asyncio.gather(*[_review(index) for index in review_indices])
+    for index, corrected in results:
+        if corrected:
+            reviewed[index] = corrected
+    return reviewed
+
+
 def attach_yolo_bboxes(
     detected_objects: list[dict],
     yolo_candidates: list[dict]
@@ -526,6 +585,44 @@ def attach_yolo_bboxes(
                 used_candidate_indices.add(matched_index)
 
     return detected_objects
+
+
+def merge_gemini_and_yolo_results(
+    gemini_items: list[dict],
+    yolo_candidates: list[dict],
+    limit: int = 5,
+) -> list[dict]:
+    """保留 Gemini 補充結果，同時加入未被 Gemini 涵蓋的 YOLO 物品。"""
+    merged = list(gemini_items)
+    person_words = {"person", "man", "woman", "人物", "男生", "女生"}
+
+    for candidate in yolo_candidates:
+        candidate_en = str(candidate.get("label_en", "")).strip().lower()
+        candidate_zh = str(candidate.get("label_zh", "")).strip()
+        duplicate = False
+
+        for item in merged:
+            item_en = str(item.get("label_en", "")).strip().lower()
+            item_zh = str(item.get("label_zh", "")).strip()
+            if candidate_en and candidate_en == item_en:
+                duplicate = True
+                break
+            if candidate_zh and candidate_zh == item_zh:
+                duplicate = True
+                break
+            if (
+                (candidate_en in person_words or candidate_zh in person_words)
+                and (item_en in person_words or item_zh in person_words)
+            ):
+                duplicate = True
+                break
+
+        if not duplicate:
+            merged.append(candidate)
+        if len(merged) >= limit:
+            break
+
+    return merged[:limit]
 
 
 async def generate_sentences_for_words(words: list[str]) -> list[str]:
@@ -586,11 +683,16 @@ async def recognize_image(
         detected_objects = []
         yolo_candidates = []
 
-        # ── 決策：優先用 Gemini，YOLO 只在 Gemini 不可用或無結果時才載入 ──
+        # ── 辨識模式 ────────────────────────────────────────────────
+        # always / gemini：每張圖片先問 Gemini，失敗才 fallback YOLO
+        # fallback / hybrid / review：先跑 YOLO，低信心、易混淆或無結果才問 Gemini
+        # yolo / disabled：只使用 YOLO
         gemini_client_available = _get_gemini_client() is not None
         force_yolo = GEMINI_MODE in {"yolo", "disabled"}
+        gemini_first = GEMINI_MODE in {"always", "gemini"}
+        hybrid_mode = not force_yolo and not gemini_first
 
-        if not force_yolo and gemini_client_available:
+        if gemini_first and gemini_client_available:
             # 第一軌：直接讓 Gemini 辨識，不預先跑 YOLO
             print("[Recognition] 使用 Gemini 辨識（跳過 YOLO 初始載入）")
             detected_objects = await recognize_with_gemini(tmp_path, yolo_candidates=None)
@@ -601,7 +703,15 @@ async def recognize_image(
         if not detected_objects:
             # 第二軌（fallback）：Gemini 無結果 或 未設定 Gemini → 載入 YOLO
             yolo_model = _get_yolo_model()
-            results = yolo_model(tmp_path, verbose=False)
+            # 使用較高輸入解析度與較低候選門檻，先保留可能的多物件框；
+            # 是否需要 Gemini 則由後續較高的 YOLO_CONF_THRESHOLD 決定。
+            results = yolo_model(
+                tmp_path,
+                verbose=False,
+                imgsz=960,
+                conf=0.20,
+                max_det=10,
+            )
             boxes = results[0].boxes
             _log("YOLO 辨識完成")
 
@@ -613,42 +723,81 @@ async def recognize_image(
                     label_en = yolo_model.names[int(boxes.cls[i])]
                     confidence = float(boxes.conf[i])
 
-                    if label_en not in [obj["label_en"] for obj in yolo_candidates]:
-                        raw_bbox = [float(v) for v in boxes.xyxy[i].tolist()]
-                        label_zh = COCO_ZH.get(label_en, label_en)
-                        bbox, crop_path = _save_object_crop(tmp_path, raw_bbox, label_zh)
-                        yolo_candidates.append({
-                            "label_en": label_en,
-                            "label_zh": label_zh,
-                            "confidence": confidence,
-                            "source": "yolo",
-                            "bbox": bbox,
-                            "crop_path": crop_path,
-                        })
+                    # YOLO 已完成 NMS；不再依類別名稱去重，才能保留照片中
+                    # 多個同類但位置不同的物品（例如三個杯子）。
+                    raw_bbox = [float(v) for v in boxes.xyxy[i].tolist()]
+                    label_zh = COCO_ZH.get(label_en, label_en)
+                    bbox, crop_path = _save_object_crop(tmp_path, raw_bbox, label_zh)
+                    yolo_candidates.append({
+                        "label_en": label_en,
+                        "label_zh": label_zh,
+                        "confidence": confidence,
+                        "source": "yolo",
+                        "bbox": bbox,
+                        "crop_path": crop_path,
+                    })
 
                     if len(yolo_candidates) >= 5:
                         break
 
-            # YOLO 有結果但信心度低 → 再試一次 Gemini（帶 YOLO hints）
-            if yolo_candidates and gemini_client_available and not force_yolo:
-                max_confidence = yolo_candidates[0]["confidence"]
-                top_label_en = yolo_candidates[0]["label_en"]
-                needs_gemini_review = (
-                    max_confidence < YOLO_CONF_THRESHOLD
-                    or top_label_en in GEMINI_REVIEW_CLASSES
+            # 人物場景中，YOLO 很可能漏掉眼鏡、衣物、包包等非 COCO
+            # 或小型物品；即使另有手機等候選，仍讓 Gemini 看完整照片補齊。
+            person_scene = (
+                hybrid_mode
+                and any(
+                    candidate.get("label_en") == "person"
+                    for candidate in yolo_candidates
                 )
-                if needs_gemini_review:
-                    print(f"[Recognition] YOLO 信心度 {max_confidence:.2f}，帶 hints 再問 Gemini")
-                    gemini_result = await recognize_with_gemini(tmp_path, yolo_candidates)
-                    _log("YOLO+Gemini 複查完成")
-                    if gemini_result:
-                        detected_objects = attach_yolo_bboxes(gemini_result, yolo_candidates)
-                    else:
-                        detected_objects = yolo_candidates
+            )
+            if person_scene and gemini_client_available:
+                print("[Recognition] YOLO 偵測到人物，Gemini 整圖補找附屬物品")
+                gemini_result = await recognize_with_gemini(tmp_path, yolo_candidates)
+                _log("人物場景 Gemini 整圖補漏完成")
+                if gemini_result:
+                    gemini_result = attach_yolo_bboxes(gemini_result, yolo_candidates)
+                    detected_objects = merge_gemini_and_yolo_results(
+                        gemini_result,
+                        yolo_candidates,
+                    )
                 else:
                     detected_objects = yolo_candidates
-            elif yolo_candidates:
+
+            # 其他情況採局部複查：高信心框保留，只把低信心／易混淆
+            # 物件的裁切圖交給 Gemini。
+            if yolo_candidates and gemini_client_available and not force_yolo:
+                needs_gemini_review = any(
+                    float(candidate.get("confidence", 0)) < YOLO_CONF_THRESHOLD
+                    or candidate.get("label_en") in GEMINI_REVIEW_CLASSES
+                    for candidate in yolo_candidates
+                )
+                if not detected_objects and needs_gemini_review:
+                    detected_objects = await review_yolo_candidates_with_gemini(
+                        tmp_path,
+                        yolo_candidates,
+                    )
+                    _log("YOLO 裁切圖 Gemini 局部複查完成")
+                elif not detected_objects:
+                    min_confidence = min(
+                        float(candidate.get("confidence", 0))
+                        for candidate in yolo_candidates
+                    )
+                    print(
+                        f"[Recognition] {len(yolo_candidates)} 個 YOLO 物品，"
+                        f"最低信心度 {min_confidence:.2f}，直接採用 YOLO"
+                    )
+                    detected_objects = yolo_candidates
+            elif yolo_candidates and not detected_objects:
                 detected_objects = yolo_candidates
+
+            # YOLO 完全沒有結果時，混合模式最後再交給 Gemini
+            if (
+                not detected_objects
+                and hybrid_mode
+                and gemini_client_available
+            ):
+                print("[Recognition] YOLO 未偵測到物品，fallback 到 Gemini")
+                detected_objects = await recognize_with_gemini(tmp_path, yolo_candidates=None)
+                _log("YOLO 無結果，Gemini 辨識完成")
 
         if not detected_objects:
             if _get_gemini_client() is None:

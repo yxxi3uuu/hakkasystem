@@ -8,14 +8,14 @@
   <style>
     body { background:#f5f7f5; }
     .admin-wrap { max-width:960px; margin:0 auto; padding:16px 16px 100px; }
-    .page-title { font-size:22px; font-weight:800; color:#2E7D32; margin:0 0 4px; }
+    .page-title { font-size:22px; font-weight:800; color:#24465D; margin:0 0 4px; }
     .page-sub   { font-size:13px; color:#888; margin-bottom:20px; }
 
     /* 頁籤 */
     .tabs { display:flex; gap:8px; margin-bottom:20px; border-bottom:2px solid #e0e0e0; padding-bottom:0; }
     .tab  { padding:9px 20px; border:none; background:none; font-size:14px; font-weight:600;
             color:#888; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; }
-    .tab.active { color:#2E7D32; border-bottom-color:#2E7D32; }
+    .tab.active { color:#24465D; border-bottom-color:#24465D; }
 
     /* 卡片 */
     .card { background:white; border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,0.07); margin-bottom:16px; overflow:hidden; }
@@ -25,20 +25,20 @@
 
     /* 表格 */
     table { width:100%; border-collapse:collapse; }
-    th { background:#E8F5E9; color:#2E7D32; font-size:12px; font-weight:700; padding:9px 14px; text-align:left; }
+    th { background:#E8F2F7; color:#24465D; font-size:12px; font-weight:700; padding:9px 14px; text-align:left; }
     td { font-size:13px; color:#444; padding:9px 14px; border-top:1px solid #f5f5f5; vertical-align:middle; }
     tr:hover td { background:#fafffe; }
 
     /* Badge */
     .badge { border-radius:8px; padding:2px 8px; font-size:11px; font-weight:700; }
     .badge-admin   { background:#FFF3E0; color:#E65100; }
-    .badge-teacher { background:#E8F5E9; color:#2E7D32; }
+    .badge-teacher { background:#E8F2F7; color:#24465D; }
     .badge-student { background:#F3F3F3; color:#666; }
 
     /* 按鈕 */
     .btn { padding:6px 14px; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; }
-    .btn-green  { background:#4CAF50; color:white; }
-    .btn-green:hover  { background:#388E3C; }
+    .btn-blue  { background:#315B78; color:white; }
+    .btn-blue:hover  { background:#1E3D52; }
     .btn-red    { background:#FFEBEE; color:#D32F2F; }
     .btn-red:hover    { background:#FFCDD2; }
     .btn-blue   { background:#E3F2FD; color:#1565C0; }
@@ -49,12 +49,12 @@
     /* 搜尋 */
     .search-row { display:flex; gap:8px; margin-bottom:12px; }
     .search-row input { flex:1; padding:8px 12px; border:1px solid #ddd; border-radius:10px; font-size:13px; outline:none; }
-    .search-row input:focus { border-color:#4CAF50; }
+    .search-row input:focus { border-color:#315B78; }
 
     /* 班級卡片 */
     .class-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; padding:16px; }
     .class-card { border:1px solid #e0e0e0; border-radius:12px; padding:14px; background:#fafffe; }
-    .class-card-name { font-size:16px; font-weight:700; color:#2E7D32; margin-bottom:4px; }
+    .class-card-name { font-size:16px; font-weight:700; color:#24465D; margin-bottom:4px; }
     .class-card-desc { font-size:12px; color:#888; margin-bottom:10px; }
     .class-card-meta { font-size:12px; color:#555; margin-bottom:10px; }
 
@@ -65,26 +65,26 @@
                    max-height:85vh; overflow-y:auto; padding:24px 20px 40px; animation:slideUp 0.25s ease; }
     @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
     .modal-handle { width:40px; height:4px; background:#ddd; border-radius:2px; margin:0 auto 20px; }
-    .modal-title  { font-size:18px; font-weight:800; color:#2E7D32; margin-bottom:4px; }
+    .modal-title  { font-size:18px; font-weight:800; color:#24465D; margin-bottom:4px; }
     .modal-sub    { font-size:13px; color:#888; margin-bottom:16px; }
     .tab-row { display:flex; gap:8px; margin-bottom:16px; }
     .tab-btn { padding:6px 16px; border-radius:20px; border:none; font-size:13px; font-weight:600; cursor:pointer; background:#f0f0f0; color:#666; }
-    .tab-btn.active { background:#4CAF50; color:white; }
+    .tab-btn.active { background:#315B78; color:white; }
 
     /* 單字格 */
     .word-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
     .word-card { background:#f9f9f9; border-radius:12px; overflow:hidden; }
     .word-card img { width:100%; aspect-ratio:4/3; object-fit:cover; display:block; background:#eee; }
     .word-card-body { padding:8px 10px 10px; }
-    .word-card-hakka { font-size:16px; font-weight:800; color:#2E7D32; }
-    .word-card-pinyin { font-size:11px; color:#4CAF50; margin:1px 0 2px; }
+    .word-card-hakka { font-size:16px; font-weight:800; color:#24465D; }
+    .word-card-pinyin { font-size:11px; color:#315B78; margin:1px 0 2px; }
     .word-card-zh { font-size:12px; color:#888; }
     .word-card-sentence { font-size:11px; color:#aaa; margin-top:4px; line-height:1.5; }
     audio { width:100%; margin-top:6px; height:28px; }
 
     .activity-item { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #f0f0f0; }
     .activity-item:last-child { border-bottom:none; }
-    .act-score { margin-left:auto; font-size:15px; font-weight:800; color:#2E7D32; }
+    .act-score { margin-left:auto; font-size:15px; font-weight:800; color:#24465D; }
 
     .empty-tip   { text-align:center; padding:30px; color:#bbb; font-size:13px; }
     .loading-tip { text-align:center; padding:20px; color:#aaa; font-size:13px; }
@@ -96,14 +96,14 @@
     .form-row label { font-size:12px; color:#666; font-weight:600; }
     .form-row input, .form-row select, .form-row textarea {
       padding:9px 12px; border:1px solid #ddd; border-radius:10px; font-size:13px; outline:none; }
-    .form-row input:focus, .form-row select:focus { border-color:#4CAF50; }
+    .form-row input:focus, .form-row select:focus { border-color:#315B78; }
   </style>
   <link rel="stylesheet" href="/static/theme.css" />
 </head>
 <body>
 
   <div class="top-bar">
-    <a href="/profile" style="text-decoration:none;color:#2E7D32;font-size:22px;margin-right:8px;">‹</a>
+    <a href="/profile" style="text-decoration:none;color:#24465D;font-size:22px;margin-right:8px;">‹</a>
     <span style="font-size:22px;">🛡️</span>
     <h1>管理後台</h1>
   </div>
@@ -135,7 +135,7 @@
         </div>
         <div style="display:flex;gap:8px;">
           <input type="text" id="broadcastBody" placeholder="通知內容（選填）" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;outline:none;" />
-          <button class="btn btn-green" onclick="sendBroadcast()">廣播</button>
+          <button class="btn btn-blue" onclick="sendBroadcast()">廣播</button>
         </div>
         <div id="broadcastMsg" style="font-size:12px;margin-top:6px;display:none;"></div>
       </div>
@@ -159,7 +159,7 @@
         <div class="card-title" style="margin-bottom:12px;">➕ 建立新班級</div>
         <div class="form-row"><label>班級名稱</label><input type="text" id="newClassName" placeholder="例：三年甲班" /></div>
         <div class="form-row"><label>說明（選填）</label><input type="text" id="newClassDesc" placeholder="例：108學年度客語班" /></div>
-        <button class="btn btn-green" onclick="createClass()">建立班級</button>
+        <button class="btn btn-blue" onclick="createClass()">建立班級</button>
       </div>
       <div id="adminClassList"><div class="loading-tip">載入中...</div></div>
     </div>
@@ -187,29 +187,29 @@
       <div class="modal-sub"   id="classModalSub"></div>
       <div style="display:flex;gap:8px;margin-bottom:14px;">
         <input type="text" id="addStudentEmail" placeholder="輸入學生 Email 加入班級" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;outline:none;" />
-        <button class="btn btn-green" onclick="addStudentByEmail()">加入</button>
+        <button class="btn btn-blue" onclick="addStudentByEmail()">加入</button>
       </div>
       <!-- 發送班級通知 -->
-      <div style="background:#F1F8E9;border-radius:12px;padding:12px 14px;margin-bottom:14px;">
-        <div style="font-size:12px;font-weight:700;color:#2E7D32;margin-bottom:8px;">📣 發送通知給全班</div>
+      <div style="background:#F2F7FA;border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:#24465D;margin-bottom:8px;">📣 發送通知給全班</div>
         <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <input type="text" id="classNotifTitle" placeholder="通知標題（必填）" style="flex:1;padding:8px 10px;border:1px solid #c8e6c9;border-radius:8px;font-size:13px;outline:none;" />
+          <input type="text" id="classNotifTitle" placeholder="通知標題（必填）" style="flex:1;padding:8px 10px;border:1px solid #CFE1EA;border-radius:8px;font-size:13px;outline:none;" />
         </div>
         <div style="display:flex;gap:8px;">
-          <input type="text" id="classNotifBody" placeholder="通知內容（選填）" style="flex:1;padding:8px 10px;border:1px solid #c8e6c9;border-radius:8px;font-size:13px;outline:none;" />
-          <button class="btn btn-green" onclick="sendClassNotif()" style="white-space:nowrap;">發送</button>
+          <input type="text" id="classNotifBody" placeholder="通知內容（選填）" style="flex:1;padding:8px 10px;border:1px solid #CFE1EA;border-radius:8px;font-size:13px;outline:none;" />
+          <button class="btn btn-blue" onclick="sendClassNotif()" style="white-space:nowrap;">發送</button>
         </div>
         <div id="classNotifMsg" style="font-size:12px;margin-top:6px;display:none;"></div>
       </div>
       <!-- 發送班級通知 -->
-      <div style="background:#F1F8E9;border-radius:12px;padding:12px 14px;margin-bottom:14px;">
-        <div style="font-size:12px;font-weight:700;color:#2E7D32;margin-bottom:8px;">📣 發送通知給全班</div>
+      <div style="background:#F2F7FA;border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:#24465D;margin-bottom:8px;">📣 發送通知給全班</div>
         <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <input type="text" id="classNotifTitle" placeholder="通知標題（必填）" style="flex:1;padding:8px 10px;border:1px solid #c8e6c9;border-radius:8px;font-size:13px;outline:none;" />
+          <input type="text" id="classNotifTitle" placeholder="通知標題（必填）" style="flex:1;padding:8px 10px;border:1px solid #CFE1EA;border-radius:8px;font-size:13px;outline:none;" />
         </div>
         <div style="display:flex;gap:8px;">
-          <input type="text" id="classNotifBody" placeholder="通知內容（選填）" style="flex:1;padding:8px 10px;border:1px solid #c8e6c9;border-radius:8px;font-size:13px;outline:none;" />
-          <button class="btn btn-green" onclick="sendClassNotif()" style="white-space:nowrap;">發送</button>
+          <input type="text" id="classNotifBody" placeholder="通知內容（選填）" style="flex:1;padding:8px 10px;border:1px solid #CFE1EA;border-radius:8px;font-size:13px;outline:none;" />
+          <button class="btn btn-blue" onclick="sendClassNotif()" style="white-space:nowrap;">發送</button>
         </div>
         <div id="classNotifMsg" style="font-size:12px;margin-top:6px;display:none;"></div>
       </div>
@@ -241,7 +241,7 @@
       <div class="modal-title" id="teacherModalTitle">指派老師</div>
       <div style="display:flex;gap:8px;margin-bottom:14px;">
         <select id="teacherSelect" style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:10px;font-size:13px;outline:none;"></select>
-        <button class="btn btn-green" onclick="addTeacher()">指派</button>
+        <button class="btn btn-blue" onclick="addTeacher()">指派</button>
       </div>
       <div id="teacherList"><div class="loading-tip">載入中...</div></div>
       <button class="modal-close" onclick="document.getElementById('teacherModal').classList.remove('open')">關閉</button>
@@ -318,7 +318,7 @@
             <div class="class-card-meta">學生人數：${c.student_count} 人</div>
             <div class="class-card-meta">負責老師：${c.teachers.map(t=>t.name).join('、') || '尚未指派'}</div>
             <div class="btn-row">
-              <button class="btn btn-green" onclick="openClassModal(${c.id},'${c.name.replace(/'/g,"\\'")}')">查看學生</button>
+              <button class="btn btn-blue" onclick="openClassModal(${c.id},'${c.name.replace(/'/g,"\\'")}')">查看學生</button>
             </div>
           </div>`).join('');
       } catch(e) { grid.innerHTML = '<div class="empty-tip">載入失敗</div>'; }
@@ -473,7 +473,7 @@
         const data = await res.json();
         if (!res.ok) { msg.textContent = data.detail || '發送失敗'; msg.style.color = '#e53935'; msg.style.display = 'block'; return; }
         msg.textContent = `✅ 已發送給 ${data.sent_to} 位學生`;
-        msg.style.color = '#2E7D32'; msg.style.display = 'block';
+        msg.style.color = '#24465D'; msg.style.display = 'block';
         document.getElementById('classNotifTitle').value = '';
         document.getElementById('classNotifBody').value = '';
         setTimeout(() => { msg.style.display = 'none'; }, 3000);
@@ -494,7 +494,7 @@
         const data = await res.json();
         if (!res.ok) { msg.textContent = data.detail || '發送失敗'; msg.style.color = '#e53935'; msg.style.display = 'block'; return; }
         msg.textContent = `✅ 已廣播給 ${data.sent_to} 位使用者`;
-        msg.style.color = '#2E7D32'; msg.style.display = 'block';
+        msg.style.color = '#24465D'; msg.style.display = 'block';
         document.getElementById('broadcastTitle').value = '';
         document.getElementById('broadcastBody').value = '';
         setTimeout(() => { msg.style.display = 'none'; }, 3000);
@@ -631,7 +631,7 @@
         const reports = await fetch(`/api/admin/reports?admin_id=${user.id}&status=${status}`).then(r=>r.json());
         if (!reports.length) { el.innerHTML = '<div class="empty-tip">無符合的回報</div>'; return; }
         const statusLabel = {'pending':'⏳ 待審','approved':'✅ 已接受','rejected':'❌ 已拒絕'};
-        const statusColor = {'pending':'#E65100','approved':'#2E7D32','rejected':'#B71C1C'};
+        const statusColor = {'pending':'#E65100','approved':'#24465D','rejected':'#B71C1C'};
         el.innerHTML = reports.map(r => `
           <div class="card" style="margin-bottom:12px;padding:14px;">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
@@ -647,7 +647,7 @@
               </div>
               <div>
                 <div style="font-size:11px;color:#888;margin-bottom:3px;">✅ 使用者修正</div>
-                <div style="font-size:16px;font-weight:700;color:#2E7D32;">${r.correct_text||''}</div>
+                <div style="font-size:16px;font-weight:700;color:#24465D;">${r.correct_text||''}</div>
               </div>
             </div>
             ${r.ai_suggested_text && r.ai_suggested_text !== r.correct_text ? `
@@ -657,7 +657,7 @@
             ${r.audio_path ? `<audio controls style="width:100%;height:28px;margin-bottom:10px;"><source src="/${r.audio_path}" type="audio/wav"></audio>` : ''}
             ${r.review_status === 'pending' ? `
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-              <button class="btn btn-green" onclick="reviewReport('${r.id}','approve','')">✅ 接受</button>
+              <button class="btn btn-blue" onclick="reviewReport('${r.id}','approve','')">✅ 接受</button>
               <button class="btn btn-red"   onclick="reviewReport('${r.id}','reject','')">❌ 拒絕</button>
               <input type="text" id="editText_${r.id}" placeholder="手動輸入最終正確字"
                 value="${(r.ai_suggested_text||r.correct_text||'').replace(/"/g,'&quot;')}"
@@ -665,7 +665,7 @@
               <button class="btn btn-blue" onclick="reviewReport('${r.id}','edit',document.getElementById('editText_${r.id}').value)">💾 修正後接受</button>
             </div>` : `
             <div style="font-size:13px;color:#666;">
-              ${r.final_text ? `最終核定：<strong style="color:#2E7D32;">${r.final_text}</strong>` : ''}
+              ${r.final_text ? `最終核定：<strong style="color:#24465D;">${r.final_text}</strong>` : ''}
             </div>`}
           </div>`).join('');
       } catch(e) { el.innerHTML = '<div class="empty-tip">載入失敗</div>'; }

@@ -13,7 +13,7 @@
       text-align:center; font-size:12px; font-weight:600; cursor:pointer;
       border:2px solid #e0e0e0; background:white; color:#666; transition:all 0.2s;
     }
-    .game-tab.active { border-color:#4CAF50; background:#E8F5E9; color:#2E7D32; }
+    .game-tab.active { border-color:#315B78; background:#E8F2F7; color:#24465D; }
 
     .src-tabs { display:flex; gap:8px; margin:8px 16px 0; }
     .src-tab {
@@ -21,7 +21,7 @@
       font-size:13px; font-weight:600; cursor:pointer;
       border:2px solid #e0e0e0; background:white; color:#666; transition:all 0.2s;
     }
-    .src-tab.active { border-color:#4CAF50; background:#E8F5E9; color:#2E7D32; }
+    .src-tab.active { border-color:#315B78; background:#E8F2F7; color:#24465D; }
 
     .game-header {
       display:flex; justify-content:space-between; align-items:center;
@@ -29,11 +29,11 @@
       border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,0.06);
     }
     .game-stat { text-align:center; }
-    .game-stat-val { font-size:22px; font-weight:800; color:#2E7D32; }
+    .game-stat-val { font-size:22px; font-weight:800; color:#24465D; }
     .game-stat-lbl { font-size:11px; color:#888; }
 
     .win-banner {
-      display:none; background:linear-gradient(135deg,#4CAF50,#2E7D32);
+      display:none; background:linear-gradient(135deg,#315B78,#24465D);
       color:white; border-radius:16px; margin:0 16px 16px; padding:24px; text-align:center;
     }
     .win-banner h2 { font-size:22px; margin-bottom:8px; }
@@ -51,16 +51,17 @@
       padding:12px 8px; border-radius:12px; text-align:center; font-size:14px;
       font-weight:600; cursor:pointer; user-select:none; transition:all 0.2s;
       border:2px solid #e0e0e0; background:white;
-      display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:54px;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      height:104px; min-height:104px; overflow:hidden;
     }
     .match-item img { width:100%; height:54px; object-fit:cover; border-radius:8px; margin-bottom:4px; }
-    .match-item:hover  { border-color:#4CAF50; background:#f1f8e9; }
-    .match-item.selected { border-color:#4CAF50; background:#E8F5E9; box-shadow:0 0 0 3px rgba(76,175,80,0.2); }
-    .match-item.matched  { border-color:#4CAF50; background:#C8E6C9; opacity:0.7; cursor:default; }
+    .match-item:hover  { border-color:#315B78; background:#F2F7FA; }
+    .match-item.selected { border-color:#315B78; background:#E8F2F7; box-shadow:0 0 0 3px rgba(49,91,120,0.2); }
+    .match-item.matched  { border-color:#315B78; background:#CFE1EA; opacity:0.7; cursor:default; }
     .match-item.wrong    { border-color:#f44336; background:#FFEBEE; animation:shake 0.4s; }
     .match-item .sub { font-size:10px; color:#888; margin-top:2px; font-weight:400; }
     svg.lines { position:absolute; top:0; left:0; width:100%; height:100%; z-index:1; pointer-events:none; }
-    svg.lines line { stroke:#4CAF50; stroke-width:2.5; stroke-linecap:round; }
+    svg.lines line { stroke:#315B78; stroke-width:2.5; stroke-linecap:round; }
 
     /* ── 翻牌配對 ── */
     .flip-grid {
@@ -81,7 +82,7 @@
       backface-visibility:hidden; font-weight:700;
     }
     .flip-front {
-      background:linear-gradient(135deg,#4CAF50,#2E7D32);
+      background:linear-gradient(135deg,#315B78,#24465D);
       color:white; font-size:28px;
     }
     .flip-back {
@@ -90,18 +91,18 @@
       padding:6px; color:#333; flex-direction:column; gap:4px;
     }
     .flip-back img { width:100%; height:50px; object-fit:cover; border-radius:6px; }
-    .flip-card.matched .flip-front { background:linear-gradient(135deg,#81C784,#4CAF50); }
-    .flip-card.matched .flip-back  { border-color:#4CAF50; background:#E8F5E9; }
+    .flip-card.matched .flip-front { background:linear-gradient(135deg,#7FA3B8,#315B78); }
+    .flip-card.matched .flip-back  { border-color:#315B78; background:#E8F2F7; }
 
     /* ── 聽音選字 ── */
     .listen-question {
       text-align:center; padding:20px 0 10px;
     }
     .listen-play-btn {
-      width:80px; height:80px; border-radius:50%; background:#4CAF50;
+      width:80px; height:80px; border-radius:50%; background:#315B78;
       border:none; font-size:32px; cursor:pointer; margin:0 auto 12px;
       display:flex; align-items:center; justify-content:center;
-      box-shadow:0 4px 16px rgba(76,175,80,0.4); transition:transform 0.15s;
+      box-shadow:0 4px 16px rgba(49,91,120,0.4); transition:transform 0.15s;
     }
     .listen-play-btn:hover { transform:scale(1.05); }
     .listen-options {
@@ -112,8 +113,8 @@
       font-size:16px; font-weight:700; cursor:pointer;
       border:2px solid #e0e0e0; background:white; transition:all 0.2s;
     }
-    .listen-opt:hover  { border-color:#4CAF50; background:#f1f8e9; }
-    .listen-opt.correct { border-color:#4CAF50; background:#C8E6C9; }
+    .listen-opt:hover  { border-color:#315B78; background:#F2F7FA; }
+    .listen-opt.correct { border-color:#315B78; background:#CFE1EA; }
     .listen-opt.wrong   { border-color:#f44336; background:#FFEBEE; }
 
     /* ── 填字測驗 ── */
@@ -127,11 +128,11 @@
       font-size:16px; outline:none; text-align:center; margin-bottom:12px;
       transition:border-color 0.2s;
     }
-    .quiz-input:focus { border-color:#4CAF50; }
-    .quiz-input.correct { border-color:#4CAF50; background:#E8F5E9; }
+    .quiz-input:focus { border-color:#315B78; }
+    .quiz-input.correct { border-color:#315B78; background:#E8F2F7; }
     .quiz-input.wrong   { border-color:#f44336; background:#FFEBEE; }
     .quiz-hint { font-size:12px; color:#aaa; margin-bottom:12px; }
-    .quiz-answer { font-size:14px; color:#2E7D32; font-weight:600; margin-bottom:12px; display:none; }
+    .quiz-answer { font-size:14px; color:#24465D; font-weight:600; margin-bottom:12px; display:none; }
 
     @keyframes shake {
       0%,100% { transform:translateX(0); }
@@ -155,12 +156,6 @@
     <div class="game-tab" id="gt1" onclick="setGameType(1)">🃏 翻牌配對</div>
     <div class="game-tab" id="gt2" onclick="setGameType(2)">🔊 聽音選字</div>
     <div class="game-tab" id="gt3" onclick="setGameType(3)">✏️ 填字測驗</div>
-  </div>
-
-  <!-- 詞彙來源選擇 -->
-  <div class="src-tabs">
-    <div class="src-tab active" id="srcDefault" onclick="setSrc('default')">📝 預設單字</div>
-    <div class="src-tab" id="srcPhoto" onclick="setSrc('photo')">📸 我的單字</div>
   </div>
 
   <p id="gameDesc" style="font-size:13px;color:#888;padding:8px 16px 0;"></p>
@@ -215,16 +210,6 @@
   // ════════════════════════════════════════
   //  資料層
   // ════════════════════════════════════════
-  const DEFAULT_PAIRS = [
-    { zh:"你好",  rom:"ngì-hó",    img:"", audio:"" },
-    { zh:"謝謝",  rom:"án-tsṳ́-sì", img:"", audio:"" },
-    { zh:"蘋果",  rom:"phìn-kó",   img:"/voice_practice/images/images.jpg", audio:"/voice_practice/audios/apple.wav" },
-    { zh:"椅子",  rom:"椅仔",       img:"/voice_practice/images/800x.jpg",   audio:"/voice_practice/audios/chair.wav" },
-    { zh:"電視",  rom:"電視",       img:"/voice_practice/images/Samsung_LE26R41BD_and_Yamada_DVD_player_20030624.jpg", audio:"/voice_practice/audios/TV.wav" },
-    { zh:"水",    rom:"súi",        img:"", audio:"" },
-  ];
-
-  let currentSrc     = 'default';
   let currentGame    = 0;
   let PAIRS          = [];
   let savedPairs     = [];
@@ -238,23 +223,17 @@
       if (res.ok) {
         const data = await res.json();
         savedPairs = data.map(w => ({
-          zh: w.label_zh, rom: w.label_hakka,
+          zh: w.label_zh, rom: w.label_hakka || w.label_pinyin,
           img: w.image_path || "", audio: w.audio_path || ""
-        }));
+        })).filter(pair => pair.zh && pair.rom);
       }
-    } catch(e) {}
+    } catch(e) {
+      savedPairs = [];
+    }
   }
 
   function getActivePairs() {
-    if (currentSrc === 'photo') {
-      if (savedPairs.length === 0) {
-        alert('還沒有儲存任何單字！請先到「拍照學習」儲存。');
-        setSrc('default');
-        return DEFAULT_PAIRS;
-      }
-      return [...savedPairs].sort(()=>Math.random()-0.5).slice(0,8);
-    }
-    return DEFAULT_PAIRS;
+    return [...savedPairs].sort(()=>Math.random()-0.5).slice(0,8);
   }
 
   function shuffle(arr) {
@@ -263,12 +242,17 @@
     return a;
   }
 
-  async function setSrc(src) {
-    currentSrc = src;
-    document.getElementById('srcDefault').classList.toggle('active', src==='default');
-    document.getElementById('srcPhoto').classList.toggle('active', src==='photo');
-    if (src==='photo' && savedPairs.length===0) await loadSavedPairs();
-    restartGame();
+  function renderEmptyGame() {
+    document.getElementById('gameTitle').textContent = '我的詞彙遊戲';
+    document.getElementById('gameDesc').textContent = '收藏詞彙後，就能用自己的照片開始練習。';
+    document.getElementById('progress').textContent = '0/0';
+    document.getElementById('gameArea').innerHTML = `
+      <div class="section empty-state" style="margin-top:16px;">
+        <div style="width:58px;height:58px;border-radius:18px;background:#E8F2F7;color:#315B78;display:grid;place-items:center;font-size:26px;margin:0 auto 14px;">📷</div>
+        <h2 style="font-size:19px;color:#29343A;margin-bottom:8px;">還沒有可練習的詞彙</h2>
+        <p style="font-size:14px;line-height:1.7;">先拍下生活中的物品並收藏詞彙，這裡就會自動建立專屬遊戲。</p>
+        <a href="/recognition" class="btn btn-primary" style="display:inline-flex;margin-top:18px;text-decoration:none;">開始拍照</a>
+      </div>`;
   }
 
   function setGameType(idx) {
@@ -284,6 +268,10 @@
     document.getElementById('winBanner').style.display='none';
     PAIRS = getActivePairs();
     total = PAIRS.length;
+    if (total === 0) {
+      renderEmptyGame();
+      return;
+    }
     document.getElementById('progress').textContent=`0/${total}`;
     const games=[initMatch, initFlip, initListen, initQuiz];
     const titles=['🔗 連連看','🃏 翻牌配對','🔊 聽音選字','✏️ 填字測驗'];
@@ -350,7 +338,7 @@
         <div class="match-col" id="leftCol">
           ${L.map(p=>`
             <div class="match-item" data-id="${pairs.indexOf(p)}" data-side="left" onclick="matchClick(this)">
-              ${currentSrc==='photo'&&p.img?`<img src="${p.img}" onerror="this.style.display='none'"/>`:''}
+              ${p.img?`<img src="${p.img}" onerror="this.style.display='none'"/>`:''}
               <span>${p.zh}</span>
             </div>`).join('')}
         </div>
@@ -358,7 +346,7 @@
         <div class="match-col" id="rightCol">
           ${R.map(p=>`
             <div class="match-item" data-id="${pairs.indexOf(p)}" data-side="right" onclick="matchClick(this)">
-              ${p.rom}<div class="sub">${p.zh}</div>
+              ${p.rom}
             </div>`).join('')}
         </div>
       </div>`;

@@ -7,7 +7,7 @@
   --hakka-indigo-deep: #24465d;
   --hakka-orange: #e88a4d;
   --hakka-yellow: #f4c95d;
-  --hakka-green: #5f9d78;
+  --hakka-blue-mid: #547C96;
   --hakka-blue-soft: #e8f2f7;
   --hakka-orange-soft: #fff0e3;
   --hakka-text: #29343a;
@@ -289,6 +289,52 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .result-word, .word-display { font-size: clamp(30px, 9vw, 36px) !important; }
 .result-roman, .word-roman { font-size: 19px !important; color: var(--hakka-indigo) !important; }
+.section #vocabList .vocab-rom {
+  color: var(--hakka-indigo) !important;
+}
+.section #myWordsList .my-word-hakka {
+  color: var(--hakka-indigo) !important;
+}
+.section #myWordsList .my-word-pinyin {
+  color: var(--hakka-indigo) !important;
+  opacity: 0.82;
+}
+.word-card-hakka,
+.word-card-pinyin,
+#modalPinyin {
+  color: var(--hakka-indigo) !important;
+}
+.word-card-pinyin,
+#modalPinyin {
+  opacity: 0.82;
+}
+.word-card .practice-btn {
+  background: var(--hakka-orange-soft) !important;
+  color: #a95727 !important;
+}
+.word-card .practice-btn:hover {
+  background: #f9dcc5 !important;
+}
+.modal-actions .btn-practice-modal {
+  background: var(--hakka-orange) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 15px rgba(232, 138, 77, 0.22) !important;
+}
+.modal-actions .btn-practice-modal:hover {
+  background: #d8793f !important;
+}
+.word-count-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 10;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--hakka-indigo) !important;
+  color: #fff !important;
+  font-size: 11px;
+  font-weight: 700;
+}
 .result-example, .modal-sentence-box, .word-modal-sentence-box {
   background: var(--hakka-orange-soft) !important;
   border-left-color: var(--hakka-orange) !important;
@@ -301,17 +347,30 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .mic-btn.recording { background: var(--hakka-error) !important; }
 
 .progress-fill, .score-fill, .bar {
-  background: linear-gradient(90deg, var(--hakka-indigo), var(--hakka-green)) !important;
+  background: linear-gradient(90deg, var(--hakka-indigo), var(--hakka-blue-mid)) !important;
 }
 
 .match-item.selected, .listen-opt.correct, .quiz-input.correct,
 .match-item.matched, .flip-card.matched .flip-back {
-  border-color: var(--hakka-green) !important;
-  background: #edf6f0 !important;
+  border-color: var(--hakka-blue-mid) !important;
+  background: #EEF5F8 !important;
 }
 .match-item.wrong, .listen-opt.wrong, .quiz-input.wrong {
   border-color: #dfa0a0 !important;
   background: #fff3f1 !important;
+}
+
+.flip-front {
+  background: var(--hakka-orange) !important;
+  color: #fff !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.flip-card.matched .flip-front {
+  background: #c96f35 !important;
+}
+.flip-card.matched .flip-back {
+  border-color: var(--hakka-orange) !important;
+  background: var(--hakka-orange-soft) !important;
 }
 
 .profile-header {
@@ -337,7 +396,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .profile-header .user-subtitle { font-size: 12px !important; }
 .profile-header + .stats-row { margin-top: 16px !important; }
-.menu-icon.green, .badge.unlocked { background: #edf6f0 !important; }
+.menu-icon.blue-soft, .badge.unlocked { background: #EEF5F8 !important; }
 .menu-icon.blue { background: var(--hakka-blue-soft) !important; }
 .menu-icon.orange { background: var(--hakka-orange-soft) !important; }
 
@@ -358,7 +417,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   color: var(--hakka-error) !important;
 }
 .success-msg {
-  background: #edf6f0 !important;
+  background: #EEF5F8 !important;
   color: #407a58 !important;
 }
 
