@@ -28,7 +28,8 @@ class WordsRequest(BaseModel):
 
 # ── Gemini API 設定 ───────────────────────────────────────────────────────
 _GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
+# 造句用 2.0-flash（穩定），辨識用 2.5-flash（精準）
+_GEMINI_MODEL = os.getenv("LLM_GEMINI_MODEL", "gemini-2.0-flash").strip()
 
 
 def init_llm() -> None:
