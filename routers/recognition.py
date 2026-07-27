@@ -556,7 +556,8 @@ async def generate_sentences_for_words(words: list[str]) -> list[str]:
 
         return [f"這是一個{word}。" for word in words]
 
-    except Exception:
+    except Exception as e:
+        print(f"[Recognition] generate_sentences_for_words 失敗：{e}")
         return [f"這是一個{word}。" for word in words]
 
 
