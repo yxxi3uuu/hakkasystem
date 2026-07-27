@@ -403,7 +403,6 @@ Important:
         ],
         config=genai_types.GenerateContentConfig(
             response_mime_type="application/json",
-            timeout=15,          # 超過 15 秒直接放棄，改用 YOLO
         ),
     )
 

@@ -93,10 +93,11 @@ def _normalize_words(words: list[str] | str, max_words: int = 5) -> list[str]:
 
 
 async def _ask_gemini(prompt: str, max_tokens: int = 300) -> str:
-    """呼叫 Gemini API，回傳生成的文字內容。"""
+    """呼叫 Gemini API，回傳生成的文字內容。503/429 時最多 retry 2 次。"""
     if not _GEMINI_API_KEY:
         return ""
 
+    import asyncio
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{_GEMINI_MODEL}:generateContent"
 
     payload = {
@@ -107,23 +108,40 @@ async def _ask_gemini(prompt: str, max_tokens: int = 300) -> str:
         },
     }
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        resp = await client.post(
-            url,
-            params={"key": _GEMINI_API_KEY},
-            json=payload,
-        )
-        resp.raise_for_status()
-        data = resp.json()
+    last_err = None
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.post(
+                    url,
+                    params={"key": _GEMINI_API_KEY},
+                    json=payload,
+                )
+                resp.raise_for_status()
+                data = resp.json()
 
-    # 解析 Gemini 回應
-    candidates = data.get("candidates", [])
-    if not candidates:
-        return ""
-    parts = candidates[0].get("content", {}).get("parts", [])
-    if not parts:
-        return ""
-    return parts[0].get("text", "").strip()
+            # 解析 Gemini 回應
+            candidates = data.get("candidates", [])
+            if not candidates:
+                return ""
+            parts = candidates[0].get("content", {}).get("parts", [])
+            if not parts:
+                return ""
+            return parts[0].get("text", "").strip()
+        except Exception as e:
+            last_err = e
+            err_str = str(e)
+            if any(code in err_str for code in ("503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED")):
+                if attempt < 2:
+                    wait = 1.5 * (attempt + 1)
+                    print(f"[LLM] Gemini 造句第 {attempt + 1} 次失敗，{wait:.1f}s 後重試...")
+                    await asyncio.sleep(wait)
+                    continue
+            print(f"[LLM] Gemini 造句失敗：{e}")
+            return ""
+
+    print(f"[LLM] Gemini 造句重試 3 次仍失敗：{last_err}")
+    return ""
 
 
 # ── Fallback 範例句庫 ─────────────────────────────────────────────────────
