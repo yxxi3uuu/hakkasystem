@@ -1,16 +1,15 @@
 """
 routers/learning.py
 客語例句 / 故事生成
-使用本地 llama_cpp 模型，路徑從環境變數 LLM_MODEL_PATH 讀取。
-若模型不存在或未設定，自動 fallback 到內建範例句庫。
+優先使用 Gemini API 造句，若 Gemini 不可用則 fallback 到罐頭句。
 """
 
 import json
 import logging
 import os
 import re
-from pathlib import Path
 
+import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -27,65 +26,17 @@ class WordsRequest(BaseModel):
     words: list[str] | str
 
 
-# ── 載入本地 LLM（由 main.py lifespan 呼叫 init_llm() 完成初始化）────────
-llm = None
-
-
-def _candidate_model_paths(raw_path: str) -> list[Path]:
-    """Return possible model paths, ordered from most explicit to most portable."""
-    candidates: list[Path] = []
-    path = Path(raw_path).expanduser()
-
-    candidates.append(path)
-
-    if not path.is_absolute():
-        candidates.append(Path(__file__).resolve().parent.parent / path)
-
-    candidates.append(Path(__file__).resolve().parent.parent / "data" / path.name)
-    return candidates
+# ── Gemini API 設定 ───────────────────────────────────────────────────────
+_GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
 
 
 def init_llm() -> None:
-    """由 main.py lifespan 在 .env 確定載入後呼叫，初始化全域 llm 物件。"""
-    global llm
-
-    _model_path = os.getenv("LLM_MODEL_PATH", "").strip()
-
-    if not _model_path:
-        print("[LLM] LLM_MODEL_PATH 未設定，將使用 fallback 例句庫")
-        return
-
-    candidates = _candidate_model_paths(_model_path)
-    print(f"[LLM] 嘗試模型路徑：{_model_path}，候選路徑：{[str(p) for p in candidates]}")
-
-    resolved_path = None
-    for candidate in candidates:
-        if candidate.exists():
-            resolved_path = candidate
-            break
-
-    if resolved_path is None:
-        print(f"[LLM] 找不到模型檔：{_model_path}（候選路徑：{[str(p) for p in candidates]}，將使用 fallback）")
-        return
-
-    try:
-        from llama_cpp import Llama
-    except ImportError as e:
-        print(f"[LLM] llama_cpp 未安裝，無法載入模型：{e}（將使用 fallback）")
-        return
-
-    try:
-        llm = Llama(
-            model_path=str(resolved_path),
-            n_gpu_layers=20,
-            n_ctx=2048,
-            n_batch=256,
-            flash_attn=True,
-            verbose=False,
-        )
-        print(f"[LLM] 模型載入成功：{resolved_path}")
-    except Exception as e:
-        print(f"[LLM] 載入失敗（將使用 fallback）: {resolved_path} / {e}")
+    """保留介面相容性，由 main.py lifespan 呼叫。現在改用 Gemini API，不需載入本地模型。"""
+    if _GEMINI_API_KEY:
+        print(f"[LLM] 使用 Gemini API 造句（model={_GEMINI_MODEL}）")
+    else:
+        print("[LLM] GEMINI_API_KEY 未設定，造句將使用 fallback 罐頭句")
 
 
 def _clean_json_text(text: str) -> str:
@@ -125,23 +76,6 @@ def _coerce_sentence_result(parsed: object, word: str) -> dict:
     }
 
 
-def _ask_llm_json(system_prompt: str, user_prompt: str, max_tokens: int, temperature: float):
-    response = llm.create_chat_completion(
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        max_tokens=max_tokens,
-        temperature=temperature,
-    )
-    result_text = response["choices"][0]["message"]["content"].strip()
-    cleaned_text = _clean_json_text(result_text)
-    try:
-        return json.loads(cleaned_text)
-    except json.JSONDecodeError:
-        return {"sentence_zh": cleaned_text or result_text, "sentence": cleaned_text or result_text, "word": ""}
-
-
 def _normalize_words(words: list[str] | str, max_words: int = 5) -> list[str]:
     if isinstance(words, str):
         raw_words = words.split()
@@ -153,26 +87,38 @@ def _normalize_words(words: list[str] | str, max_words: int = 5) -> list[str]:
     return [word.strip() for word in raw_words if word.strip()][:max_words]
 
 
-def _with_compatible_sentence_fields(items: list[dict], words: list[str]) -> list[dict]:
-    results = []
+async def _ask_gemini(prompt: str, max_tokens: int = 300) -> str:
+    """呼叫 Gemini API，回傳生成的文字內容。"""
+    if not _GEMINI_API_KEY:
+        return ""
 
-    for index, word in enumerate(words):
-        item = items[index] if index < len(items) and isinstance(items[index], dict) else {}
-        sentence = (
-            item.get("sentence")
-            or item.get("sentence_zh")
-            or item.get("chinese_translation")
-            or f"這是一個{word}。"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{_GEMINI_MODEL}:generateContent"
+
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "temperature": 0.3,
+            "maxOutputTokens": max_tokens,
+        },
+    }
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.post(
+            url,
+            params={"key": _GEMINI_API_KEY},
+            json=payload,
         )
+        resp.raise_for_status()
+        data = resp.json()
 
-        results.append({
-            "word": item.get("word") or word,
-            "sentence": sentence,
-            "sentence_zh": sentence,
-            "chinese_translation": sentence,
-        })
-
-    return results
+    # 解析 Gemini 回應
+    candidates = data.get("candidates", [])
+    if not candidates:
+        return ""
+    parts = candidates[0].get("content", {}).get("parts", [])
+    if not parts:
+        return ""
+    return parts[0].get("text", "").strip()
 
 
 # ── Fallback 範例句庫 ─────────────────────────────────────────────────────
@@ -195,15 +141,16 @@ async def generate_hakka_sentence(request: WordRequest):
     if not word:
         raise HTTPException(status_code=400, detail="單字不可為空")
 
-    if llm:
-        system_prompt = """你是一個專業的中文句子生成助手。
+    if _GEMINI_API_KEY:
+        prompt = f"""你是一個專業的中文句子生成助手。
 請根據輸入的中文單字，生成一句生活化、適合國小生的中文句子。
 要求：
 1. 只輸出一個中文句子，不要任何英文或客語。
 2. 長度約 10 到 20 個中文字。
 3. 內容要自然、生活化、容易理解。
-4. 不要輸入任何額外說明文字。"""
-        user_prompt = f"""範例：
+4. 不要輸出任何額外說明文字，只輸出句子本身。
+
+範例：
 輸入：椅子
 這張椅子坐起來很舒服。
 
@@ -212,14 +159,18 @@ async def generate_hakka_sentence(request: WordRequest):
 
 輸入：{word}"""
         try:
-            parsed = _ask_llm_json(system_prompt, user_prompt, max_tokens=120, temperature=0.2)
-            if isinstance(parsed, dict):
-                return _coerce_sentence_result(parsed, word)
-            return _coerce_sentence_result({}, word)
-        except json.JSONDecodeError:
-            raise HTTPException(status_code=500, detail="模型未輸出正確的 JSON 格式")
+            result = await _ask_gemini(prompt, max_tokens=100)
+            if result:
+                # Gemini 直接回傳句子，不是 JSON
+                sentence = result.strip().split("\n")[0].strip()
+                return {
+                    "word": word,
+                    "sentence_zh": sentence,
+                    "sentence": sentence,
+                    "chinese_translation": sentence,
+                }
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"推論錯誤: {e}")
+            print(f"[LLM] Gemini 造句失敗：{e}")
 
     # fallback
     fallback_sentence = f"這是一個關於{word}的生活句子。"
@@ -240,37 +191,32 @@ async def generate_hakka_story(request: WordsRequest):
 
     words_str = "、".join(words)
 
-    if llm:
-        system_prompt = """你是一個專業的中文句子生成助手。請根據我提供的 1 到 5 個中文單字，為每個單字各造一個中文生活句子。
+    if _GEMINI_API_KEY:
+        prompt = f"""你是一個專業的中文句子生成助手。請根據我提供的中文單字，為每個單字各造一個中文生活句子。
 要求：
 1. 每個句子都要是中文，長度約 10 到 20 個中文字。
 2. 內容要自然、生活化、適合國小生。
-3. 只輸出合法的 JSON 陣列，陣列中每一項只包含兩個鍵：\"word\" 與 \"sentence_zh\"。
-4. 不要輸入任何額外說明文字。"""
-        user_prompt = f"""範例：
-輸入單字：蘋果、公園、下雨
+3. 只輸出合法的 JSON 陣列，不要有任何額外說明。
+4. 格式如下：
 [
   {{"word": "蘋果", "sentence_zh": "這顆蘋果看起來又紅又香。"}},
-  {{"word": "公園", "sentence_zh": "我們在公園裡一起散步。"}},
-  {{"word": "下雨", "sentence_zh": "突然下雨了，大家趕快回家。"}}
+  {{"word": "公園", "sentence_zh": "我們在公園裡一起散步。"}}
 ]
 
 輸入單字：{words_str}"""
         try:
-            parsed = _ask_llm_json(system_prompt, user_prompt, max_tokens=400, temperature=0.2)
-            if not isinstance(parsed, list):
-                return [
-                    _coerce_sentence_result({}, w) for w in words
-                ]
-            results = []
-            for idx, word in enumerate(words):
-                item = parsed[idx] if idx < len(parsed) and isinstance(parsed[idx], dict) else {}
-                results.append(_coerce_sentence_result(item, word))
-            return results
-        except json.JSONDecodeError:
-            raise HTTPException(status_code=500, detail="模型未輸出正確的 JSON 格式")
+            result = await _ask_gemini(prompt, max_tokens=400)
+            if result:
+                cleaned = _clean_json_text(result)
+                parsed = json.loads(cleaned)
+                if isinstance(parsed, list):
+                    results = []
+                    for idx, word in enumerate(words):
+                        item = parsed[idx] if idx < len(parsed) and isinstance(parsed[idx], dict) else {}
+                        results.append(_coerce_sentence_result(item, word))
+                    return results
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"推論錯誤: {e}")
+            print(f"[LLM] Gemini 批次造句失敗：{e}")
 
     # fallback
     return [
