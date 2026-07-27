@@ -68,6 +68,7 @@
     }
     .achieve-item:last-child { border-bottom: none; padding-bottom: 16px; }
   </style>
+  <link rel="stylesheet" href="/static/theme.css" />
 </head>
 <body>
 
@@ -143,6 +144,7 @@
     <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
   </nav>
 
+  <script src="/static/ui.js"></script>
   <script src="/static/auth.js"></script>
   <script src="/static/notif.js"></script>
   <script>
@@ -184,7 +186,7 @@
                   </div>
                   <div class="activity-score">${a.score > 0 ? a.score + '分' : ''}</div>
                 </div>`).join('')
-            : '<div style="padding:16px;color:#888;text-align:center;">尚無活動紀錄</div>';
+            : '<div class="empty-state">還沒有學習紀錄，拍下第一個物品開始學客語吧！<br><a class="btn btn-primary" href="/recognition" style="display:inline-flex;margin-top:16px;text-decoration:none;">📷 開始拍照</a></div>';
 
           // ── 詞彙來源分佈（動態）──────────────────────────────
           const words = await fetch(`/api/saved_words?user_id=${USER_ID}`).then(r => r.json());
@@ -194,7 +196,7 @@
 
           if (total === 0) {
             document.getElementById('categoryList').innerHTML =
-              '<div style="padding:16px;color:#888;text-align:center;">尚未儲存任何單字</div>';
+              '<div class="empty-state">完成幾次學習後，這裡會整理需要加強的內容。</div>';
           } else {
             const cats = [
               { name: '📷 拍照學習（YOLO）', count: yoloCount,  pct: Math.round(yoloCount/total*100) },
@@ -241,6 +243,8 @@
 
         } catch(e) {
           console.error("載入紀錄失敗", e);
+          document.getElementById('activityList').innerHTML = '<div class="empty-state">目前暫時無法載入學習紀錄，請稍後再試。</div>';
+          document.getElementById('categoryList').innerHTML = '<div class="empty-state">加強建議稍後就會回來。</div>';
         }
       }
 

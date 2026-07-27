@@ -178,6 +178,7 @@
     .btn-close-modal    { background: #f0f0f0; color: #555; }
     .btn-delete-modal   { background: #FFEBEE; color: #D32F2F; }
   </style>
+  <link rel="stylesheet" href="/static/theme.css" />
 </head>
 <body>
 
@@ -233,6 +234,7 @@
     <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
   </nav>
 
+  <script src="/static/ui.js"></script>
   <script src="/static/auth.js"></script>
   <script src="/static/notif.js"></script>
   <script>
@@ -256,8 +258,8 @@
           container.innerHTML = `
             <div class="empty-state">
               <div class="icon">📷</div>
-              <p>還沒有儲存任何單字<br>去拍照學習頁面拍張照片吧！</p>
-              <a href="/recognition" class="btn btn-primary" style="display:inline-block;margin-top:16px;padding:10px 24px;border-radius:12px;text-decoration:none;">前往拍照學習</a>
+              <p>還沒有收藏的詞彙，看到喜歡的詞就把它留下來吧！</p>
+              <a href="/recognition" class="btn btn-primary" style="display:inline-flex;margin-top:16px;text-decoration:none;">📷 開始拍照</a>
             </div>
           `;
           return;
@@ -303,7 +305,7 @@
         document.getElementById('wordContainer').innerHTML = `
           <div class="empty-state">
             <div class="icon">⚠️</div>
-            <p>載入失敗，請確認伺服器是否正常運作</p>
+            <p>目前暫時無法載入收藏，請稍後再試。</p>
           </div>
         `;
       }

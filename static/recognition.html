@@ -248,6 +248,7 @@
     }
     .kw-save-bar:active { opacity: 0.8; }
   </style>
+  <link rel="stylesheet" href="/static/theme.css" />
 </head>
 <body>
 
@@ -264,15 +265,16 @@
   </div>
 
   <div id="cameraMode">
+    <div class="camera-instruction">請將物品放在框框內，保持畫面清楚</div>
     <div class="camera-wrap" id="cameraWrap">
       <video id="video" autoplay playsinline></video>
       <canvas id="canvas"></canvas>
       <img id="capturedImg" alt="拍攝結果" />
     </div>
     <div class="camera-controls" id="cameraControls">
-      <button class="cam-action-btn" onclick="switchCamera()">🔄</button>
-      <div class="shutter-btn" onclick="capture()"><div class="shutter-inner"></div></div>
-      <button class="cam-action-btn hidden" id="retakeBtn" onclick="retake()">↩️</button>
+      <button class="control-wrap" onclick="switchCamera()" aria-label="切換鏡頭"><span class="cam-action-btn">🔄</span><span class="control-label">切換鏡頭</span></button>
+      <button class="control-wrap" onclick="capture()" aria-label="拍照辨識"><span class="shutter-btn"><span class="shutter-inner"></span></span><span class="control-label">拍照辨識</span></button>
+      <button class="control-wrap hidden" id="retakeBtn" onclick="retake()" aria-label="重新拍攝"><span class="cam-action-btn">↩️</span><span class="control-label">重新拍攝</span></button>
     </div>
   </div>
 
@@ -326,6 +328,7 @@
     <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
   </nav>
 
+  <script src="/static/ui.js"></script>
   <script src="/static/auth.js"></script>
   <script src="/static/notif.js"></script>
   <script>
@@ -408,8 +411,8 @@
       
       // 修改載入提示，對應現有流程
       document.getElementById('resultItemsContainer').innerHTML = `
-        <div class="result-word">物件辨識中...</div>
-        <div class="result-example">正在連線語音資料庫並呼叫 LLM 進行華語造句，請稍候...</div>
+        <div class="result-word">正在看看這是什麼……</div>
+        <div class="result-example">正在準備客語學習內容，請稍候一下。</div>
       `;
       document.getElementById('resultCard').style.display  = 'block';
       showResult();
@@ -432,8 +435,8 @@
         document.getElementById('uploadZone').style.display = 'none';
         
         document.getElementById('resultItemsContainer').innerHTML = `
-          <div class="result-word">圖片分析中...</div>
-          <div class="result-example">正在擷取多個物件並同步翻譯客語，請稍候...</div>
+          <div class="result-word">正在看看這是什麼……</div>
+          <div class="result-example">正在準備客語學習內容，請稍候一下。</div>
         `;
         document.getElementById('resultCard').style.display = 'block';
         showResult();
@@ -667,15 +670,15 @@
               saveBtn.disabled = false;
               saveBtn.textContent = `💾 點選單字後儲存（共 ${items.length} 個）`;
             } else {
-              document.getElementById('resultItemsContainer').innerHTML = '<div class="result-example">未偵測到任何物品</div>';
+              document.getElementById('resultItemsContainer').innerHTML = '<div class="result-example">這張照片有一點看不清楚，再拍一次試試看！</div>';
             }
           } else {
             const err = await res.json();
-            document.getElementById('resultItemsContainer').innerHTML = `<div class="result-example">${err.detail || '辨識失敗，請重新操作'}</div>`;
+            document.getElementById('resultItemsContainer').innerHTML = '<div class="result-example">這張照片有一點看不清楚，再拍一次試試看！</div>';
           }
         } catch (e) {
           console.error(e);
-          document.getElementById('resultItemsContainer').innerHTML = '<div class="result-example">伺服器連線異常，請確認 FastAPI 是否正常啟動</div>';
+          document.getElementById('resultItemsContainer').innerHTML = '<div class="result-example">目前暫時無法辨識，請稍後再試或從相簿選擇另一張照片。</div>';
         }
         document.getElementById('resultCard').style.display = 'block';
       }, 300);
@@ -1155,8 +1158,12 @@
       }
     }
 
-    // 預設啟動相機
-    startCamera();
+    // 支援首頁「從相簿選擇」捷徑，其餘情況預設啟動相機
+    if (new URLSearchParams(window.location.search).get('mode') === 'upload') {
+      switchMode('upload');
+    } else {
+      startCamera();
+    }
   </script>
 </body>
 </html>

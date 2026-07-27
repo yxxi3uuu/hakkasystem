@@ -187,6 +187,7 @@
     .nav-icon { font-size: 22px; }
     .nav-label { font-size: 10px; }
   </style>
+  <link rel="stylesheet" href="/static/theme.css" />
 </head>
 <body>
 
@@ -275,6 +276,7 @@
     <a class="nav-item active" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
   </nav>
 
+  <script src="/static/ui.js"></script>
   <script src="/static/auth.js"></script>
   <script src="/static/notif.js"></script>
   <script>
@@ -356,8 +358,9 @@
     .setting-row label{font-size:13px;color:#555;font-weight:600}
     .setting-row input{padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;outline:none}
     .setting-row input:focus{border-color:#4CAF50}
-    .setting-btn{width:100%;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#4CAF50,#2E7D32);color:white;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px}
-    .setting-btn:hover{opacity:.9}
+    .setting-btn{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:52px;padding:13px 20px;border:none;border-radius:15px;background:#24465D;color:white;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;box-shadow:0 6px 15px rgba(36,70,93,.18);transition:transform 180ms ease,box-shadow 180ms ease,background 180ms ease}
+    .setting-btn:hover{background:#315B78}
+    .setting-btn:active{transform:scale(.98)}
     .info-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f5f5f5;font-size:13px}
     .info-row:last-child{border-bottom:none}
     .info-label{color:#888}

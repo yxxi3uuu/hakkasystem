@@ -6,99 +6,60 @@
   <title>首頁 - 客語隨拍隨學</title>
   <link rel="stylesheet" href="/static/style.css" />
   <style>
-    .hero {
-      background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
-      color: white;
-      padding: 40px 20px 50px;
-      text-align: center;
-    }
-    .hero-emoji { font-size: 56px; margin-bottom: 12px; }
-    .hero h1 { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
-    .hero p  { font-size: 14px; opacity: 0.85; line-height: 1.6; }
+    .home-head { padding: 28px 20px 18px; position: relative; overflow: hidden; }
+    .home-head::after { content:""; position:absolute; right:-38px; top:-45px; width:120px; height:120px; border:16px double rgba(49,91,120,.07); border-radius:32px; transform:rotate(30deg); }
+    .eyebrow { color:#E88A4D; font-size:14px; font-weight:700; margin-bottom:4px; }
+    .home-head h1 { color:#29343A; font-size:26px; line-height:1.3; margin-bottom:7px; }
+    .home-head p { color:#6F7A80; font-size:14px; }
+    .streak-pill { display:inline-flex; align-items:center; gap:6px; margin-top:14px; padding:7px 11px; border-radius:999px; background:#FFF0E3; color:#9B562A; font-size:13px; font-weight:700; }
 
-    .feature-cards {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin: -24px 16px 0;
-    }
-    .feature-card {
-      background: white;
-      border-radius: 16px;
-      padding: 18px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-      text-decoration: none;
-      color: inherit;
-      transition: transform 0.15s, box-shadow 0.15s;
-    }
-    .feature-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
-    .feature-icon {
-      width: 52px; height: 52px;
-      border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 26px; flex-shrink: 0;
-    }
-    .feature-icon.green  { background: #E8F5E9; }
-    .feature-icon.blue   { background: #E3F2FD; }
-    .feature-icon.purple { background: #F3E5F5; }
-    .feature-card h3 { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 3px; }
-    .feature-card p  { font-size: 12px; color: #888; }
-    .feature-arrow   { margin-left: auto; color: #ccc; font-size: 20px; }
+    .camera-hero { margin:0 18px; padding:24px; color:white; border-radius:24px; background:#315B78; box-shadow:0 12px 28px rgba(36,70,93,.18); text-decoration:none; display:block; position:relative; overflow:hidden; }
+    .camera-hero::after { content:""; position:absolute; width:130px; height:130px; right:-42px; bottom:-66px; border:22px double rgba(255,255,255,.08); border-radius:50%; }
+    .camera-icon { width:62px; height:62px; display:grid; place-items:center; border-radius:18px; background:#E88A4D; font-size:29px; margin-bottom:18px; }
+    .camera-hero h2 { font-size:24px; margin-bottom:8px; }
+    .camera-hero p { max-width:310px; font-size:14px; opacity:.86; line-height:1.65; margin-bottom:20px; }
+    .camera-cta { display:inline-flex; min-height:52px; padding:0 22px; align-items:center; gap:9px; border-radius:15px; background:white; color:#24465D; font-size:16px; font-weight:800; }
 
-    .tip-box {
-      background: #FFF8E1;
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin: 16px;
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      font-size: 13px;
-      color: #795548;
-      line-height: 1.5;
-    }
+    .home-section-title { margin:24px 20px 12px; font-size:19px; color:#29343A; }
+    .quick-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin:0 18px; }
+    .quick-card { min-height:110px; padding:16px; border:1px solid #E5E0D8; border-radius:20px; background:white; box-shadow:0 3px 14px rgba(36,70,93,.07); color:#29343A; text-decoration:none; }
+    .quick-card:nth-child(2) { background:#FFF0E3; }
+    .quick-card:nth-child(3) { background:#E8F2F7; }
+    .quick-card:nth-child(4) { background:#F2F7ED; }
+    .quick-icon { font-size:25px; margin-bottom:10px; }
+    .quick-card strong { display:block; font-size:16px; }
+    .quick-card span { display:block; color:#6F7A80; font-size:12px; margin-top:3px; }
+    .tip-box { background:#FFF5CF; border-radius:16px; padding:14px 16px; margin:16px 18px; font-size:13px; color:#6B5823; line-height:1.6; }
+    @media(max-width:350px){ .quick-grid{grid-template-columns:1fr;} }
   </style>
+  <link rel="stylesheet" href="/static/theme.css" />
 </head>
 <body>
 
-  <div class="hero">
-    <div class="hero-emoji">🎓</div>
-    <h1>客語隨拍隨學</h1>
-    <p>透過拍照、語音、遊戲三種有趣的方式<br>輕鬆學習客家話！</p>
-  </div>
+  <header class="home-head">
+    <div class="eyebrow">AI 客語隨身教</div>
+    <h1 id="homeGreeting">你好，今天想學什麼？</h1>
+    <p>從生活裡找一個物品，拍下來就能開始學客語。</p>
+    <div class="streak-pill">🔥 已連續學習 <span id="streakDays">--</span> 天</div>
+  </header>
 
-  <div class="feature-cards">
-    <a class="feature-card" href="/recognition">
-      <div class="feature-icon green">📷</div>
-      <div>
-        <h3>拍照學習</h3>
-        <p>拍下物品，立即學習客語發音</p>
-      </div>
-      <span class="feature-arrow">›</span>
-    </a>
-    <a class="feature-card" href="/practice">
-      <div class="feature-icon blue">🎤</div>
-      <div>
-        <h3>語音練習</h3>
-        <p>跟讀練習，提升客語口說能力</p>
-      </div>
-      <span class="feature-arrow">›</span>
-    </a>
-    <a class="feature-card" href="/game">
-      <div class="feature-icon purple">🎮</div>
-      <div>
-        <h3>配對遊戲</h3>
-        <p>趣味遊戲，加深學習印象</p>
-      </div>
-      <span class="feature-arrow">›</span>
-    </a>
+  <a class="camera-hero" href="/recognition">
+    <div class="camera-icon">📷</div>
+    <h2>拍照學客語</h2>
+    <p>拍下生活中的物品，立即學習它的客語說法、拼音與發音。</p>
+    <span class="camera-cta">📸 開始拍照</span>
+  </a>
+
+  <h2 class="home-section-title">快速開始</h2>
+  <div class="quick-grid">
+    <a class="quick-card" href="/recognition?mode=upload"><div class="quick-icon">🖼️</div><strong>從相簿選擇</strong><span>挑選現有照片辨識</span></a>
+    <a class="quick-card" href="/game"><div class="quick-icon">🧩</div><strong>今日練習</strong><span>用小遊戲複習詞彙</span></a>
+    <a class="quick-card" href="/practice"><div class="quick-icon">🎙️</div><strong>語音跟讀</strong><span>聽發音並錄音練習</span></a>
+    <a class="quick-card" href="/record"><div class="quick-icon">📊</div><strong>學習紀錄</strong><span>看看進度與加強方向</span></a>
   </div>
 
   <div class="section" style="margin-top:24px;">
-    <div class="section-title">📊 今日學習進度</div>
+    <div class="section-title">今日學習進度</div>
     <div class="stats-row" style="margin:0;border-radius:0;box-shadow:none;">
       <div class="stat-item">
         <div class="stat-value" id="todayVocab">--</div>
@@ -106,17 +67,17 @@
       </div>
       <div class="stat-item">
         <div class="stat-value" id="todayPractice">--</div>
-        <div class="stat-label">語音練習</div>
+        <div class="stat-label">學習天數</div>
       </div>
       <div class="stat-item">
         <div class="stat-value" id="todayGame">--</div>
-        <div class="stat-label">完成遊戲</div>
+        <div class="stat-label">今日目標</div>
       </div>
     </div>
   </div>
 
   <div class="tip-box">
-    💡 每天練習10分鐘，客語能力進步看得見！
+    💡 今日小提示：先聽一次標準發音，再慢慢跟讀，聲調會記得更牢。
   </div>
 
   <nav class="bottom-nav">
@@ -128,6 +89,7 @@
     <a class="nav-item" href="/profile"><div class="nav-icon">👤</div><div class="nav-label">個人中心</div></a>
   </nav>
 
+  <script src="/static/ui.js"></script>
   <script src="/static/auth.js"></script>
   <script src="/static/notif.js"></script>
   <script>
@@ -135,12 +97,14 @@
     initNotif();
     if (user) {
       const USER_ID = user.id;
+      document.getElementById('homeGreeting').textContent = `${user.name || '你好'}，今天想學什麼？`;
     fetch(`/api/profile/${USER_ID}`)
       .then(r => r.json())
       .then(d => {
         document.getElementById('todayVocab').textContent    = d.vocab_learned ?? '--';
         document.getElementById('todayPractice').textContent = d.study_days    ?? '--';
-        document.getElementById('todayGame').textContent     = 3;
+        document.getElementById('streakDays').textContent    = d.study_days    ?? '--';
+        document.getElementById('todayGame').textContent     = '10 分鐘';
       })
       .catch(() => {});
     }
