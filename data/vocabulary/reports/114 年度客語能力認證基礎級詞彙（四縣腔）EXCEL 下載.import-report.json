@@ -1,0 +1,244 @@
+{
+  "original_filename": "114 年度客語能力認證基礎級詞彙（四縣腔）EXCEL 下載.ods",
+  "checksum": "aabdecfa5995d3b23b129f967679bb3a035b7c007703a9869e11a9d27cfe319c",
+  "sheet_name": "基礎級-四縣",
+  "source_version": "114-基礎級-四縣腔",
+  "dialect": "四縣腔",
+  "certification_level": "基礎級",
+  "raw_row_count": 489,
+  "importable_count": 483,
+  "flagged_count": 6,
+  "duplicate_word_count": 8,
+  "duplicate_words": [
+    "下",
+    "冰",
+    "到",
+    "好",
+    "會",
+    "無",
+    "著",
+    "行"
+  ],
+  "conflict_count": 8,
+  "conflicts": [
+    {
+      "hakka_word": "好",
+      "source_word_codes": [
+        "2-9",
+        "5-27"
+      ],
+      "meanings": [
+        "喜好、喜歡",
+        "良好"
+      ]
+    },
+    {
+      "hakka_word": "行",
+      "source_word_codes": [
+        "3-19",
+        "16-14"
+      ],
+      "meanings": [
+        "行走",
+        "行（量詞）"
+      ]
+    },
+    {
+      "hakka_word": "著",
+      "source_word_codes": [
+        "3-52",
+        "5-6"
+      ],
+      "meanings": [
+        "正確、對的，「毋著」即為不正確、不對之意",
+        "穿"
+      ]
+    },
+    {
+      "hakka_word": "會",
+      "source_word_codes": [
+        "4-7",
+        "17-18"
+      ],
+      "meanings": [
+        "將要",
+        "會、曉得"
+      ]
+    },
+    {
+      "hakka_word": "冰",
+      "source_word_codes": [
+        "5-2",
+        "7-2"
+      ],
+      "meanings": [
+        "冰冷",
+        "冰（食品）"
+      ]
+    },
+    {
+      "hakka_word": "到",
+      "source_word_codes": [
+        "16-6",
+        "17-2",
+        "17-3"
+      ],
+      "meanings": [
+        "…得",
+        "到達",
+        "次（量詞）"
+      ]
+    },
+    {
+      "hakka_word": "下",
+      "source_word_codes": [
+        "16-10",
+        "18-19"
+      ],
+      "meanings": [
+        "下方",
+        "次；下"
+      ]
+    },
+    {
+      "hakka_word": "無",
+      "source_word_codes": [
+        "17-14",
+        "18-34"
+      ],
+      "meanings": [
+        "…嗎？",
+        "沒有"
+      ]
+    }
+  ],
+  "missing_optional_fields": {
+    "audio_url": 483,
+    "example_sentence": 44,
+    "example_translation": 44,
+    "visualizable_type": 483
+  },
+  "flagged_rows": [
+    {
+      "row_number": 103,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編號": "3-57",
+        "四縣客家語": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣華語詞義": "",
+        "四縣例句": "",
+        "四縣翻譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 104,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編號": "3-58",
+        "四縣客家語": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣華語詞義": "",
+        "四縣例句": "",
+        "四縣翻譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 315,
+      "reason": "missing_required_fields",
+      "missing_required_fields": [
+        "hakka_word",
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編號": "此級無此單元",
+        "四縣客家語": "",
+        "四縣客語標音": "",
+        "四縣華語詞義": "",
+        "四縣例句": "",
+        "四縣翻譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": "10法律、政治與軍事"
+      }
+    },
+    {
+      "row_number": 436,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編號": "17-21",
+        "四縣客家語": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣華語詞義": "",
+        "四縣例句": "",
+        "四縣翻譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 437,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編號": "17-22",
+        "四縣客家語": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣華語詞義": "",
+        "四縣例句": "",
+        "四縣翻譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 438,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編號": "17-23",
+        "四縣客家語": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣華語詞義": "",
+        "四縣例句": "",
+        "四縣翻譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    }
+  ]
+}

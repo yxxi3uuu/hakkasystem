@@ -12,6 +12,23 @@
       gap: 12px;
       padding: 0 16px 16px;
     }
+    .word-date-group { margin-bottom: 8px; }
+    .word-date-heading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 18px 18px 10px;
+      color: #24465D;
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .word-date-heading::after {
+      content: "";
+      height: 1px;
+      flex: 1;
+      background: #E5E0D8;
+    }
+    .word-date-heading.today { color: #E88A4D; }
     .word-card {
       background: white;
       border-radius: 14px;
@@ -54,6 +71,97 @@
       text-align: center;
     }
     .practice-btn:hover { background: #CFE1EA; }
+    .photo-history-btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 7px 8px;
+      border: 1px solid #CFE1EA;
+      border-radius: 8px;
+      background: white;
+      color: #315B78;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .photo-history-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 600;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      background: rgba(20, 35, 43, 0.72);
+    }
+    .photo-history-sheet {
+      width: 100%;
+      max-width: 520px;
+      max-height: 92vh;
+      overflow-y: auto;
+      padding: 18px 16px max(28px, env(safe-area-inset-bottom));
+      border-radius: 22px 22px 0 0;
+      background: #F7F4EE;
+      box-sizing: border-box;
+    }
+    .photo-history-header {
+      position: sticky;
+      top: -18px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: -18px -16px 14px;
+      padding: 16px;
+      background: #F7F4EE;
+      border-bottom: 1px solid #E5E0D8;
+    }
+    .photo-history-title {
+      color: #24465D;
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .photo-history-close {
+      width: 38px;
+      height: 38px;
+      border: none;
+      border-radius: 50%;
+      background: #E8F2F7;
+      color: #24465D;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .photo-history-list {
+      display: grid;
+      gap: 16px;
+    }
+    .photo-history-item {
+      min-width: 0;
+      overflow: hidden;
+      border-radius: 16px;
+      background: white;
+      border: 1px solid #E5E0D8;
+      box-shadow: 0 5px 18px rgba(36, 70, 93, 0.1);
+    }
+    .photo-history-item img {
+      width: 100%;
+      height: auto;
+      max-height: 65vh;
+      object-fit: contain;
+      background: #17242B;
+    }
+    .photo-history-date {
+      padding: 9px 10px;
+      color: #6F7A80;
+      font-size: 12px;
+      line-height: 1.3;
+      text-align: center;
+    }
+    .word-saved-time {
+      margin-top: 5px;
+      color: #7B858A;
+      font-size: 11px;
+      line-height: 1.3;
+    }
 
     /* 刪除按鈕（卡片右上角） */
     .word-card { position: relative; }
@@ -265,10 +373,42 @@
           return;
         }
 
-        const grid = document.createElement('div');
-        grid.className = 'word-grid';
+        const localDateKey = value => {
+          if (!value) return '';
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return '';
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
+        const todayKey = localDateKey(new Date().toISOString());
+        const savedAtLabel = value => {
+          const key = localDateKey(value);
+          if (!key) return '較早儲存';
+          const date = new Date(value);
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          const time = `${hours}:${minutes}`;
+          if (key === todayKey) return `今天 ${time}`;
+          const [year, month, day] = key.split('-').map(Number);
+          return `${year}/${month}/${day} ${time}`;
+        };
+        const groups = new Map();
+        unique
+          .sort((a, b) => {
+            if (!a.created_at && !b.created_at) return b.id - a.id;
+            if (!a.created_at) return 1;
+            if (!b.created_at) return -1;
+            return new Date(b.created_at) - new Date(a.created_at);
+          })
+          .forEach(word => {
+            const key = localDateKey(word.created_at);
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(word);
+          });
 
-        unique.forEach(w => {
+        const createWordCard = w => {
           const card = document.createElement('div');
           card.className = 'word-card';
           const countBadge = (w.count && w.count > 1)
@@ -276,6 +416,12 @@
             : '';
           const sourceBadge = (w.source === 'ocr')
             ? `<div style="position:absolute;top:6px;left:6px;background:rgba(106,27,154,0.85);color:white;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;z-index:10;">🔤 OCR</div>`
+            : '';
+          const occurrences = Array.isArray(w.occurrences) && w.occurrences.length
+            ? w.occurrences
+            : [{ id: w.id, image_path: w.image_path, created_at: w.created_at }];
+          const historyButtonHtml = occurrences.length > 1
+            ? `<button type="button" class="photo-history-btn">展開全部 ${occurrences.length} 張照片</button>`
             : '';
           card.innerHTML = `
             ${w.source === 'ocr' ? sourceBadge : countBadge}
@@ -285,8 +431,10 @@
               <div class="word-card-hakka">${w.label_hakka}</div>
               ${w.label_pinyin ? `<div class="word-card-pinyin" style="font-size:11px;margin:1px 0 3px;">${w.label_pinyin}</div>` : ''}
               <div class="word-card-zh" style="font-size:12px;font-weight:600;color:#888;">${w.label_zh}</div>
+              <div class="word-saved-time">儲存於 ${savedAtLabel(w.created_at)}</div>
               ${w.sentence_zh ? `<div class="word-card-sentence">${w.sentence_zh}</div>` : ''}
               <button class="practice-btn">🎤 練習發音</button>
+              ${historyButtonHtml}
             </div>
           `;
           // 刪除按鈕：阻止事件冒泡，避免觸發 openModal
@@ -294,12 +442,64 @@
             e.stopPropagation();
             confirmDeleteCard(w);
           });
+          const historyButton = card.querySelector('.photo-history-btn');
+          if (historyButton) {
+            historyButton.addEventListener('click', (event) => {
+              event.stopPropagation();
+              const overlay = document.createElement('div');
+              overlay.className = 'photo-history-overlay';
+              overlay.innerHTML = `
+                <div class="photo-history-sheet" role="dialog" aria-modal="true" aria-label="${w.label_zh}的全部照片">
+                  <div class="photo-history-header">
+                    <div class="photo-history-title">${w.label_hakka}・全部 ${occurrences.length} 張</div>
+                    <button type="button" class="photo-history-close" aria-label="關閉">✕</button>
+                  </div>
+                  <div class="photo-history-list">
+                    ${occurrences.map(photo => `
+                      <div class="photo-history-item">
+                        <img src="${photo.image_path}" alt="${w.label_zh}的拍攝紀錄" loading="lazy" />
+                        <div class="photo-history-date">儲存於 ${savedAtLabel(photo.created_at)}</div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
+              const close = () => {
+                overlay.remove();
+                document.body.style.overflow = '';
+              };
+              overlay.querySelector('.photo-history-close').addEventListener('click', close);
+              overlay.addEventListener('click', event => {
+                if (event.target === overlay) close();
+              });
+              document.body.appendChild(overlay);
+              document.body.style.overflow = 'hidden';
+            });
+          }
           card.addEventListener('click', () => openModal(w));
-          grid.appendChild(card);
-        });
+          return card;
+        };
 
         container.innerHTML = '';
-        container.appendChild(grid);
+        groups.forEach((words, dateKey) => {
+          const section = document.createElement('section');
+          section.className = 'word-date-group';
+          const heading = document.createElement('h2');
+          heading.className = `word-date-heading${dateKey === todayKey ? ' today' : ''}`;
+          if (!dateKey) {
+            heading.textContent = '較早儲存';
+          } else if (dateKey === todayKey) {
+            heading.textContent = `今天拍攝儲存・${words.length} 個`;
+          } else {
+            const [year, month, day] = dateKey.split('-').map(Number);
+            heading.textContent = `${year} 年 ${month} 月 ${day} 日・${words.length} 個`;
+          }
+          const grid = document.createElement('div');
+          grid.className = 'word-grid';
+          words.forEach(word => grid.appendChild(createWordCard(word)));
+          section.append(heading, grid);
+          container.appendChild(section);
+        });
 
       } catch (e) {
         document.getElementById('wordContainer').innerHTML = `

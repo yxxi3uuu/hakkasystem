@@ -1,0 +1,207 @@
+{
+  "original_filename": "115 年度客語能力認證中級詞彙（四縣腔）EXCEL 下載.ods",
+  "checksum": "ce54bd70136a37db35bdf2e4fb7facec8a3149f13181644c825eec7fc90e1288",
+  "sheet_name": "中級-四縣",
+  "source_version": "115-中級-四縣腔",
+  "dialect": "四縣腔",
+  "certification_level": "中級",
+  "raw_row_count": 1706,
+  "importable_count": 1701,
+  "flagged_count": 5,
+  "duplicate_word_count": 7,
+  "duplicate_words": [
+    "拔",
+    "撩",
+    "歇",
+    "毒",
+    "煞",
+    "熟",
+    "賤"
+  ],
+  "conflict_count": 7,
+  "conflicts": [
+    {
+      "hakka_word": "毒",
+      "source_word_codes": [
+        "1-73",
+        "4-140"
+      ],
+      "meanings": [
+        "以毒藥毒殺人或動物",
+        "有害生命或健康的物質；具毒性的"
+      ]
+    },
+    {
+      "hakka_word": "拔",
+      "source_word_codes": [
+        "4-3",
+        "4-124"
+      ],
+      "meanings": [
+        "披掛",
+        "輕輕拍打"
+      ]
+    },
+    {
+      "hakka_word": "撩",
+      "source_word_codes": [
+        "4-97",
+        "11-87"
+      ],
+      "meanings": [
+        "招惹、捉弄",
+        "炒、翻；鏟起"
+      ]
+    },
+    {
+      "hakka_word": "熟",
+      "source_word_codes": [
+        "6-40",
+        "8-78"
+      ],
+      "meanings": [
+        "指蔬果熟成",
+        "熟（烹煮至可食的程度）"
+      ]
+    },
+    {
+      "hakka_word": "煞",
+      "source_word_codes": [
+        "7-35",
+        "9-176"
+      ],
+      "meanings": [
+        "完畢、結束",
+        "果決"
+      ]
+    },
+    {
+      "hakka_word": "歇",
+      "source_word_codes": [
+        "8-39",
+        "8-40"
+      ],
+      "meanings": [
+        "短住、住宿",
+        "長住、居住"
+      ]
+    },
+    {
+      "hakka_word": "賤",
+      "source_word_codes": [
+        "9-167",
+        "9-168"
+      ],
+      "meanings": [
+        "低賤、不值錢",
+        "頑皮、好動"
+      ]
+    }
+  ],
+  "missing_optional_fields": {
+    "audio_url": 1701,
+    "visualizable_type": 1701
+  },
+  "flagged_rows": [
+    {
+      "row_number": 343,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編號": "4-161",
+        "四縣客家語": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣華語詞義": "",
+        "四縣例句": "",
+        "四縣翻譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 589,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編號": "8-129",
+        "四縣客家語": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣華語詞義": "",
+        "四縣例句": "",
+        "四縣翻譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 590,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編號": "8-130",
+        "四縣客家語": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣華語詞義": "",
+        "四縣例句": "",
+        "四縣翻譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 836,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編號": "9-246",
+        "四縣客家語": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣華語詞義": "",
+        "四縣例句": "",
+        "四縣翻譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1224,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編號": "13-35",
+        "四縣客家語": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣華語詞義": "",
+        "四縣例句": "",
+        "四縣翻譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    }
+  ]
+}

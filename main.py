@@ -27,6 +27,7 @@ from routers.ocr import router as ocr_router
 from routers.dataset import router as dataset_router
 from routers.admin import router as admin_router
 from routers.notification import router as notification_router
+from routers.vocabulary import router as vocabulary_router
 
 # ── 預設帳號設定 ──────────────────────────────────────────────────────
 _SUPER_ADMIN   = {"name": "吳怡臻", "email": "s0903057896@gmail.com", "role": "admin"}
@@ -56,11 +57,17 @@ async def lifespan(app: FastAPI):
             migrations = [
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR DEFAULT 'student'",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_path VARCHAR DEFAULT ''",
                 "UPDATE users SET role='admin' WHERE is_admin=TRUE AND role='student'",
                 "ALTER TABLE saved_words ADD COLUMN IF NOT EXISTS source VARCHAR DEFAULT 'yolo'",
                 "ALTER TABLE saved_words ADD COLUMN IF NOT EXISTS label_pinyin VARCHAR DEFAULT ''",
                 "ALTER TABLE saved_words ADD COLUMN IF NOT EXISTS sentence_audio_path VARCHAR DEFAULT ''",
                 "ALTER TABLE saved_words ADD COLUMN IF NOT EXISTS labels_json VARCHAR DEFAULT ''",
+                "ALTER TABLE saved_words ADD COLUMN IF NOT EXISTS word_id INTEGER REFERENCES certification_words(word_id) ON DELETE SET NULL",
+                "ALTER TABLE saved_words ADD COLUMN IF NOT EXISTS recognition_id INTEGER REFERENCES recognitions(recognition_id) ON DELETE SET NULL",
+                "ALTER TABLE saved_words ADD COLUMN IF NOT EXISTS dialect VARCHAR DEFAULT ''",
+                "ALTER TABLE saved_words ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ",
+                "ALTER TABLE saved_words ALTER COLUMN created_at SET DEFAULT NOW()",
                 """CREATE TABLE IF NOT EXISTS classes (
                     id SERIAL PRIMARY KEY, name VARCHAR NOT NULL, description VARCHAR DEFAULT '')""",
                 """CREATE TABLE IF NOT EXISTS class_teachers (
@@ -121,13 +128,6 @@ async def lifespan(app: FastAPI):
         init_llm()
     except Exception as e:
         print(f"[LLM] 初始化失敗（不影響啟動）: {e}")
-
-    # 預設練習音檔：若不存在則自動用 TTS API 產生
-    try:
-        from routers.practice import ensure_preset_audios
-        await ensure_preset_audios()
-    except Exception as e:
-        print(f"[Practice] 預設音檔初始化失敗（不影響啟動）: {e}")
 
     # YOLO 模型背景預載：在伺服器啟動時就載入，避免第一次 request 卡住
     import asyncio as _asyncio
@@ -193,6 +193,7 @@ app.include_router(ocr_router)
 app.include_router(dataset_router)
 app.include_router(admin_router)
 app.include_router(notification_router)
+app.include_router(vocabulary_router)
 
 
 # Serve pages

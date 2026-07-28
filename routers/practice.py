@@ -29,66 +29,6 @@ else:
 
 router = APIRouter(prefix="/api/practice")
 
-# ── 內建預設詞彙 ──
-# audio_file 指向本地快取路徑；若不存在會在 lifespan 時自動用 TTS API 產生
-_VP_BASE = "voice_practice/data"
-PRESET_WORDS = [
-    {
-        "word": "蘋果",
-        "hakka": "蘋果",
-        "image_path": "/voice_practice/images/images.jpg",
-        "audio_file": os.path.join(_VP_BASE, "audios", "apple.wav"),
-        "audio_url":  "/voice_practice/audios/apple.wav",
-    },
-    {
-        "word": "椅子",
-        "hakka": "凳仔",
-        "image_path": "/voice_practice/images/800x.jpg",
-        "audio_file": os.path.join(_VP_BASE, "audios", "chair.wav"),
-        "audio_url":  "/voice_practice/audios/chair.wav",
-    },
-    {
-        "word": "電視",
-        "hakka": "電視",
-        "image_path": "/voice_practice/images/Samsung_LE26R41BD_and_Yamada_DVD_player_20030624.jpg",
-        "audio_file": os.path.join(_VP_BASE, "audios", "TV.wav"),
-        "audio_url":  "/voice_practice/audios/TV.wav",
-    },
-]
-PRESET_BY_WORD = {p["word"]: p for p in PRESET_WORDS}
-
-
-async def ensure_preset_audios():
-    """
-    啟動時檢查預設詞彙的音檔是否存在。
-    若不存在，呼叫客語 TTS API 產生並存到 voice_practice/data/audios/。
-    """
-    from routers.hakka_api import get_tts_token, generate_hakka_tts
-    import shutil
-
-    os.makedirs(os.path.join(_VP_BASE, "audios"), exist_ok=True)
-
-    for preset in PRESET_WORDS:
-        target = preset["audio_file"]
-        if os.path.exists(target) and os.path.getsize(target) > 1000:
-            print(f"[Practice] 預設音檔已存在：{target}")
-            continue
-
-        print(f"[Practice] 產生預設音檔：{preset['word']} ({preset['hakka']}) → {target}")
-        try:
-            # generate_hakka_tts 會存到 static/audios/words/ 並回傳路徑
-            # 我們把它複製到 voice_practice/data/audios/
-            tmp_path = await generate_hakka_tts(preset["hakka"], folder="words")
-            src = tmp_path.lstrip("/")   # 去掉開頭的 /
-            if os.path.exists(src):
-                shutil.copy2(src, target)
-                print(f"[Practice] ✅ 已產生：{target}")
-            else:
-                print(f"[Practice] ❌ TTS 回傳路徑不存在：{src}")
-        except Exception as e:
-            print(f"[Practice] ❌ 產生音檔失敗 ({preset['word']}): {e}")
-
-
 class Task(BaseModel):
     word: str
     hakka: str = ""
@@ -191,15 +131,6 @@ def dtw_score_ssl(y_user: np.ndarray, y_ref: np.ndarray, sr: int) -> tuple[int, 
     return int(np.clip(final_score, 0, 100)), diagnostic_report
 
 
-@router.get("/presets")
-async def get_preset_words():
-    """回傳內建預設詞彙列表"""
-    return [
-        {"word": p["word"], "hakka": p["hakka"], "audio_url": p["audio_url"], "image_path": p["image_path"]}
-        for p in PRESET_WORDS
-    ]
-
-
 @router.get("/task", response_model=Task)
 async def get_task(
     word: str | None = None,
@@ -225,18 +156,10 @@ async def get_task(
             audio_url=row.audio_path
         )
 
-    # 2. Fallback：使用內建預設詞彙
-    if word and word in PRESET_BY_WORD:
-        p = PRESET_BY_WORD[word]
-        return Task(word=p["word"], hakka=p["hakka"], image_path=p["image_path"], audio_url=p["audio_url"])
-
     if word:
-        # 指定了單字但找不到（既不在 saved_words 也不在預設）
         raise HTTPException(status_code=404, detail=f"找不到「{word}」的練習資料")
 
-    # 隨機從預設詞彙選一個
-    p = random.choice(PRESET_WORDS)
-    return Task(word=p["word"], hakka=p["hakka"], image_path=p["image_path"], audio_url=p["audio_url"])
+    raise HTTPException(status_code=404, detail="尚未儲存可練習的單字")
 
 class ScoreResult(BaseModel):
     score: int 
@@ -264,11 +187,7 @@ async def score_recording(
         if rows:
             ref_path = rows[0].audio_path.lstrip("/")
 
-    # 2. Fallback：用內建預設詞彙的音檔
-    if not ref_path and word and word in PRESET_BY_WORD:
-        ref_path = PRESET_BY_WORD[word]["audio_file"]
-
-    # 3. 還是找不到：從所有 saved_words 隨機選一個
+    # 找不到指定單字時，從使用者已儲存的單字中選擇可用標準音。
     if not ref_path:
         query = select(SavedWord).where(
             SavedWord.user_id == user_id,

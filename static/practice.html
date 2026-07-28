@@ -232,18 +232,18 @@
     </div>
   </div>
 
-  <!-- 詞彙列表 -->
-  <div class="section">
-    <div class="section-title">📝 練習詞彙列表</div>
-    <div id="vocabList"></div>
-    <div style="padding:12px 16px;">
-      <button class="btn btn-primary btn-block" onclick="loadTask()">🔄 隨機換一題</button>
-    </div>
-  </div>
-
   <!-- 我的單字 -->
   <div class="section">
-    <div class="section-title">⭐ 我的單字</div>
+    <div class="section-title">
+      <span class="inline-icon" aria-hidden="true">
+        <svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 5a3 3 0 0 1 3-2h5v17H6a3 3 0 0 0-3 2z"></path>
+          <path d="M21 5a3 3 0 0 0-3-2h-5v17h5a3 3 0 0 1 3 2z"></path>
+        </svg>
+      </span>
+      我的單字
+    </div>
     <div id="myWordsList">
       <div style="padding:16px;color:#aaa;font-size:13px;text-align:center;">載入中...</div>
     </div>
@@ -531,37 +531,6 @@
       }
     }
 
-    // ── 從 API 載入預設詞彙列表 ──
-    async function loadVocabList() {
-      try {
-        const res = await fetch('/api/practice/presets');
-        if (!res.ok) throw new Error();
-        const presets = await res.json();
-        document.getElementById('vocabList').innerHTML = presets.map(p => `
-          <div class="vocab-item" onclick="loadTask('${p.word.replace(/'/g, "\\'")}')">
-            <div style="flex:1;">
-              <div class="vocab-rom" style="font-size:16px;font-weight:700;color:#24465D;">${p.hakka}</div>
-              <div class="vocab-zh" style="font-size:12px;color:#888;margin-top:1px;">${p.word}</div>
-            </div>
-            <span class="vocab-diff"><span class="difficulty-badge easy">預設</span></span>
-          </div>
-        `).join('');
-      } catch {
-        // fallback 靜態清單
-        const words = [
-          { word: '蘋果', hakka: '頻果' },
-          { word: '椅子', hakka: '椅仔' },
-          { word: '電視', hakka: '電視' },
-        ];
-        document.getElementById('vocabList').innerHTML = words.map(p => `
-          <div class="vocab-item" onclick="loadTask('${p.word}')">
-            <span class="vocab-zh">${p.word}</span>
-            <span class="vocab-rom">${p.hakka}</span>
-          </div>
-        `).join('');
-      }
-    }
-
     // ── 載入我的單字（去重，點擊開 modal）──
     let _myWordsData = [];
 
@@ -692,7 +661,6 @@
     const urlParams = new URLSearchParams(window.location.search);
     const wordParam = urlParams.get('word');
     loadTask(wordParam || null);
-    loadVocabList();
     loadMyWords();
   </script>
 </body>

@@ -102,6 +102,75 @@
     .upload-icon { font-size: 48px; margin-bottom: 12px; }
     .upload-zone h3 { font-size: 16px; color: #24465D; margin-bottom: 6px; }
     .upload-zone p  { font-size: 13px; color: #888; }
+    .recognition-progress {
+      padding: 18px 16px;
+      border: 1px solid #CFE1EA;
+      border-radius: 16px;
+      background: #F2F7FA;
+    }
+    .recognition-progress-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: #24465D;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .recognition-progress-track {
+      height: 12px;
+      margin-top: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #DCE9EF;
+      box-shadow: inset 0 1px 3px rgba(36, 70, 93, 0.12);
+    }
+    .recognition-progress-bar {
+      position: relative;
+      width: 6%;
+      height: 100%;
+      overflow: hidden;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #315B78 0%, #4E7892 45%, #E88A4D 100%);
+      transition: width 500ms ease;
+    }
+    .recognition-progress-bar::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      width: 45%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.62),
+        transparent
+      );
+      transform: translateX(-130%);
+      animation: recognitionProgressShine 1.15s ease-in-out infinite;
+    }
+    .recognition-progress.is-complete .recognition-progress-bar::after,
+    .recognition-progress.is-failed .recognition-progress-bar::after {
+      animation: none;
+      display: none;
+    }
+    .recognition-progress.is-complete .recognition-progress-bar {
+      background: #3B8064;
+    }
+    .recognition-progress.is-failed .recognition-progress-bar {
+      background: #C75A52;
+    }
+    .recognition-progress-stage {
+      margin-top: 9px;
+      color: #6F7A80;
+      font-size: 12px;
+    }
+    @keyframes recognitionProgressShine {
+      from { transform: translateX(-130%); }
+      to { transform: translateX(300%); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .recognition-progress-bar::after { animation: none; }
+    }
 
     #uploadPreview { margin: 0 16px 16px; display: none; }
     #uploadPreview img { width: 100%; border-radius: 12px; }
@@ -355,6 +424,80 @@
 
     let currentLabelsJson = '';
     let currentRecognitionSource = 'yolo';
+    let recognitionProgressTimer = null;
+    let recognitionProgressStartedAt = 0;
+
+    function renderRecognitionProgress() {
+      clearInterval(recognitionProgressTimer);
+      recognitionProgressTimer = null;
+      document.getElementById('resultItemsContainer').innerHTML = `
+        <div class="recognition-progress" role="status" aria-live="polite">
+          <div class="recognition-progress-head">
+            <span>正在準備客語學習內容</span>
+            <span id="recognitionProgressPercent">6%</span>
+          </div>
+          <div class="recognition-progress-track"
+               role="progressbar"
+               aria-label="照片辨識進度"
+               aria-valuemin="0"
+               aria-valuemax="100"
+               aria-valuenow="6">
+            <div class="recognition-progress-bar" id="recognitionProgressBar"></div>
+          </div>
+          <div class="recognition-progress-stage" id="recognitionProgressStage">正在上傳照片…</div>
+        </div>
+      `;
+    }
+
+    function updateRecognitionProgress(percent, stage) {
+      const safePercent = Math.max(0, Math.min(100, Math.round(percent)));
+      const bar = document.getElementById('recognitionProgressBar');
+      const percentLabel = document.getElementById('recognitionProgressPercent');
+      const stageLabel = document.getElementById('recognitionProgressStage');
+      const track = document.querySelector('.recognition-progress-track');
+      if (bar) bar.style.width = `${safePercent}%`;
+      if (percentLabel) percentLabel.textContent = `${safePercent}%`;
+      if (stageLabel) stageLabel.textContent = stage;
+      if (track) track.setAttribute('aria-valuenow', String(safePercent));
+    }
+
+    function startRecognitionProgress() {
+      renderRecognitionProgress();
+      recognitionProgressStartedAt = Date.now();
+      recognitionProgressTimer = setInterval(() => {
+        const elapsed = (Date.now() - recognitionProgressStartedAt) / 1000;
+        let percent;
+        let stage;
+        if (elapsed < 2) {
+          percent = 6 + elapsed * 9;
+          stage = '正在上傳照片…';
+        } else if (elapsed < 7) {
+          percent = 24 + (elapsed - 2) * 6;
+          stage = '正在辨識照片中的物品…';
+        } else if (elapsed < 12) {
+          percent = 54 + (elapsed - 7) * 4;
+          stage = '正在比對客語認證詞庫…';
+        } else {
+          percent = Math.min(92, 74 + (elapsed - 12) * 1.5);
+          stage = '正在產生例句、拼音與發音…';
+        }
+        updateRecognitionProgress(percent, stage);
+      }, 500);
+    }
+
+    async function finishRecognitionProgress(succeeded) {
+      clearInterval(recognitionProgressTimer);
+      recognitionProgressTimer = null;
+      const progress = document.querySelector('.recognition-progress');
+      if (!succeeded) {
+        if (progress) progress.classList.add('is-failed');
+        updateRecognitionProgress(100, '辨識未完成，請再試一次');
+        return;
+      }
+      if (progress) progress.classList.add('is-complete');
+      updateRecognitionProgress(100, '辨識完成');
+      await new Promise(resolve => setTimeout(resolve, 320));
+    }
 
     // ── 相機啟動 ──
     async function startCamera() {
@@ -409,16 +552,14 @@
 
       document.getElementById('retakeBtn').classList.remove('hidden');
       
-      // 修改載入提示，對應現有流程
-      document.getElementById('resultItemsContainer').innerHTML = `
-        <div class="result-word">正在看看這是什麼……</div>
-        <div class="result-example">正在準備客語學習內容，請稍候一下。</div>
-      `;
+      renderRecognitionProgress();
       document.getElementById('resultCard').style.display  = 'block';
       showResult();
     }
 
     function retake() {
+      clearInterval(recognitionProgressTimer);
+      recognitionProgressTimer = null;
       document.getElementById('retakeBtn').classList.add('hidden');
       document.getElementById('resultCard').style.display = 'none';
       startCamera();
@@ -434,10 +575,7 @@
         document.getElementById('uploadPreview').style.display = 'block';
         document.getElementById('uploadZone').style.display = 'none';
         
-        document.getElementById('resultItemsContainer').innerHTML = `
-          <div class="result-word">正在看看這是什麼……</div>
-          <div class="result-example">正在準備客語學習內容，請稍候一下。</div>
-        `;
+        renderRecognitionProgress();
         document.getElementById('resultCard').style.display = 'block';
         showResult();
       };
@@ -446,6 +584,8 @@
 
     // ── 模式切換 ──
     function switchMode(mode) {
+      clearInterval(recognitionProgressTimer);
+      recognitionProgressTimer = null;
       document.querySelectorAll('.mode-tab').forEach((t, i) => {
         t.classList.toggle('active',
           (mode === 'camera' && i === 0) ||
@@ -496,10 +636,12 @@
           formData.append('file', blob, 'photo.jpg');
 
           // 發送請求到整合了客委會 API 與 LLM 的新路由
+          startRecognitionProgress();
           const res = await fetch('/api/recognize', { method: 'POST', body: formData });
 
           if (res.ok) {
             const data = await res.json();
+            await finishRecognitionProgress(true);
             const items = data.items || [];
 
             if (items.length > 0) {
@@ -527,7 +669,23 @@
                 JSON.stringify(items);
               currentRecognitionSource = items[0].source || 'yolo';
               
-              let html = '';
+              const categoryCounts = items.reduce((counts, item) => {
+                const category = item.simple_category || '其他';
+                counts[category] = (counts[category] || 0) + 1;
+                return counts;
+              }, {});
+              let html = `
+                <div style="margin:0 0 16px;padding:14px 16px;border-radius:14px;background:#F2F7FA;border:1px solid #CFE1EA;">
+                  <div style="font-size:15px;font-weight:800;color:#24465D;">照片詞彙分類</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:9px;">
+                    ${Object.entries(categoryCounts).map(([category, count]) => `
+                      <span style="padding:5px 10px;border-radius:999px;background:white;border:1px solid #CFE1EA;color:#315B78;font-size:12px;font-weight:700;">
+                        ${category}・${count} 個
+                      </span>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
               items.forEach((item, idx) => {
 
                 // 💡 【核心修改】：標題直接放大顯示客語漢字，下方搭配 LLM 的華語造句
@@ -557,6 +715,9 @@
                       </div>
                       ${item.pinyin ? `<div style="font-size:18px;color:#315B78;font-weight:700;margin:5px 0 5px;line-height:1.25;">${item.pinyin}</div>` : ''}
                       <div style="font-size:13px;color:#888;margin-top:2px;">中文：${item.label_zh}</div>
+                      <div style="display:inline-block;margin-top:7px;padding:4px 9px;border-radius:999px;background:#E8F2F7;color:#315B78;font-size:11px;font-weight:700;">
+                        ${item.simple_category || '其他'}
+                      </div>
                     </div>
 
                     <div style="margin-top:10px;margin-bottom:12px;">
@@ -596,7 +757,8 @@
 
                     <!-- 回報錯誤按鈕 -->
                     <button
-                      onclick="toggleReportPanel(this, '${(item.keyword_hakka || item.label_zh).replace(/'/g, "\\'")}')"
+                      type="button"
+                      onclick="event.stopPropagation(); toggleReportPanel(this, '${(item.keyword_hakka || item.label_zh).replace(/'/g, "\\'")}')"
                       style="margin-top:10px;padding:7px 16px;border-radius:20px;
                              border:1.5px solid #FFC107;background:white;
                              color:#795548;font-size:12px;font-weight:600;cursor:pointer;width:100%;">
@@ -604,7 +766,7 @@
                     </button>
 
                     <!-- inline 修正面板（每個 item 獨立） -->
-                    <div class="report-panel-inline">
+                    <div class="report-panel-inline" onclick="event.stopPropagation()">
                       <h4>✏️ 回報辨識錯誤</h4>
                       <div class="rpt-field">
                         <label>❌ 錯誤辨識結果（自動帶入）</label>
@@ -624,8 +786,8 @@
                         </select>
                       </div>
                       <div class="rpt-actions">
-                        <button class="rpt-submit" onclick="submitRecognitionReport(this)">📤 確認送出修正</button>
-                        <button class="rpt-cancel" onclick="this.closest('.report-panel-inline').style.display='none'">取消</button>
+                        <button type="button" class="rpt-submit" onclick="event.stopPropagation(); submitRecognitionReport(this)">📤 確認送出修正</button>
+                        <button type="button" class="rpt-cancel" onclick="event.stopPropagation(); this.closest('.report-panel-inline').style.display='none'">取消</button>
                       </div>
                     </div>
 
@@ -644,6 +806,32 @@
                 }
               });
 
+              const photoVocabulary = data.photo_vocabulary || [];
+              if (photoVocabulary.length > 0) {
+                html += `
+                  <div style="margin:8px 0 20px;padding:16px;border-radius:16px;background:#F2F7FA;border:1px solid #CFE1EA;">
+                    <div style="font-size:17px;font-weight:800;color:#24465D;">🌱 本張照片的認證詞彙</div>
+                    <div style="font-size:12px;color:#6F7A80;margin:4px 0 12px;">
+                      以下詞彙直接對應這張照片中辨識到的物品
+                    </div>
+                    <div style="display:grid;gap:9px;">
+                      ${photoVocabulary.map(word => `
+                        <div style="padding:11px 12px;border-radius:12px;background:white;border:1px solid #E5E0D8;">
+                          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                            <div>
+                              <div style="font-size:18px;font-weight:800;color:#24465D;">${word.hakka_word}</div>
+                              <div style="font-size:13px;color:#315B78;margin-top:2px;">${word.pinyin}</div>
+                              <div style="font-size:12px;color:#6F7A80;margin-top:3px;">${word.zh_meaning}・${word.category}</div>
+                            </div>
+                            <span style="flex-shrink:0;padding:3px 8px;border-radius:999px;background:#FFF0E3;color:#9B562A;font-size:10px;font-weight:700;">${word.certification_level}</span>
+                          </div>
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>
+                `;
+              }
+
               document.getElementById('resultItemsContainer').innerHTML = html;
 
               // ── 物件辨識：選擇性儲存 ──
@@ -654,7 +842,10 @@
               items.forEach((item, idx) => {
                 const card = document.getElementById(`recCard${idx}`);
                 if (card) {
-                  card.addEventListener('click', () => toggleRecognitionItem(idx));
+                  card.addEventListener('click', (event) => {
+                    if (event.target.closest('button,input,select,audio,.report-panel-inline')) return;
+                    toggleRecognitionItem(idx);
+                  });
                 }
                 renderRecognitionCropPreview(idx, item);
               });
@@ -667,10 +858,12 @@
               document.getElementById('resultItemsContainer').innerHTML = '<div class="result-example">這張照片有一點看不清楚，再拍一次試試看！</div>';
             }
           } else {
+            await finishRecognitionProgress(false);
             const err = await res.json();
             document.getElementById('resultItemsContainer').innerHTML = '<div class="result-example">這張照片有一點看不清楚，再拍一次試試看！</div>';
           }
         } catch (e) {
+          await finishRecognitionProgress(false);
           console.error(e);
           document.getElementById('resultItemsContainer').innerHTML = '<div class="result-example">目前暫時無法辨識，請稍後再試或從相簿選擇另一張照片。</div>';
         }
@@ -679,6 +872,8 @@
     }
 
     function resetAll() {
+      clearInterval(recognitionProgressTimer);
+      recognitionProgressTimer = null;
       document.getElementById('resultCard').style.display = 'none';
       const activeTab = document.querySelector('.mode-tab.active').textContent.trim();
       if (activeTab.includes('拍照')) {
@@ -1105,6 +1300,7 @@
         panel.querySelector('.rpt-correct').value = '';
         panel.querySelector('.rpt-scenario').value = 'complex_background';
         panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        window.setTimeout(() => panel.querySelector('.rpt-correct').focus(), 220);
       }
     }
 

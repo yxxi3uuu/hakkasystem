@@ -1,5 +1,6 @@
 import os
-import uuid
+import hashlib
+from collections import OrderedDict
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -19,6 +20,25 @@ PASSWORD = os.getenv("HAKKA_PASSWORD")
 
 _cached_trans_token = None
 _cached_tts_token = None
+_TRANSLATION_CACHE_MAX_SIZE = 2048
+_translation_cache: OrderedDict[tuple[str, str], dict] = OrderedDict()
+
+
+def _get_cached_translation(endpoint: str, text: str) -> dict | None:
+    key = (endpoint, text)
+    cached = _translation_cache.get(key)
+    if cached is None:
+        return None
+    _translation_cache.move_to_end(key)
+    return cached.copy()
+
+
+def _cache_translation(endpoint: str, text: str, result: dict) -> None:
+    key = (endpoint, text)
+    _translation_cache[key] = result.copy()
+    _translation_cache.move_to_end(key)
+    while len(_translation_cache) > _TRANSLATION_CACHE_MAX_SIZE:
+        _translation_cache.popitem(last=False)
 
 
 class TextRequest(BaseModel):
@@ -95,6 +115,10 @@ async def call_hakka_translate_api(endpoint: str, text: str, token: str):
     if len(text) > 300:
         raise HTTPException(status_code=400, detail="輸入字數過長，請勿超過300字")
 
+    cached = _get_cached_translation(endpoint, text)
+    if cached is not None:
+        return cached
+
     target_url = f"{HKTRANS_API}{endpoint}"
 
     async with httpx.AsyncClient() as client:
@@ -120,6 +144,7 @@ async def call_hakka_translate_api(endpoint: str, text: str, token: str):
     if response.status_code != 200:
         raise HTTPException(status_code=response.status_code, detail=f"客語翻譯 API 錯誤：{result}")
 
+    _cache_translation(endpoint, text, result)
     return result
 
 
@@ -129,8 +154,19 @@ async def generate_hakka_tts(text: str, folder: str = "words") -> str:
     audio_dir = Path(f"static/audios/{folder}")
     audio_dir.mkdir(parents=True, exist_ok=True)
 
-    filename = f"{uuid.uuid4().hex}.wav"
+    # The digest includes every setting that affects the generated audio.
+    # Identical requests reuse the exact same official API output.
+    cache_key = "|".join([
+        "broncitts",
+        "hak-xi-TW",
+        "hak-xi-TW-vs2-F01",
+        "1.0",
+        text,
+    ])
+    filename = f"{hashlib.sha256(cache_key.encode('utf-8')).hexdigest()}.wav"
     filepath = audio_dir / filename
+    if filepath.is_file() and filepath.stat().st_size > 0:
+        return "/" + str(filepath).replace("\\", "/")
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(

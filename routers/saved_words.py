@@ -16,6 +16,20 @@ UPLOAD_DIR = "static/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
+def _created_at_value(word: SavedWord) -> str:
+    created_at = getattr(word, "created_at", None)
+    return created_at.isoformat() if created_at else ""
+
+
+def _word_occurrence(word: SavedWord) -> dict:
+    return {
+        "id": word.id,
+        "image_path": word.image_path,
+        "created_at": _created_at_value(word),
+        "source": getattr(word, "source", "yolo") or "yolo",
+    }
+
+
 @router.post("")
 async def save_word(
     user_id: int = Form(...),
@@ -33,6 +47,9 @@ async def save_word(
     sentence_audio_path: str = Form(""),
 
     source: str = Form("yolo"),   # yolo | ocr
+    word_id: int | None = Form(None),
+    recognition_id: int | None = Form(None),
+    dialect: str = Form(""),
 
     db: AsyncSession = Depends(get_db)
 ):
@@ -62,6 +79,9 @@ async def save_word(
             sentence_audio_path=sentence_audio_path,
 
             source=source,
+            word_id=word_id,
+            recognition_id=recognition_id,
+            dialect=dialect,
         )
 
         db.add(new_word)
@@ -89,6 +109,10 @@ async def save_word(
             "audio_path": audio_path,
             "sentence_audio_path": sentence_audio_path,
             "source": source,
+            "word_id": word_id,
+            "recognition_id": recognition_id,
+            "dialect": dialect,
+            "created_at": _created_at_value(new_word),
         }
 
     except Exception as e:
@@ -105,15 +129,17 @@ async def get_unique_saved_words(
     result = await db.execute(
         select(SavedWord)
         .where(SavedWord.user_id == user_id)
-        .order_by(SavedWord.id.asc())
+        .order_by(SavedWord.created_at.desc().nullslast(), SavedWord.id.desc())
     )
 
     words = result.scalars().all()
 
     # 計算每個 label_zh 出現幾次
     count_map: dict[str, int] = {}
+    occurrence_map: dict[str, list[dict]] = {}
     for w in words:
         count_map[w.label_zh] = count_map.get(w.label_zh, 0) + 1
+        occurrence_map.setdefault(w.label_zh, []).append(_word_occurrence(w))
 
     seen = set()
     unique_words = []
@@ -138,7 +164,12 @@ async def get_unique_saved_words(
                 "sentence_audio_path": getattr(w, "sentence_audio_path", ""),
 
                 "count": count_map.get(w.label_zh, 1),
+                "occurrences": occurrence_map.get(w.label_zh, []),
                 "source": getattr(w, "source", "yolo"),
+                "word_id": getattr(w, "word_id", None),
+                "recognition_id": getattr(w, "recognition_id", None),
+                "dialect": getattr(w, "dialect", ""),
+                "created_at": _created_at_value(w),
             })
 
     return unique_words
@@ -171,6 +202,10 @@ async def get_saved_words(
             "sentence_hakka": w.sentence_hakka,
             "sentence_audio_path": getattr(w, "sentence_audio_path", ""),
             "source": getattr(w, "source", "yolo") or "yolo",
+            "word_id": getattr(w, "word_id", None),
+            "recognition_id": getattr(w, "recognition_id", None),
+            "dialect": getattr(w, "dialect", ""),
+            "created_at": _created_at_value(w),
         }
         for w in words
     ]

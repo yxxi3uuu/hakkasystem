@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import re
+import time
 
 import httpx
 from fastapi import APIRouter, HTTPException
@@ -30,6 +31,7 @@ class WordsRequest(BaseModel):
 _GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
 _GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_2", "").strip() or os.getenv("GEMINI_API_KEY", "").strip()
 _GEMINI_MODEL = "gemini-2.0-flash"
+_LLM_BACKOFF_UNTIL = 0.0
 
 
 def init_llm() -> None:
@@ -41,7 +43,7 @@ def init_llm() -> None:
     if _GROQ_API_KEY:
         print(f"[LLM] 使用 Groq API 造句（key={_GROQ_API_KEY[:8]}...）")
     elif _GEMINI_API_KEY:
-        print(f"[LLM] 使用 Gemini API 造句（model={_GEMINI_MODEL}，key={_GEMINI_API_KEY[:8]}...）")
+        print(f"[LLM] 使用 Gemini API 造句（model={_GEMINI_MODEL}）")
     else:
         print("[LLM] 未設定任何 LLM API Key，造句將使用 fallback 罐頭句")
 
@@ -58,7 +60,7 @@ def _clean_json_text(text: str) -> str:
     return match.group(1).strip() if match else cleaned
 
 
-def _coerce_sentence_result(parsed: object, word: str) -> dict:
+def _coerce_sentence_result(parsed: object, word: str, index: int = 0) -> dict:
     if isinstance(parsed, dict):
         sentence = (
             parsed.get("sentence_zh")
@@ -74,7 +76,7 @@ def _coerce_sentence_result(parsed: object, word: str) -> dict:
                 "chinese_translation": sentence.strip(),
             }
 
-    fallback_sentence = f"這是一個關於{word}的生活句子。"
+    fallback_sentence = _fallback_sentence(word, index)
     return {
         "word": word,
         "sentence_zh": fallback_sentence,
@@ -97,6 +99,10 @@ def _normalize_words(words: list[str] | str, max_words: int = 5) -> list[str]:
 async def _ask_llm(prompt: str, max_tokens: int = 300) -> str:
     """呼叫 LLM API 造句。優先 Groq，備選 Gemini，都失敗回傳空字串。"""
     import asyncio
+    global _LLM_BACKOFF_UNTIL
+
+    if time.monotonic() < _LLM_BACKOFF_UNTIL:
+        return ""
 
     # ── 優先用 Groq（免費、穩定）──
     if _GROQ_API_KEY:
@@ -151,7 +157,11 @@ async def _ask_llm(prompt: str, max_tokens: int = 300) -> str:
             except Exception as e:
                 last_err = e
                 err_str = str(e)
-                if any(code in err_str for code in ("503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED")):
+                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                    _LLM_BACKOFF_UNTIL = time.monotonic() + 60
+                    print("[LLM] Gemini 已達請求限制，60 秒內改用本地備用例句")
+                    return ""
+                if any(code in err_str for code in ("503", "UNAVAILABLE")):
                     if attempt < 2:
                         await asyncio.sleep(1.5 * (attempt + 1))
                         continue
@@ -174,6 +184,23 @@ FALLBACK: dict[str, dict] = {
     "手機": {"hakka_sentence": "這支手機當新。",     "chinese_translation": "這支手機很新。"},
     "蘋果": {"hakka_sentence": "這粒蘋果當甜。",     "chinese_translation": "這顆蘋果很甜。"},
 }
+
+GENERIC_FALLBACK_TEMPLATES = (
+    "我今天在生活中看見了{word}。",
+    "請你找找看，{word}在什麼地方？",
+    "我們一起來認識{word}的客語講法。",
+    "照片裡的{word}是今天要學的詞。",
+    "你在日常生活中有看過{word}嗎？",
+)
+
+
+def _fallback_sentence(word: str, index: int = 0) -> str:
+    """Return a useful local sentence without presenting AI output as fact."""
+    known = FALLBACK.get(word)
+    if known and known.get("chinese_translation"):
+        return str(known["chinese_translation"]).strip()
+    template = GENERIC_FALLBACK_TEMPLATES[index % len(GENERIC_FALLBACK_TEMPLATES)]
+    return template.format(word=word)
 
 
 # ── 生成單字例句 ─────────────────────────────────────────────────────────
@@ -215,7 +242,7 @@ async def generate_hakka_sentence(request: WordRequest):
             print(f"[LLM] Gemini 造句失敗：{e}")
 
     # fallback
-    fallback_sentence = f"這是一個關於{word}的生活句子。"
+    fallback_sentence = _fallback_sentence(word)
     return {
         "word": word,
         "sentence_zh": fallback_sentence,
@@ -255,18 +282,22 @@ async def generate_hakka_story(request: WordsRequest):
                     results = []
                     for idx, word in enumerate(words):
                         item = parsed[idx] if idx < len(parsed) and isinstance(parsed[idx], dict) else {}
-                        results.append(_coerce_sentence_result(item, word))
+                        results.append(_coerce_sentence_result(item, word, idx))
                     return results
         except Exception as e:
             print(f"[LLM] Gemini 批次造句失敗：{e}")
 
     # fallback
-    return [
-        {
-            "word": w,
-            "sentence": f"這是一個關於{w}的生活句子。",
-            "sentence_zh": f"這是一個關於{w}的生活句子。",
-            "chinese_translation": f"這是一個關於{w}的生活句子。",
-        }
-        for w in words
-    ]
+    results = []
+    for index, word in enumerate(words):
+        sentence = _fallback_sentence(word, index)
+        results.append(
+            {
+                "word": word,
+                "sentence": sentence,
+                "sentence_zh": sentence,
+                "chinese_translation": sentence,
+                "sentence_source": "local_fallback",
+            }
+        )
+    return results

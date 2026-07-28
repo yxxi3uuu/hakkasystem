@@ -80,6 +80,22 @@
     });
   }
 
+  const clickableSelector = [
+    "a[href]", "button", "[onclick]", "[role='button']", "summary", "label[for]",
+    "input[type='button']", "input[type='submit']", "input[type='reset']",
+    ".word-card", ".vocab-item", ".menu-item", ".notif-item",
+    ".quick-card", ".game-card", ".game-tab", ".match-item", ".flip-card",
+    ".listen-opt", ".mode-tab", ".src-tab", "[id^='recCard']"
+  ].join(",");
+
+  function markClickables(root) {
+    if (!root || root.nodeType !== Node.ELEMENT_NODE) return;
+    if (root.matches(clickableSelector)) root.classList.add("app-clickable");
+    root.querySelectorAll(clickableSelector).forEach((element) => {
+      element.classList.add("app-clickable");
+    });
+  }
+
   const nav = document.querySelector(".bottom-nav");
   if (nav) {
     const path = window.location.pathname.replace(/\/+$/, "") || "/";
@@ -101,10 +117,24 @@
     nav.setAttribute("aria-label", "主要導覽");
   }
 
+  const attribution = document.createElement("footer");
+  attribution.className = "api-attribution";
+  attribution.setAttribute("role", "contentinfo");
+  attribution.textContent = "本產品使用客家委員會授權／提供之 API";
+  if (nav) {
+    nav.insertAdjacentElement("beforebegin", attribution);
+  } else {
+    document.body.appendChild(attribution);
+  }
+
   replaceEmojiText(document.body);
+  markClickables(document.body);
   new MutationObserver((mutations) => {
     mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
-      if (node.nodeType === Node.ELEMENT_NODE) replaceEmojiText(node);
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        replaceEmojiText(node);
+        markClickables(node);
+      }
       if (node.nodeType === Node.TEXT_NODE && node.parentElement) replaceEmojiText(node.parentElement);
     }));
   }).observe(document.body, { childList: true, subtree: true });

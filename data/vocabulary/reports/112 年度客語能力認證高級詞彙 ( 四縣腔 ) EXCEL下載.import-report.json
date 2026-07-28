@@ -1,0 +1,1643 @@
+{
+  "original_filename": "112 年度客語能力認證高級詞彙 ( 四縣腔 ) EXCEL下載.ods",
+  "checksum": "b19535da201d05a4e9dd158cc4305dc26d7470e4f7dab79a9b073767fc40b920",
+  "sheet_name": "高級-四縣",
+  "source_version": "112-高級-四縣腔",
+  "dialect": "四縣腔",
+  "certification_level": "高級",
+  "raw_row_count": 2875,
+  "importable_count": 2793,
+  "flagged_count": 82,
+  "duplicate_word_count": 5,
+  "duplicate_words": [
+    "㐁舌",
+    "合本",
+    "嗶嗶跳",
+    "堅皮",
+    "打竳"
+  ],
+  "conflict_count": 5,
+  "conflicts": [
+    {
+      "hakka_word": "堅皮",
+      "source_word_codes": [
+        "1-239",
+        "6-23"
+      ],
+      "meanings": [
+        "表皮變乾、變硬或顯得堅韌。",
+        "表皮變硬，也可指傷口結痂。"
+      ]
+    },
+    {
+      "hakka_word": "嗶嗶跳",
+      "source_word_codes": [
+        "2-5",
+        "3-15"
+      ],
+      "meanings": [
+        "活潑有精神的樣子；或指惱怒而暴跳如雷的樣子；或指拚命掙扎的樣子。",
+        "蹦蹦跳。"
+      ]
+    },
+    {
+      "hakka_word": "打竳",
+      "source_word_codes": [
+        "3-52",
+        "6-12"
+      ],
+      "meanings": [
+        "小孩學站立。",
+        "豎立。"
+      ]
+    },
+    {
+      "hakka_word": "㐁舌",
+      "source_word_codes": [
+        "3-59",
+        "3-145"
+      ],
+      "meanings": [
+        "吐舌的樣子。",
+        "有意識地使用舌頭用力接觸物體。"
+      ]
+    },
+    {
+      "hakka_word": "合本",
+      "source_word_codes": [
+        "12-5",
+        "16-140"
+      ],
+      "meanings": [
+        "只不過。",
+        "合股做生意。"
+      ]
+    }
+  ],
+  "missing_optional_fields": {
+    "audio_url": 2793,
+    "example_sentence": 682,
+    "example_translation": 682,
+    "visualizable_type": 2793
+  },
+  "flagged_rows": [
+    {
+      "row_number": 245,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "1-244",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 246,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "1-245",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 443,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "2-197",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 444,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "2-198",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 706,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "3-262",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 707,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "3-263",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 708,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "3-264",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 709,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "3-265",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 710,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "3-266",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 711,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "3-267",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 712,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "3-268",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 713,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "3-269",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 714,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "3-270",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 715,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "3-271",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 716,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "3-272",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 799,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "4-83",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 800,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "4-84",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 896,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "5-96",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 897,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "5-97",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 898,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "5-98",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 899,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "5-99",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 900,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "5-100",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 901,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "5-101",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 902,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "5-102",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 903,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "5-103",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 904,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "5-104",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 905,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "5-105",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 906,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "5-106",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 907,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "5-107",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 970,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "6-63",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1151,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "7-181",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1152,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "7-182",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1153,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "7-183",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1154,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "7-184",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1674,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "8-520",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1675,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "8-521",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1676,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "8-522",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1677,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "8-523",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1678,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "8-524",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1679,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "8-525",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1680,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "8-526",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1681,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "8-527",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1682,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "8-528",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1683,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "8-529",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1684,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "8-530",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 1685,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "8-531",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2425,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-730",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2426,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-731",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2427,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-732",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2428,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-733",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2429,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-734",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2430,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-735",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2431,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-736",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2432,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-737",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2433,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-738",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2434,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-739",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2435,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-740",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2436,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-741",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2437,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-742",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2438,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-743",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2439,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-744",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2440,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-745",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2441,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-746",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2442,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-747",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2443,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-748",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2444,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-749",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2445,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-750",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2446,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-751",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2447,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-752",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2448,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "10-753",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2535,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "12-27",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2536,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "12-28",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2537,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "12-29",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2538,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "12-30",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2695,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "14-139",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2696,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "14-140",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2697,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "14-141",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2698,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "14-142",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2714,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "15-16",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2860,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "16-146",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2875,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "17-15",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    },
+    {
+      "row_number": 2876,
+      "reason": "dialect_placeholder",
+      "missing_required_fields": [
+        "zh_meaning",
+        "pinyin"
+      ],
+      "raw_data": {
+        "編碼": "17-16",
+        "四縣客語詞彙": "此腔無此詞條",
+        "四縣客語標音": "",
+        "四縣腔華語詞義／客語舉例": "",
+        "舉例華譯": "",
+        "備註": "",
+        "詞性1": "",
+        "詞性2": "",
+        "分類": ""
+      }
+    }
+  ]
+}

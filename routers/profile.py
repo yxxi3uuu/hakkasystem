@@ -1,13 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
 from pydantic import BaseModel
+from PIL import Image, ImageOps, UnidentifiedImageError
 from database import get_db
 from models import User, LearningStats, Achievement, WeeklyGoal, SavedWord, Activity
 import datetime
+import io
+import uuid
+from pathlib import Path
 
 router = APIRouter(prefix="/api")
+AVATAR_DIR = Path("static/uploads/avatars")
+MAX_AVATAR_BYTES = 5 * 1024 * 1024
+ALLOWED_AVATAR_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 # ── Schemas ──────────────────────────────────────────
 class ProfileResponse(BaseModel):
@@ -16,6 +23,7 @@ class ProfileResponse(BaseModel):
     study_days:    int
     vocab_learned: int
     avg_score:     float
+    avatar_path:   str = ""
     model_config = {"from_attributes": True}
 
 class AchievementResponse(BaseModel):
@@ -85,7 +93,58 @@ async def get_profile(user_id: int, db: AsyncSession = Depends(get_db)):
         study_days=unique_days,
         vocab_learned=vocab_count,
         avg_score=round(avg_score, 1),
+        avatar_path=user.avatar_path or "",
     )
+
+
+@router.post("/profile/{user_id}/avatar")
+async def update_avatar(
+    user_id: int,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+):
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="找不到使用者")
+    if file.content_type not in ALLOWED_AVATAR_TYPES:
+        raise HTTPException(status_code=415, detail="僅支援 JPG、PNG 或 WebP 圖片")
+
+    content = await file.read(MAX_AVATAR_BYTES + 1)
+    if not content:
+        raise HTTPException(status_code=400, detail="圖片內容不可為空")
+    if len(content) > MAX_AVATAR_BYTES:
+        raise HTTPException(status_code=413, detail="大頭貼不可超過 5MB")
+
+    try:
+        with Image.open(io.BytesIO(content)) as source:
+            source.verify()
+        with Image.open(io.BytesIO(content)) as source:
+            image = ImageOps.exif_transpose(source).convert("RGB")
+            image = ImageOps.fit(image, (512, 512), method=Image.Resampling.LANCZOS)
+    except (UnidentifiedImageError, OSError, ValueError):
+        raise HTTPException(status_code=400, detail="無法讀取這張圖片")
+
+    AVATAR_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"{uuid.uuid4().hex}.jpg"
+    filepath = AVATAR_DIR / filename
+    image.save(filepath, format="JPEG", quality=88, optimize=True)
+
+    old_avatar = user.avatar_path or ""
+    user.avatar_path = f"/static/uploads/avatars/{filename}"
+    try:
+        await db.commit()
+    except Exception:
+        filepath.unlink(missing_ok=True)
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="大頭貼儲存失敗")
+
+    if old_avatar.startswith("/static/uploads/avatars/"):
+        old_path = Path(old_avatar.lstrip("/"))
+        if old_path.parent.resolve() == AVATAR_DIR.resolve():
+            old_path.unlink(missing_ok=True)
+
+    return {"avatar_path": user.avatar_path}
+
 
 @router.get("/profile/{user_id}/achievements", response_model=list[AchievementResponse])
 async def get_achievements(user_id: int, db: AsyncSession = Depends(get_db)):

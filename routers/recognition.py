@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from dotenv import load_dotenv
 from pathlib import Path
@@ -27,6 +27,7 @@ from routers.hakka_api import (
     generate_hakka_tts,
     to_superscript_tone
 )
+from services.vocabulary_matcher import find_best_word
 
 env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=env_path, override=True)
@@ -167,6 +168,44 @@ COCO_ZH = {
     "glasses": "眼鏡"
 }
 
+SIMPLE_CATEGORY_RULES = [
+    ("飲食", ("飲食", "食物", "餐飲", "水果", "蔬菜", "飯", "菜", "湯", "茶", "水", "果", "杯", "碗", "盤", "筷", "匙", "叉", "刀", "瓶")),
+    ("服飾配件", ("服飾", "衣", "褲", "鞋", "帽", "眼鏡", "背包", "手提包", "領帶", "行李箱", "雨傘")),
+    ("動物", ("動物", "鳥", "貓", "狗", "馬", "羊", "牛", "魚", "蟲", "雞", "鴨")),
+    ("植物", ("植物", "花", "樹", "草", "盆栽")),
+    ("交通", ("交通", "車", "飛機", "船", "火車", "公車", "腳踏車", "道路")),
+    ("3C與電器", ("科技", "電器", "資訊", "手機", "電話", "電腦", "筆電", "鍵盤", "滑鼠", "電視", "冰箱", "微波爐", "烤箱")),
+    ("人物與身體", ("人物", "人體", "身體", "家庭", "親屬", "人", "手", "腳", "眼", "耳", "口", "鼻", "頭", "臉")),
+    ("學習用品", ("教育", "學習", "文具", "書", "筆", "剪刀", "尺")),
+    ("休閒運動", ("休閒", "運動", "遊戲", "球", "玩具", "滑板", "風箏", "飛盤")),
+    ("居家用品", ("居家", "生活用品", "家具", "家電", "椅", "桌", "床", "沙發", "時鐘", "花瓶", "牙刷", "吹風機", "馬桶", "水槽")),
+]
+
+
+def classify_simple_category(label_zh: str, official_category: str = "") -> str:
+    """以詞庫分類優先，搭配固定關鍵字產生容易閱讀的第一層分類。"""
+    if official_category:
+        for category, keywords in SIMPLE_CATEGORY_RULES:
+            if any(keyword in official_category for keyword in keywords):
+                return category
+    if label_zh:
+        for category, keywords in SIMPLE_CATEGORY_RULES:
+            if any(keyword in label_zh for keyword in keywords):
+                return category
+    return "其他"
+
+
+class RecommendedWord(BaseModel):
+    word_id: int
+    hakka_word: str
+    zh_meaning: str
+    dialect: str
+    pinyin: str
+    certification_level: str
+    category: str
+    example_sentence: str = ""
+    example_translation: str = ""
+
 
 class RecognizedItem(BaseModel):
     label_en: str
@@ -181,15 +220,46 @@ class RecognizedItem(BaseModel):
     sentence_zh: str = ""
     sentence_hakka: str = ""
     sentence_audio_path: str = ""
+    word_id: int | None = None
+    dialect: str = ""
+    certification_level: str = ""
+    category: str = ""
+    simple_category: str = "其他"
+    is_certification_word: bool = False
+    match_status: str = "not_found"
+    vocabulary_source: str = ""
+    vocabulary_source_version: str = ""
+    example_source: str = "system_generated"
+    example_is_verified: bool = False
+    recommendations: list[RecommendedWord] = Field(default_factory=list)
 
 
 class RecognitionResponse(BaseModel):
     items: list[RecognizedItem]
     image_path: str = ""
+    photo_vocabulary: list[RecommendedWord] = Field(default_factory=list)
 
 
 def make_numbered_text(items: list[str]) -> str:
     return "\n".join([f"{i + 1}. {item}" for i, item in enumerate(items)])
+
+
+def strip_sentence_number_prefix(text: str) -> str:
+    """移除翻譯 API 可能保留或重複產生的句首清單編號。"""
+    cleaned = text.strip()
+    prefix_pattern = re.compile(
+        r"^\s*(?:"
+        r"(?:第\s*)?(?:\d+|[一二三四五六七八九十]+)\s*[\.\、．:：]"
+        r"|[（(]\s*(?:\d+|[一二三四五六七八九十]+)\s*[）)]"
+        r")\s*"
+    )
+    # 有些回應會同時包含「1. 一、」，因此允許連續清除多層前綴。
+    for _ in range(3):
+        updated = prefix_pattern.sub("", cleaned, count=1)
+        if updated == cleaned:
+            break
+        cleaned = updated.strip()
+    return cleaned
 
 
 def split_numbered_text(text: str, expected_count: int) -> list[str]:
@@ -202,14 +272,20 @@ def split_numbered_text(text: str, expected_count: int) -> list[str]:
         for i, match in enumerate(matches):
             start = match.end()
             end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-            parts.append(text[start:end].strip())
+            part = strip_sentence_number_prefix(text[start:end])
+            if part:
+                parts.append(part)
 
         while len(parts) < expected_count:
             parts.append("")
 
         return parts[:expected_count]
 
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    lines = [
+        strip_sentence_number_prefix(line)
+        for line in text.splitlines()
+        if line.strip()
+    ]
 
     while len(lines) < expected_count:
         lines.append("")
@@ -818,6 +894,15 @@ async def recognize_image(
             )
 
         words_zh = [obj["label_zh"] for obj in detected_objects]
+        matched_words = []
+        for word_zh in words_zh:
+            matched_word = await find_best_word(
+                db,
+                word_zh,
+                dialect="四縣腔",
+            )
+            matched_words.append(matched_word)
+        _log("認證詞庫比對完成")
 
         # 取得翻譯 token（手動呼叫，不透過 FastAPI Depends）
         trans_token = await get_trans_token()
@@ -903,6 +988,8 @@ async def recognize_image(
             sentence_hakka = sentences_hakka[i] if i < len(sentences_hakka) else ""
             audio_path = tts_results[i * 2]
             sentence_audio_path = tts_results[i * 2 + 1]
+            matched_word = matched_words[i] if i < len(matched_words) else None
+            official_category = matched_word.category if matched_word else ""
 
             items.append(
                 RecognizedItem(
@@ -917,14 +1004,52 @@ async def recognize_image(
                     audio_path=audio_path,
                     sentence_zh=sentence_zh,
                     sentence_hakka=sentence_hakka,
-                    sentence_audio_path=sentence_audio_path
+                    sentence_audio_path=sentence_audio_path,
+                    word_id=matched_word.word_id if matched_word else None,
+                    dialect=matched_word.dialect if matched_word else "",
+                    certification_level=(
+                        matched_word.certification_level if matched_word else ""
+                    ),
+                    category=official_category,
+                    simple_category=classify_simple_category(
+                        word_zh,
+                        official_category,
+                    ),
+                    is_certification_word=matched_word is not None,
+                    match_status="matched" if matched_word else "not_found",
+                    vocabulary_source=matched_word.source if matched_word else "",
+                    vocabulary_source_version=(
+                        matched_word.source_version if matched_word else ""
+                    ),
+                    example_source="system_generated",
+                    example_is_verified=False,
                 )
             )
 
         _log("全部完成，準備回傳")
+        photo_vocabulary = []
+        seen_word_ids = set()
+        for matched_word in matched_words:
+            if not matched_word or matched_word.word_id in seen_word_ids:
+                continue
+            seen_word_ids.add(matched_word.word_id)
+            photo_vocabulary.append(
+                RecommendedWord(
+                    word_id=matched_word.word_id,
+                    hakka_word=matched_word.hakka_word,
+                    zh_meaning=matched_word.zh_meaning,
+                    dialect=matched_word.dialect,
+                    pinyin=matched_word.pinyin,
+                    certification_level=matched_word.certification_level,
+                    category=matched_word.category,
+                    example_sentence=matched_word.example_sentence,
+                    example_translation=matched_word.example_translation,
+                )
+            )
         return RecognitionResponse(
             items=items,
-            image_path="/" + saved_path.replace("\\", "/")
+            image_path="/" + saved_path.replace("\\", "/"),
+            photo_vocabulary=photo_vocabulary,
         )
 
     finally:
