@@ -40,7 +40,10 @@ body:has(.auth-card) {
   display: flex !important;
   align-items: center;
   justify-content: center;
-  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom)) !important;
+  padding:
+    max(20px, env(safe-area-inset-top))
+    20px
+    max(68px, calc(52px + env(safe-area-inset-bottom))) !important;
   background:
     radial-gradient(circle at 82% 12%, rgba(244, 201, 93, 0.45) 0 9%, transparent 10%),
     linear-gradient(150deg, var(--hakka-indigo) 0 42%, var(--hakka-cream) 42%) !important;
@@ -546,4 +549,15 @@ body.page-swipe-right { animation: pageSwipeRight 120ms ease-out forwards; }
 
 .api-attribution + .bottom-nav {
   margin-top: 0;
+}
+
+body:has(.auth-card) > .api-attribution {
+  position: fixed;
+  right: 0;
+  bottom: env(safe-area-inset-bottom);
+  left: 0;
+  z-index: 2;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 14px 16px;
 }
