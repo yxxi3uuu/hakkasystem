@@ -56,6 +56,18 @@
     }
     .score-fill { height: 100%; background: #315B78; border-radius: 5px; transition: width 0.6s; }
     .score-text { font-size: 13px; color: #666; text-align: right; }
+    .analysis-progress { display:none; margin-top:16px; text-align:left; }
+    .analysis-progress-head {
+      display:flex; justify-content:space-between; margin-bottom:6px;
+      color:#65767F; font-size:12px; font-weight:600;
+    }
+    .analysis-progress-track {
+      height:8px; overflow:hidden; border-radius:999px; background:#E8F2F7;
+    }
+    .analysis-progress-fill {
+      width:0; height:100%; border-radius:999px; background:#315B78;
+      transition:width .35s ease;
+    }
 
     /* vocab list */
     #myWordsList {
@@ -204,6 +216,15 @@
     <button class="mic-btn" id="micBtn" onclick="toggleRecord()">🎤</button>
     <div class="mic-hint" id="micHint">點擊麥克風開始錄音</div>
     <div id="recordingMeta" style="display:none;margin-top:10px;color:#D45D5D;font-size:14px;font-weight:700;">● 錄音中 <span id="recordingTime">00:00</span></div>
+    <div class="analysis-progress" id="analysisProgress" role="status" aria-live="polite">
+      <div class="analysis-progress-head">
+        <span id="analysisProgressLabel">正在準備音檔...</span>
+        <span id="analysisProgressPercent">0%</span>
+      </div>
+      <div class="analysis-progress-track">
+        <div class="analysis-progress-fill" id="analysisProgressFill"></div>
+      </div>
+    </div>
 
     <div id="scoreWrap" style="display:none;">
       <div class="score-bar"><div class="score-fill" id="scoreFill" style="width:0%"></div></div>
@@ -319,11 +340,14 @@
     let recording     = false;
     let recordingTimer = null;
     let recordingSeconds = 0;
+    let analysisProgressTimer = null;
 
     // ── 載入隨機題目 ──
     async function loadTask(word = null) {
       document.getElementById('scoreWrap').style.display = 'none';
       document.getElementById('scoreMsg').textContent    = '';
+      clearInterval(analysisProgressTimer);
+      document.getElementById('analysisProgress').style.display = 'none';
       if (document.getElementById('aiAdviceWrap')) {
         document.getElementById('aiAdviceWrap').style.display = 'none';
       }
@@ -412,11 +436,55 @@
         // 停止錄音
         recording = false;
         btn.classList.remove('recording');
+        btn.disabled = true;
         hint.textContent = '分析中...';
         clearInterval(recordingTimer);
         document.getElementById('recordingMeta').style.display = 'none';
+        startAnalysisProgress();
         mediaRecorder.stop();
       }
+    }
+
+    function setAnalysisProgress(percent) {
+      const safePercent = Math.max(0, Math.min(100, Math.round(percent)));
+      document.getElementById('analysisProgressFill').style.width = `${safePercent}%`;
+      document.getElementById('analysisProgressPercent').textContent = `${safePercent}%`;
+      const label = safePercent < 35
+        ? '正在準備音檔...'
+        : safePercent < 70
+          ? '正在分析發音...'
+          : safePercent < 100
+            ? '正在產生評分與建議...'
+            : '分析完成';
+      document.getElementById('analysisProgressLabel').textContent = label;
+    }
+
+    function startAnalysisProgress() {
+      clearInterval(analysisProgressTimer);
+      const progress = document.getElementById('analysisProgress');
+      progress.style.display = 'block';
+      setAnalysisProgress(8);
+      analysisProgressTimer = setInterval(() => {
+        const current = Number.parseInt(
+          document.getElementById('analysisProgressPercent').textContent,
+          10
+        ) || 0;
+        if (current >= 92) return;
+        const increment = current < 50 ? 8 : current < 75 ? 4 : 2;
+        setAnalysisProgress(Math.min(92, current + increment));
+      }, 450);
+    }
+
+    function finishAnalysisProgress(success) {
+      clearInterval(analysisProgressTimer);
+      if (!success) {
+        document.getElementById('analysisProgress').style.display = 'none';
+        return;
+      }
+      setAnalysisProgress(100);
+      setTimeout(() => {
+        document.getElementById('analysisProgress').style.display = 'none';
+      }, 500);
     }
 
     // ── 送出錄音並取得分數 ──
@@ -452,6 +520,7 @@
 
     const data = await res.json();
 
+    finishAnalysisProgress(true);
     document.getElementById('scoreWrap').style.display = 'block';
     document.getElementById('scoreFill').style.width = data.score + '%';
     document.getElementById('scoreText').textContent = data.score + ' 分';
@@ -479,7 +548,10 @@
     }
 
   } catch (e) {
+    finishAnalysisProgress(false);
     hint.textContent = e.message || '評分失敗，請重試';
+  } finally {
+    document.getElementById('micBtn').disabled = false;
   }
 }
 
