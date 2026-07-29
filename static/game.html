@@ -15,13 +15,29 @@
     }
     .game-tab.active { border-color:#315B78; background:#E8F2F7; color:#24465D; }
 
-    .src-tabs { display:flex; gap:8px; margin:8px 16px 0; }
-    .src-tab {
-      flex:1; padding:7px; border-radius:10px; text-align:center;
-      font-size:13px; font-weight:600; cursor:pointer;
-      border:2px solid #e0e0e0; background:white; color:#666; transition:all 0.2s;
+    .scope-setting {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      margin:10px 16px;
+      padding:11px 14px;
+      border:1px solid #E5E0D8;
+      border-radius:14px;
+      background:white;
     }
-    .src-tab.active { border-color:#315B78; background:#E8F2F7; color:#24465D; }
+    .scope-setting label { color:#52636C; font-size:13px; font-weight:700; }
+    .scope-setting select {
+      min-width:130px;
+      padding:8px 34px 8px 11px;
+      border:1.5px solid #CFE1EA;
+      border-radius:10px;
+      background:#F7FAFB;
+      color:#24465D;
+      font-size:13px;
+      font-weight:700;
+      cursor:pointer;
+    }
 
     .game-header {
       display:flex; justify-content:space-between; align-items:center;
@@ -134,6 +150,57 @@
     .quiz-hint { font-size:12px; color:#aaa; margin-bottom:12px; }
     .quiz-answer { font-size:14px; color:#24465D; font-weight:600; margin-bottom:12px; display:none; }
 
+    /* ── 答對回饋 ── */
+    .correct-feedback {
+      position:fixed;
+      inset:0;
+      z-index:500;
+      display:grid;
+      place-items:center;
+      pointer-events:none;
+      background:rgba(36,70,93,0.08);
+      animation:feedbackFade 850ms ease forwards;
+    }
+    .correct-feedback-card {
+      min-width:150px;
+      padding:22px 26px;
+      border:2px solid #91B1C3;
+      border-radius:24px;
+      background:white;
+      box-shadow:0 14px 38px rgba(36,70,93,0.24);
+      color:#24465D;
+      text-align:center;
+      animation:feedbackPop 850ms cubic-bezier(.2,.8,.2,1) forwards;
+    }
+    .correct-feedback-icon {
+      display:grid;
+      width:68px;
+      height:68px;
+      margin:0 auto 9px;
+      place-items:center;
+      border-radius:50%;
+      background:#E8F2F7;
+      font-size:38px;
+    }
+    .correct-feedback-text { font-size:19px; font-weight:800; }
+    .correct-feedback-card.wrong {
+      border-color:#E5AAA3;
+      color:#A63F35;
+    }
+    .correct-feedback-card.wrong .correct-feedback-icon {
+      background:#FFF0EE;
+    }
+
+    @keyframes feedbackPop {
+      0% { opacity:0; transform:scale(.55) translateY(16px); }
+      25%, 72% { opacity:1; transform:scale(1) translateY(0); }
+      100% { opacity:0; transform:scale(.92) translateY(-8px); }
+    }
+    @keyframes feedbackFade {
+      0%, 72% { opacity:1; }
+      100% { opacity:0; }
+    }
+
     @keyframes shake {
       0%,100% { transform:translateX(0); }
       25%      { transform:translateX(-6px); }
@@ -164,6 +231,15 @@
   <div class="section">
     <div class="section-title" id="ruleTitle">🎮 遊戲說明</div>
     <ul id="ruleList" style="padding:8px 16px 16px;list-style:none;"></ul>
+  </div>
+
+  <!-- 次要設定：練習詞彙範圍 -->
+  <div class="scope-setting">
+    <label for="practiceScope">練習範圍</label>
+    <select id="practiceScope" onchange="setPracticeScope(this.value)">
+      <option value="mixed">🔀 混合複習</option>
+      <option value="today">📅 今日拍攝</option>
+    </select>
   </div>
 
   <!-- 計分板 -->
@@ -212,6 +288,7 @@
   //  資料層
   // ════════════════════════════════════════
   let currentGame    = 0;
+  let currentScope   = 'mixed';
   let PAIRS          = [];
   let savedPairs     = [];
   let score=0, moves=0, progress=0, total=0;
@@ -228,7 +305,9 @@
           hakka: w.label_hakka || "",
           pinyin: w.label_pinyin || "",
           rom: w.label_hakka || w.label_pinyin,
-          img: w.image_path || "", audio: w.audio_path || ""
+          img: w.image_path || "",
+          audio: w.audio_path || "",
+          createdAt: w.created_at || ""
         })).filter(pair => pair.zh && pair.rom);
       }
     } catch(e) {
@@ -236,8 +315,22 @@
     }
   }
 
+  function localDateKey(value) {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getDate()).padStart(2, '0')
+    ].join('-');
+  }
+
   function getActivePairs() {
-    return [...savedPairs].sort(()=>Math.random()-0.5).slice(0,8);
+    const todayKey = localDateKey(new Date());
+    const scopedPairs = currentScope === 'today'
+      ? savedPairs.filter(pair => localDateKey(pair.createdAt) === todayKey)
+      : savedPairs;
+    return shuffle(scopedPairs).slice(0, 8);
   }
 
   function shuffle(arr) {
@@ -248,13 +341,16 @@
 
   function renderEmptyGame() {
     document.getElementById('gameTitle').textContent = '我的詞彙遊戲';
-    document.getElementById('gameDesc').textContent = '收藏詞彙後，就能用自己的照片開始練習。';
+    const isTodayScope = currentScope === 'today';
+    document.getElementById('gameDesc').textContent = isTodayScope
+      ? '今天還沒有收藏可練習的詞彙。'
+      : '收藏詞彙後，就能用自己的照片開始練習。';
     document.getElementById('progress').textContent = '0/0';
     document.getElementById('gameArea').innerHTML = `
       <div class="section empty-state" style="margin-top:16px;">
         <div style="width:58px;height:58px;border-radius:18px;background:#E8F2F7;color:#315B78;display:grid;place-items:center;font-size:26px;margin:0 auto 14px;">📷</div>
-        <h2 style="font-size:19px;color:#29343A;margin-bottom:8px;">還沒有可練習的詞彙</h2>
-        <p style="font-size:14px;line-height:1.7;">先拍下生活中的物品並收藏詞彙，這裡就會自動建立專屬遊戲。</p>
+        <h2 style="font-size:19px;color:#29343A;margin-bottom:8px;">${isTodayScope ? '今天還沒有拍攝詞彙' : '還沒有可練習的詞彙'}</h2>
+        <p style="font-size:14px;line-height:1.7;">${isTodayScope ? '先拍下今天想學的物品，或切換到「混合複習」使用以前收藏的詞彙。' : '先拍下生活中的物品並收藏詞彙，這裡就會自動建立專屬遊戲。'}</p>
         <a href="/recognition" class="btn btn-primary" style="display:inline-flex;margin-top:18px;text-decoration:none;">開始拍照</a>
       </div>`;
   }
@@ -262,6 +358,13 @@
   function setGameType(idx) {
     currentGame = idx;
     document.querySelectorAll('.game-tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
+    restartGame();
+  }
+
+  function setPracticeScope(scope) {
+    if (!['today', 'mixed'].includes(scope)) return;
+    currentScope = scope;
+    document.getElementById('practiceScope').value = scope;
     restartGame();
   }
 
@@ -292,7 +395,8 @@
       ['看中文，輸入客語（漢字或拼音皆可）','按確認或 Enter 送出','答對得 10 分，可查看答案']
     ];
     document.getElementById('gameTitle').textContent = titles[currentGame];
-    document.getElementById('gameDesc').textContent  = descs[currentGame];
+    const scopeLabel = currentScope === 'today' ? '今日拍攝' : '混合複習';
+    document.getElementById('gameDesc').textContent  = `${scopeLabel}・${descs[currentGame]}`;
     document.getElementById('ruleTitle').textContent = `🎮 ${titles[currentGame]} 說明`;
     document.getElementById('ruleList').innerHTML = rules[currentGame].map(r=>`<li style="font-size:13px;color:#666;margin-bottom:6px;">• ${r}</li>`).join('');
     games[currentGame]();
@@ -311,6 +415,92 @@
     document.getElementById('progress').textContent = `${progress}/${total}`;
     if (progress >= total) setTimeout(showWin, 500);
   }
+
+  function playCorrectSound() {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      const context = new AudioContextClass();
+      const now = context.currentTime;
+      [
+        { frequency: 523.25, start: 0, duration: 0.12 },
+        { frequency: 659.25, start: 0.11, duration: 0.12 },
+        { frequency: 783.99, start: 0.22, duration: 0.2 }
+      ].forEach(note => {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.value = note.frequency;
+        gain.gain.setValueAtTime(0.0001, now + note.start);
+        gain.gain.exponentialRampToValueAtTime(0.18, now + note.start + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + note.start + note.duration);
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start(now + note.start);
+        oscillator.stop(now + note.start + note.duration);
+      });
+      setTimeout(() => context.close().catch(() => {}), 700);
+    } catch (e) {}
+  }
+
+  function showCorrectFeedback() {
+    playCorrectSound();
+    document.querySelector('.correct-feedback')?.remove();
+    const feedback = document.createElement('div');
+    feedback.className = 'correct-feedback';
+    feedback.setAttribute('role', 'status');
+    feedback.setAttribute('aria-label', '答對了');
+    feedback.innerHTML = `
+      <div class="correct-feedback-card">
+        <div class="correct-feedback-icon">✓</div>
+        <div class="correct-feedback-text">答對了！</div>
+      </div>`;
+    document.body.appendChild(feedback);
+    setTimeout(() => feedback.remove(), 900);
+  }
+
+  function playWrongSound() {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      const context = new AudioContextClass();
+      const now = context.currentTime;
+      [
+        { frequency: 220, start: 0, duration: 0.14 },
+        { frequency: 174.61, start: 0.13, duration: 0.22 }
+      ].forEach(note => {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = 'triangle';
+        oscillator.frequency.value = note.frequency;
+        gain.gain.setValueAtTime(0.0001, now + note.start);
+        gain.gain.exponentialRampToValueAtTime(0.13, now + note.start + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + note.start + note.duration);
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start(now + note.start);
+        oscillator.stop(now + note.start + note.duration);
+      });
+      setTimeout(() => context.close().catch(() => {}), 600);
+    } catch (e) {}
+  }
+
+  function showWrongFeedback() {
+    playWrongSound();
+    document.querySelector('.correct-feedback')?.remove();
+    const feedback = document.createElement('div');
+    feedback.className = 'correct-feedback';
+    feedback.setAttribute('role', 'status');
+    feedback.setAttribute('aria-label', '答錯了，再試一次');
+    feedback.innerHTML = `
+      <div class="correct-feedback-card wrong">
+        <div class="correct-feedback-icon">✕</div>
+        <div class="correct-feedback-text">再試一次</div>
+      </div>`;
+    document.body.appendChild(feedback);
+    setTimeout(() => feedback.remove(), 900);
+  }
+
   async function showWin() {
     document.getElementById('winMsg').textContent = `得分 ${score} 分，共 ${moves} 次！`;
     document.getElementById('winBanner').style.display = 'block';
@@ -369,9 +559,10 @@
         el.classList.add('matched');
         drawMatchLine(selectedLeft, el);
         matchedPairs.push({left:selectedLeft,right:el});
-        addScore(10); addProgress(); selectedLeft=null;
+        addScore(10); addProgress(); showCorrectFeedback(); selectedLeft=null;
       } else {
         selectedLeft.classList.add('wrong'); el.classList.add('wrong');
+        showWrongFeedback();
         const pl=selectedLeft;
         setTimeout(()=>{pl.classList.remove('selected','wrong');el.classList.remove('wrong');},600);
         selectedLeft=null;
@@ -431,9 +622,10 @@
     const second=el;
     if (flipFirst.dataset.id===second.dataset.id && flipFirst.dataset.type!==second.dataset.type) {
       flipFirst.classList.add('matched'); second.classList.add('matched');
-      addScore(10); flipMatched++; addProgress(); flipFirst=null;
+      addScore(10); flipMatched++; addProgress(); showCorrectFeedback(); flipFirst=null;
     } else {
       flipLock=true;
+      showWrongFeedback();
       const f=flipFirst;
       setTimeout(()=>{ f.classList.remove('flipped'); second.classList.remove('flipped'); flipLock=false; },900);
       flipFirst=null;
@@ -486,9 +678,9 @@
     if (listenAnswered) return;
     listenAnswered=true; addMove();
     if (el.dataset.zh === correctZh) {
-      el.classList.add('correct'); addScore(10); addProgress();
+      el.classList.add('correct'); addScore(10); addProgress(); showCorrectFeedback();
     } else {
-      el.classList.add('wrong'); addScore(-5);
+      el.classList.add('wrong'); addScore(-5); showWrongFeedback();
       document.querySelectorAll('.listen-opt').forEach(o=>{
         if(o.dataset.zh===correctZh) o.classList.add('correct');
       });
@@ -549,9 +741,10 @@
       .filter(Boolean)
       .map(norm);
     if (acceptedAnswers.includes(norm(val))) {
-      input.classList.add('correct'); addScore(10); addProgress();
+      input.classList.add('correct'); addScore(10); addProgress(); showCorrectFeedback();
     } else {
       input.classList.add('wrong');
+      showWrongFeedback();
       document.getElementById('quizAnswer').style.display='block';
     }
     quizIdx++;
