@@ -160,6 +160,12 @@
 
   <p id="gameDesc" style="font-size:13px;color:#888;padding:8px 16px 0;"></p>
 
+  <!-- 遊戲說明：先看規則，再開始操作 -->
+  <div class="section">
+    <div class="section-title" id="ruleTitle">🎮 遊戲說明</div>
+    <ul id="ruleList" style="padding:8px 16px 16px;list-style:none;"></ul>
+  </div>
+
   <!-- 計分板 -->
   <div class="game-header">
     <div class="game-stat">
@@ -184,11 +190,6 @@
     <h2>🎉 恭喜完成！</h2>
     <p id="winMsg"></p>
     <button class="btn btn-outline" style="color:white;border-color:white;" onclick="restartGame()">再玩一次</button>
-  </div>
-
-  <div class="section">
-    <div class="section-title" id="ruleTitle">🎮 遊戲說明</div>
-    <ul id="ruleList" style="padding:8px 16px 16px;list-style:none;"></ul>
   </div>
 
   <nav class="bottom-nav">
@@ -223,7 +224,10 @@
       if (res.ok) {
         const data = await res.json();
         savedPairs = data.map(w => ({
-          zh: w.label_zh, rom: w.label_hakka || w.label_pinyin,
+          zh: w.label_zh,
+          hakka: w.label_hakka || "",
+          pinyin: w.label_pinyin || "",
+          rom: w.label_hakka || w.label_pinyin,
           img: w.image_path || "", audio: w.audio_path || ""
         })).filter(pair => pair.zh && pair.rom);
       }
@@ -511,6 +515,7 @@
     if (quizIdx >= quizPairs.length) return;
     quizAnswered=false;
     const p = quizPairs[quizIdx];
+    const acceptedAnswers = [p.hakka, p.pinyin].filter(Boolean);
     document.getElementById('gameArea').innerHTML=`
       <div class="quiz-question">
         <div style="font-size:13px;color:#888;margin-bottom:8px;">第 ${quizIdx+1} / ${quizPairs.length} 題</div>
@@ -518,8 +523,8 @@
         <div class="quiz-zh">${p.zh}</div>
         <div style="font-size:13px;color:#888;margin-bottom:12px;">請輸入客語（漢字或拼音）</div>
         <input class="quiz-input" id="quizInput" placeholder="輸入客語..." onkeydown="if(event.key==='Enter')quizSubmit()" />
-        <div class="quiz-hint">提示：共 ${p.rom.length} 個字元</div>
-        <div class="quiz-answer" id="quizAnswer">正確答案：${p.rom}</div>
+        <div class="quiz-hint">可輸入客語漢字或完整拼音</div>
+        <div class="quiz-answer" id="quizAnswer">正確答案：${acceptedAnswers.join('／')}</div>
         <div style="display:flex;gap:10px;">
           <button class="btn btn-primary" style="flex:1;" onclick="quizSubmit()">確認</button>
           <button class="btn btn-outline" style="flex:1;" onclick="quizSkip()">跳過 / 看答案</button>
@@ -534,10 +539,16 @@
     const val = input.value.trim();
     if (!val) return;
     quizAnswered=true; addMove();
-    const correct = quizPairs[quizIdx].rom;
-    // 比對：去空白、忽略大小寫、允許漢字或拼音
-    const norm = s => s.replace(/\s/g,'').toLowerCase();
-    if (norm(val)===norm(correct) || norm(val)===norm(quizPairs[quizIdx].zh)) {
+    const pair = quizPairs[quizIdx];
+    // 客語漢字與拼音都可作答；拼音忽略空格、連字號及大小寫。
+    const norm = s => String(s || '')
+      .normalize('NFKC')
+      .toLowerCase()
+      .replace(/[\s\-‐‑‒–—·・'’]/g, '');
+    const acceptedAnswers = [pair.hakka, pair.pinyin]
+      .filter(Boolean)
+      .map(norm);
+    if (acceptedAnswers.includes(norm(val))) {
       input.classList.add('correct'); addScore(10); addProgress();
     } else {
       input.classList.add('wrong');

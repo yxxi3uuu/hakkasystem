@@ -278,9 +278,30 @@ async def get_records(user_id: int, db: AsyncSession = Depends(get_db)):
     while len(last_7_scores) < 7:
         last_7_scores.insert(0, 0)
 
+    # 「需要加強」應呈現使用者實際答錯／發音不熟的詞，而不是辨識引擎來源。
+    # 語音練習的活動標題格式為「語音練習: 單字」；低於 80 分視為需加強。
+    weak_word_attempts: dict[str, list[int]] = {}
+    for activity in scored_activities:
+        if activity.score >= 80 or not activity.title:
+            continue
+        prefix, separator, word = activity.title.partition(":")
+        if separator and prefix.strip() == "語音練習" and word.strip():
+            weak_word_attempts.setdefault(word.strip(), []).append(activity.score)
+
+    weak_words = [
+        {
+            "word": word,
+            "average_score": round(sum(scores) / len(scores)),
+            "attempts": len(scores),
+        }
+        for word, scores in weak_word_attempts.items()
+    ]
+    weak_words.sort(key=lambda item: (item["average_score"], -item["attempts"], item["word"]))
+
     return {
         "recent_activities": [{"icon": a.icon, "title": a.title, "score": a.score, "date": a.created_at} for a in activities],
-        "weekly_scores": last_7_scores
+        "weekly_scores": last_7_scores,
+        "weak_words": weak_words,
     }
 
 @router.post("/profile/{user_id}/activity")

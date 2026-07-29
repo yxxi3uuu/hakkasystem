@@ -7,10 +7,22 @@
   <link rel="stylesheet" href="/static/style.css" />
   <style>
     .word-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      display: flex;
       gap: 12px;
       padding: 0 16px 16px;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline: 16px;
+      scrollbar-width: thin;
+      scrollbar-color: #91B1C3 transparent;
+      -webkit-overflow-scrolling: touch;
+    }
+    .word-grid::-webkit-scrollbar { height: 5px; }
+    .word-grid::-webkit-scrollbar-track { background: transparent; }
+    .word-grid::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: #91B1C3;
     }
     .word-date-group { margin-bottom: 8px; }
     .word-date-heading {
@@ -30,6 +42,9 @@
     }
     .word-date-heading.today { color: #E88A4D; }
     .word-card {
+      flex: 0 0 min(78vw, 300px);
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
       background: white;
       border-radius: 14px;
       overflow: hidden;
@@ -161,6 +176,16 @@
       color: #7B858A;
       font-size: 11px;
       line-height: 1.3;
+    }
+    .word-swipe-hint {
+      margin: -5px 18px 9px;
+      color: #88959B;
+      font-size: 11px;
+      text-align: right;
+    }
+
+    @media (min-width: 700px) {
+      .word-card { flex-basis: 280px; }
     }
 
     /* 刪除按鈕（卡片右上角） */
@@ -496,8 +521,13 @@
           }
           const grid = document.createElement('div');
           grid.className = 'word-grid';
+          grid.setAttribute('aria-label', `${heading.textContent}的單字，可左右滑動`);
+          grid.setAttribute('tabindex', '0');
           words.forEach(word => grid.appendChild(createWordCard(word)));
-          section.append(heading, grid);
+          const swipeHint = document.createElement('div');
+          swipeHint.className = 'word-swipe-hint';
+          swipeHint.textContent = words.length > 1 ? '左右滑動查看更多 ↔' : '';
+          section.append(heading, swipeHint, grid);
           container.appendChild(section);
         });
 

@@ -49,6 +49,26 @@
     .activity-title { font-size: 14px; color: #333; font-weight: 600; }
     .activity-date  { font-size: 12px; color: #aaa; }
     .activity-score { margin-left: auto; font-size: 14px; font-weight: 700; color: #315B78; }
+    .activity-date-group {
+      padding: 9px 16px 7px;
+      border-bottom: 1px solid #edf2f4;
+      background: #f6f9fa;
+      color: #65767f;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .activity-toggle {
+      width: 100%;
+      padding: 11px 16px;
+      border: 0;
+      border-top: 1px solid #f0f0f0;
+      background: #fafcfd;
+      color: #315B78;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .activity-toggle:hover { background: #f1f6f8; }
 
     /* category */
     .cat-item { padding: 10px 16px; border-bottom: 1px solid #f5f5f5; }
@@ -134,7 +154,7 @@
 
   <!-- 需要加強 -->
   <div class="section">
-    <div class="section-title">🎯 需要加強的類別</div>
+    <div class="section-title">🎯 需要加強的單字</div>
     <div id="categoryList"></div>
   </div>
 
@@ -185,40 +205,80 @@
           `).join('');
 
           const activities = records.recent_activities || [];
-          document.getElementById('activityList').innerHTML = activities.length > 0
-            ? activities.map(a => `
+          const activityList = document.getElementById('activityList');
+          const activityPageSize = 4;
+
+          function activityDateLabel(dateValue) {
+            const dateText = String(dateValue || '').slice(0, 10);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const localDateText = date => [
+              date.getFullYear(),
+              String(date.getMonth() + 1).padStart(2, '0'),
+              String(date.getDate()).padStart(2, '0')
+            ].join('-');
+
+            if (dateText === localDateText(today)) return '今天';
+            if (dateText === localDateText(yesterday)) return '昨天';
+            if (!dateText) return '日期未記錄';
+
+            const [year, month, day] = dateText.split('-');
+            return `${year} 年 ${Number(month)} 月 ${Number(day)} 日`;
+          }
+
+          function renderActivities(expanded = false) {
+            if (activities.length === 0) {
+              activityList.innerHTML = '<div class="empty-state">還沒有學習紀錄，拍下第一個物品開始學客語吧！<br><a class="btn btn-primary" href="/recognition" style="display:inline-flex;margin-top:16px;text-decoration:none;">📷 開始拍照</a></div>';
+              return;
+            }
+
+            const visibleActivities = expanded
+              ? activities
+              : activities.slice(0, activityPageSize);
+            let previousDate = '';
+            activityList.innerHTML = visibleActivities.map(a => {
+              const activityDate = String(a.date || '').slice(0, 10);
+              const dateHeader = activityDate !== previousDate
+                ? `<div class="activity-date-group">${activityDateLabel(a.date)}</div>`
+                : '';
+              previousDate = activityDate;
+              return `${dateHeader}
                 <div class="activity-item">
                   <div class="activity-icon" style="background:#E8F2F7">${a.icon}</div>
                   <div>
                     <div class="activity-title">${a.title}</div>
-                    <div class="activity-date">${a.date}</div>
                   </div>
                   <div class="activity-score">${a.score > 0 ? a.score + '分' : ''}</div>
-                </div>`).join('')
-            : '<div class="empty-state">還沒有學習紀錄，拍下第一個物品開始學客語吧！<br><a class="btn btn-primary" href="/recognition" style="display:inline-flex;margin-top:16px;text-decoration:none;">📷 開始拍照</a></div>';
+                </div>`;
+            }).join('');
 
-          // ── 詞彙來源分佈（動態）──────────────────────────────
-          const words = await fetch(`/api/saved_words?user_id=${USER_ID}`).then(r => r.json());
-          const total = words.length;
-          const yoloCount = words.filter(w => !w.source || w.source === 'yolo').length;
-          const ocrCount  = words.filter(w => w.source === 'ocr').length;
+            if (activities.length > activityPageSize) {
+              activityList.insertAdjacentHTML('beforeend', `
+                <button type="button" class="activity-toggle" aria-expanded="${expanded}">
+                  ${expanded ? '收合活動紀錄 ▲' : `展開其餘 ${activities.length - activityPageSize} 筆活動 ▼`}
+                </button>`);
+              activityList.querySelector('.activity-toggle').addEventListener('click', () => {
+                renderActivities(!expanded);
+              });
+            }
+          }
 
-          if (total === 0) {
+          renderActivities();
+
+          // ── 低於 80 分的語音練習單字（同一單字彙整顯示）────────
+          const weakWords = records.weak_words || [];
+          if (weakWords.length === 0) {
             document.getElementById('categoryList').innerHTML =
-              '<div class="empty-state">完成幾次學習後，這裡會整理需要加強的內容。</div>';
+              '<div class="empty-state">目前沒有需要加強的單字，繼續保持！</div>';
           } else {
-            const cats = [
-              { name: '📷 拍照學習（YOLO）', count: yoloCount,  pct: Math.round(yoloCount/total*100) },
-              { name: '🔤 文字辨識（OCR）',  count: ocrCount,   pct: Math.round(ocrCount/total*100)  },
-              { name: '📚 總計',             count: total,      pct: 100 },
-            ];
-            document.getElementById('categoryList').innerHTML = cats.map(c => `
+            document.getElementById('categoryList').innerHTML = weakWords.map(item => `
               <div class="cat-item">
                 <div class="cat-header">
-                  <span class="cat-name">${c.name}</span>
-                  <span class="cat-pct">${c.count} 個 ${c.pct < 100 ? '（' + c.pct + '%）' : ''}</span>
+                  <span class="cat-name">📝 ${item.word}</span>
+                  <span class="cat-pct">平均 ${item.average_score} 分・${item.attempts} 次</span>
                 </div>
-                ${c.pct < 100 ? `<div class="cat-bar"><div class="cat-fill" style="width:${c.pct}%"></div></div>` : ''}
+                <div class="cat-bar"><div class="cat-fill" style="width:${item.average_score}%"></div></div>
               </div>`).join('');
           }
 
