@@ -620,6 +620,46 @@
     }
 
     // ── 載入我的單字（去重，點擊開 modal）──
+    async function loadVocabList() {
+      const myWordsSection = document.getElementById('myWordsList').closest('.section');
+      const section = document.createElement('div');
+      section.className = 'section';
+      section.innerHTML = `
+        <div class="section-title">📝 練習單字列表</div>
+        <div id="vocabList"><div style="padding:16px;color:#aaa;font-size:13px;text-align:center;">載入中...</div></div>
+        <div style="padding:12px 16px;">
+          <button class="btn btn-primary btn-block" onclick="loadTask()">🔄 隨機換一題</button>
+        </div>`;
+      myWordsSection.parentNode.insertBefore(section, myWordsSection);
+
+      const container = section.querySelector('#vocabList');
+      let presets;
+      try {
+        const res = await fetch('/api/practice/presets');
+        if (!res.ok) throw new Error();
+        presets = await res.json();
+      } catch {
+        presets = [
+          { word: '蘋果', hakka: '蘋果' },
+          { word: '椅子', hakka: '凳仔' },
+          { word: '電視', hakka: '電視' },
+        ];
+      }
+
+      container.innerHTML = presets.map(p => `
+        <div class="vocab-item" data-preset-word="${p.word}">
+          <div style="flex:1;">
+            <div style="font-size:16px;font-weight:700;color:#24465D;">${p.hakka}</div>
+            <div style="font-size:12px;color:#888;margin-top:1px;">${p.word}</div>
+          </div>
+          <span class="difficulty-badge easy">預設</span>
+        </div>
+      `).join('');
+      container.querySelectorAll('[data-preset-word]').forEach(item => {
+        item.addEventListener('click', () => loadTask(item.dataset.presetWord));
+      });
+    }
+
     let _myWordsData = [];
 
     async function loadMyWords() {
@@ -752,6 +792,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const wordParam = urlParams.get('word');
     loadTask(wordParam || null);
+    loadVocabList();
     loadMyWords();
   </script>
 </body>

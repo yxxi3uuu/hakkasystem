@@ -29,6 +29,33 @@ else:
 
 router = APIRouter(prefix="/api/practice")
 
+# ── 內建預設詞彙 ──
+_VP_BASE = os.path.join(_PROJECT_ROOT, "voice_practice", "data")
+PRESET_WORDS = [
+    {
+        "word": "蘋果",
+        "hakka": "蘋果",
+        "image_path": "/voice_practice/images/images.jpg",
+        "audio_file": os.path.join(_VP_BASE, "audios", "apple.wav"),
+        "audio_url": "/voice_practice/audios/apple.wav",
+    },
+    {
+        "word": "椅子",
+        "hakka": "凳仔",
+        "image_path": "/voice_practice/images/800x.jpg",
+        "audio_file": os.path.join(_VP_BASE, "audios", "chair.wav"),
+        "audio_url": "/voice_practice/audios/chair.wav",
+    },
+    {
+        "word": "電視",
+        "hakka": "電視",
+        "image_path": "/voice_practice/images/Samsung_LE26R41BD_and_Yamada_DVD_player_20030624.jpg",
+        "audio_file": os.path.join(_VP_BASE, "audios", "TV.wav"),
+        "audio_url": "/voice_practice/audios/TV.wav",
+    },
+]
+PRESET_BY_WORD = {preset["word"]: preset for preset in PRESET_WORDS}
+
 class Task(BaseModel):
     word: str
     hakka: str = ""
@@ -131,6 +158,20 @@ def dtw_score_ssl(y_user: np.ndarray, y_ref: np.ndarray, sr: int) -> tuple[int, 
     return int(np.clip(final_score, 0, 100)), diagnostic_report
 
 
+@router.get("/presets")
+async def get_preset_words():
+    """回傳內建預設詞彙列表。"""
+    return [
+        {
+            "word": preset["word"],
+            "hakka": preset["hakka"],
+            "audio_url": preset["audio_url"],
+            "image_path": preset["image_path"],
+        }
+        for preset in PRESET_WORDS
+    ]
+
+
 @router.get("/task", response_model=Task)
 async def get_task(
     word: str | None = None,
@@ -156,10 +197,26 @@ async def get_task(
             audio_url=row.audio_path
         )
 
+    # 使用者沒有儲存該單字時，回退到內建預設題庫。
+    if word and word in PRESET_BY_WORD:
+        preset = PRESET_BY_WORD[word]
+        return Task(
+            word=preset["word"],
+            hakka=preset["hakka"],
+            image_path=preset["image_path"],
+            audio_url=preset["audio_url"],
+        )
+
     if word:
         raise HTTPException(status_code=404, detail=f"找不到「{word}」的練習資料")
 
-    raise HTTPException(status_code=404, detail="尚未儲存可練習的單字")
+    preset = random.choice(PRESET_WORDS)
+    return Task(
+        word=preset["word"],
+        hakka=preset["hakka"],
+        image_path=preset["image_path"],
+        audio_url=preset["audio_url"],
+    )
 
 class ScoreResult(BaseModel):
     score: int 
@@ -186,6 +243,10 @@ async def score_recording(
         rows = result.scalars().all()
         if rows:
             ref_path = rows[0].audio_path.lstrip("/")
+
+    # 內建預設單字使用專屬的標準音。
+    if not ref_path and word and word in PRESET_BY_WORD:
+        ref_path = PRESET_BY_WORD[word]["audio_file"]
 
     # 找不到指定單字時，從使用者已儲存的單字中選擇可用標準音。
     if not ref_path:
