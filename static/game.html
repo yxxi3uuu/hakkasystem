@@ -291,7 +291,8 @@
   let currentScope   = 'mixed';
   let PAIRS          = [];
   let savedPairs     = [];
-  let score=0, moves=0, progress=0, total=0;
+  let score=0, moves=0, progress=0, total=0, correctAnswers=0;
+  let mistakes=[];
 
   async function loadSavedPairs() {
     const user = getUser();
@@ -369,7 +370,7 @@
   }
 
   function restartGame() {
-    score=0; moves=0; progress=0;
+    score=0; moves=0; progress=0; correctAnswers=0; mistakes=[];
     document.getElementById('score').textContent='0';
     document.getElementById('moves').textContent='0';
     document.getElementById('winBanner').style.display='none';
@@ -410,10 +411,19 @@
     moves++;
     document.getElementById('moves').textContent = moves;
   }
-  function addProgress() {
+  function addProgress(wasCorrect = true) {
+    if (wasCorrect) correctAnswers++;
     progress++;
     document.getElementById('progress').textContent = `${progress}/${total}`;
     if (progress >= total) setTimeout(showWin, 500);
+  }
+
+  function recordMistake(question, answer, correct) {
+    mistakes.push({
+      question: String(question || '未知題目').trim(),
+      answer: String(answer || '未作答').trim(),
+      correct: String(correct || '請重新查看題目').trim()
+    });
   }
 
   function playCorrectSound() {
@@ -502,7 +512,41 @@
   }
 
   async function showWin() {
-    document.getElementById('winMsg').textContent = `得分 ${score} 分，共 ${moves} 次！`;
+    document.querySelector('#winBanner h2').textContent =
+      mistakes.length === 0 ? '🎉 全部答對！' : '🎯 練習完成！';
+    document.getElementById('winMsg').textContent =
+      `完成 ${progress} / ${total} 題，得分 ${score} 分，共嘗試 ${moves} 次，答錯 ${mistakes.length} 次。`;
+
+    let mistakeSummary = document.getElementById('mistakeSummary');
+    if (!mistakeSummary) {
+      mistakeSummary = document.createElement('div');
+      mistakeSummary.id = 'mistakeSummary';
+      document.getElementById('winMsg').insertAdjacentElement('afterend', mistakeSummary);
+    }
+    mistakeSummary.innerHTML = '';
+    mistakeSummary.style.cssText = mistakes.length
+      ? 'display:block;margin:16px 0;text-align:left;background:rgba(255,255,255,.96);color:#29343A;border-radius:12px;padding:14px;max-height:300px;overflow-y:auto;'
+      : 'display:none;';
+    if (mistakes.length) {
+      const heading = document.createElement('div');
+      heading.textContent = '💡 這些地方可以再加強';
+      heading.style.cssText = 'font-weight:800;margin-bottom:10px;color:#24465D;';
+      mistakeSummary.appendChild(heading);
+      mistakes.forEach((mistake, index) => {
+        const item = document.createElement('div');
+        item.style.cssText = 'padding:10px 0;border-top:1px solid #E8EEF1;font-size:13px;line-height:1.65;';
+        const title = document.createElement('strong');
+        title.textContent = `${index + 1}. ${mistake.question}`;
+        const answer = document.createElement('div');
+        answer.textContent = `你的答案：${mistake.answer}`;
+        answer.style.color = '#C94A4A';
+        const correct = document.createElement('div');
+        correct.textContent = `正確答案：${mistake.correct}`;
+        correct.style.color = '#315B78';
+        item.append(title, answer, correct);
+        mistakeSummary.appendChild(item);
+      });
+    }
     document.getElementById('winBanner').style.display = 'block';
     const user = getUser();
     if (user) {
@@ -562,6 +606,8 @@
         addScore(10); addProgress(); showCorrectFeedback(); selectedLeft=null;
       } else {
         selectedLeft.classList.add('wrong'); el.classList.add('wrong');
+        const correctEl = document.querySelector(`#rightCol .match-item[data-id="${selectedLeft.dataset.id}"]`);
+        recordMistake(selectedLeft.innerText, el.innerText, correctEl?.innerText);
         showWrongFeedback();
         const pl=selectedLeft;
         setTimeout(()=>{pl.classList.remove('selected','wrong');el.classList.remove('wrong');},600);
@@ -625,6 +671,12 @@
       addScore(10); flipMatched++; addProgress(); showCorrectFeedback(); flipFirst=null;
     } else {
       flipLock=true;
+      const firstLabel = flipFirst.querySelector('.flip-back span')?.textContent;
+      const secondLabel = second.querySelector('.flip-back span')?.textContent;
+      const correctCard = document.querySelector(
+        `.flip-card[data-id="${flipFirst.dataset.id}"][data-type="${flipFirst.dataset.type === 'zh' ? 'rom' : 'zh'}"] .flip-back span`
+      );
+      recordMistake(firstLabel, secondLabel, correctCard?.textContent);
       showWrongFeedback();
       const f=flipFirst;
       setTimeout(()=>{ f.classList.remove('flipped'); second.classList.remove('flipped'); flipLock=false; },900);
@@ -676,11 +728,14 @@
 
   function listenAnswer(el, correctZh) {
     if (listenAnswered) return;
+    const correct = listenPairs[listenIdx];
     listenAnswered=true; addMove();
     if (el.dataset.zh === correctZh) {
       el.classList.add('correct'); addScore(10); addProgress(); showCorrectFeedback();
     } else {
       el.classList.add('wrong'); addScore(-5); showWrongFeedback();
+      recordMistake(correct.rom || '聽音選字', el.dataset.zh, correct.zh);
+      addProgress(false);
       document.querySelectorAll('.listen-opt').forEach(o=>{
         if(o.dataset.zh===correctZh) o.classList.add('correct');
       });
@@ -745,6 +800,8 @@
     } else {
       input.classList.add('wrong');
       showWrongFeedback();
+      recordMistake(pair.zh, val, [pair.hakka, pair.pinyin].filter(Boolean).join(' / '));
+      addProgress(false);
       document.getElementById('quizAnswer').style.display='block';
     }
     quizIdx++;
@@ -755,9 +812,11 @@
     if (quizAnswered) return;
     quizAnswered=true; addMove();
     document.getElementById('quizAnswer').style.display='block';
+    const pair = quizPairs[quizIdx];
+    recordMistake(pair.zh, '未作答（跳過）', [pair.hakka, pair.pinyin].filter(Boolean).join(' / '));
+    addProgress(false);
     quizIdx++;
     if (quizIdx < quizPairs.length) setTimeout(renderQuiz, 1500);
-    else addProgress();
   }
 
   // ════════════════════════════════════════
