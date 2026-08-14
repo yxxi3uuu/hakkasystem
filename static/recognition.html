@@ -499,6 +499,48 @@
       await new Promise(resolve => setTimeout(resolve, 320));
     }
 
+    // ── 圖片壓縮函數 ──
+    async function compressImage(blob, maxWidth = 1280, quality = 0.65) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            // 計算縮放尺寸(保持寬高比)
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > maxWidth) {
+              const ratio = maxWidth / width;
+              width = maxWidth;
+              height = Math.round(height * ratio);
+            }
+            
+            // 建立臨時 canvas 進行壓縮
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const ctx = tempCanvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // 轉換為 blob(降低品質)
+            tempCanvas.toBlob(
+              (compressedBlob) => {
+                console.log(`[Compress] ${blob.size} bytes → ${compressedBlob.size} bytes`);
+                resolve(compressedBlob);
+              },
+              'image/jpeg',
+              quality
+            );
+          };
+          img.onerror = () => reject(new Error('圖片載入失敗'));
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('檔案讀取失敗'));
+        reader.readAsDataURL(blob);
+      });
+    }
+
     // ── 相機啟動 ──
     async function startCamera() {
       try {
@@ -538,10 +580,14 @@
       startCamera();
     }
 
-    function capture() {
+    async function capture() {
       canvas.width  = video.videoWidth;
       canvas.height = video.videoHeight;
       canvas.getContext('2d').drawImage(video, 0, 0);
+
+      const uncompressedBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+      const compressedBlob = await compressImage(uncompressedBlob, 1280, 0.65);
+      currentPhotoBlob = compressedBlob;
 
       const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
       captured.src = dataUrl;
@@ -566,9 +612,13 @@
     }
 
     // ── 上傳模式 ──
-    document.getElementById('fileInput').addEventListener('change', function(e) {
+    document.getElementById('fileInput').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (!file) return;
+      
+      const compressedBlob = await compressImage(file, 1280, 0.65);
+      currentPhotoBlob = compressedBlob;
+      
       const reader = new FileReader();
       reader.onload = ev => {
         document.getElementById('uploadPreviewImg').src = ev.target.result;
@@ -622,13 +672,17 @@
     function showResult() {
       setTimeout(async () => {
         try {
-          let blob;
+          let blob = currentPhotoBlob;
           const activeTab = document.querySelector('.mode-tab.active').textContent.trim();
 
-          if (activeTab.includes('拍照')) {
-            blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
-          } else {
-            blob = document.getElementById('fileInput').files[0];
+          if (!blob) {
+            if (activeTab.includes('拍照')) {
+              const uncompressedBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+              blob = await compressImage(uncompressedBlob, 1280, 0.65);
+            } else {
+              const file = document.getElementById('fileInput').files[0];
+              blob = await compressImage(file, 1280, 0.65);
+            }
           }
           currentPhotoBlob = blob;
 
@@ -1095,18 +1149,21 @@
     let _ocrFile = null;        // 保存目前 OCR 的原始檔案
     let _ocrData = null;        // 保存 OCR 結果
 
-    document.getElementById('ocrFileInput').addEventListener('change', function(e) {
+    document.getElementById('ocrFileInput').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (!file) return;
-      _ocrFile = file;
+
+      const compressedBlob = await compressImage(file, 1280, 0.65);
+      _ocrFile = compressedBlob;
+
       const reader = new FileReader();
       reader.onload = ev => {
         document.getElementById('ocrPreviewImg').src = ev.target.result;
         document.getElementById('ocrPreview').style.display = 'block';
         document.getElementById('ocrZone').style.display = 'none';
-        runOcr(file);
+        runOcr(compressedBlob);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressedBlob);
     });
 
     // ── OCR 處理（新版：關鍵詞彙卡片模式）──
