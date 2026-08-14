@@ -19,6 +19,15 @@ function requireLogin() {
   return getUser();
 }
 
+function getToken() {
+  return localStorage.getItem('token');
+}
+
+function authHeaders() {
+  const token = getToken();
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
 async function logout() {
   try {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -27,5 +36,6 @@ async function logout() {
   localStorage.removeItem('user_name');
   localStorage.removeItem('user_email');
   localStorage.removeItem('user_role');
+  localStorage.removeItem('token');
   window.location.href = '/login';
 }

@@ -225,6 +225,7 @@
         localStorage.setItem('user_name', data.name);
         localStorage.setItem('user_email', data.email);
         localStorage.setItem('user_role', data.role || 'student');
+        localStorage.setItem('token', data.access_token);
         window.location.href = '/';
       } catch (err) {
         showError('網路錯誤，請稍後再試');
@@ -266,6 +267,7 @@
         localStorage.setItem('user_name', data.name);
         localStorage.setItem('user_email', data.email);
         localStorage.setItem('user_role', data.role || 'student');
+        localStorage.setItem('token', data.access_token);
         setTimeout(() => { window.location.href = '/'; }, 1000);
       } catch (err) {
         showError('網路錯誤，請稍後再試');

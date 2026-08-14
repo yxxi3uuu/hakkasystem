@@ -19,6 +19,10 @@ def verify_password(password: str, stored: str) -> bool:
     salt, hashed = stored.split(":")
     return hashlib.sha256((salt + password).encode()).hexdigest() == hashed
 
+# ── 簡易 Bearer token（正式環境請改用標準 JWT 並驗證有效期）──
+def generate_access_token(user_id: int) -> str:
+    return f"{user_id}.{secrets.token_urlsafe(32)}"
+
 # ── Schemas ──
 class RegisterRequest(BaseModel):
     name: str
@@ -30,6 +34,8 @@ class LoginRequest(BaseModel):
     password: str
 
 class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
     user_id: int
     name: str
     email: str
@@ -56,6 +62,7 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     await db.refresh(user)
 
     return AuthResponse(
+        access_token=generate_access_token(user.id),
         user_id=user.id,
         name=user.name,
         email=user.email,
@@ -77,6 +84,7 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Email 或密碼錯誤")
 
     return AuthResponse(
+        access_token=generate_access_token(user.id),
         user_id=user.id,
         name=user.name,
         email=user.email,
