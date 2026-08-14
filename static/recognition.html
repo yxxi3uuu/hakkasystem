@@ -637,7 +637,11 @@
 
           // 發送請求到整合了客委會 API 與 LLM 的新路由
           startRecognitionProgress();
-          const res = await fetch('/api/recognize', { method: 'POST', body: formData });
+          const res = await fetch('/api/recognize', {
+            method: 'POST',
+            body: formData,
+            headers: authHeaders(),
+          });
 
           if (res.ok) {
             const data = await res.json();
@@ -1068,7 +1072,11 @@
           formData.append('sentence_audio_path',  item.sentence_audio_path || '');
           formData.append('source',               item.source || 'yolo');
 
-          const res = await fetch('/api/saved_words', { method: 'POST', body: formData });
+          const res = await fetch('/api/saved_words', {
+            method: 'POST',
+            body: formData,
+            headers: authHeaders(),
+          });
           if (res.ok) successCount++;
         } catch(e) {
           console.error('儲存失敗:', e);
@@ -1123,7 +1131,8 @@
 
         const res = await fetch('/api/ocr/extract-and-keywords', {
           method: 'POST',
-          body: formData
+          body: formData,
+          headers: authHeaders(),
         });
 
         if (!res.ok) {
@@ -1269,7 +1278,11 @@
           formData.append('sentence_audio_path',    '');
           formData.append('source', 'ocr');
 
-          const res = await fetch('/api/saved_words', { method: 'POST', body: formData });
+          const res = await fetch('/api/saved_words', {
+            method: 'POST',
+            body: formData,
+            headers: authHeaders(),
+          });
           if (res.ok) successCount++;
         } catch (e) {
           console.error('儲存失敗:', e);
@@ -1327,7 +1340,8 @@
 
         const res = await fetch('/api/v1/dataset/report', {
           method: 'POST',
-          body: formData
+          body: formData,
+          headers: authHeaders(),
         });
 
         if (res.ok) {
