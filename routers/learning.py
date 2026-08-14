@@ -107,7 +107,7 @@ async def _ask_llm(prompt: str, max_tokens: int = 300) -> str:
     # ── 優先用 Groq（免費、穩定）──
     if _GROQ_API_KEY:
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=25.0) as client:
                 resp = await client.post(
                     "https://api.groq.com/openai/v1/chat/completions",
                     headers={
@@ -115,7 +115,7 @@ async def _ask_llm(prompt: str, max_tokens: int = 300) -> str:
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "llama-3.1-8b-instant",
+                        "model": "openai/gpt-oss-20b",
                         "messages": [{"role": "user", "content": prompt}],
                         "temperature": 0.3,
                         "max_tokens": max_tokens,
